@@ -1,0 +1,17 @@
+package com.scaler.price.rule.domain;
+
+public enum ConditionType {
+    ATTRIBUTE_MATCH,
+    PRICE_RANGE,
+    DATE_RANGE,
+    INVENTORY_LEVEL,
+    COMPETITOR_PRICE,
+    CATEGORY_MATCH,
+    BRAND_MATCH,
+    CUSTOM,
+    SALES_VELOCITY,
+    CATEGORY_ATTRIBUTE,
+    PRODUCT_ATTRIBUTE,
+    TIME_BASED,
+    MIN_MARGIN_PERCENTAGE, MARGIN_RANGE
+}

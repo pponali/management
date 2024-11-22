@@ -1,0 +1,14 @@
+package com.scaler.price.rule.domain;
+
+public enum ActionType {
+    SET_PRICE,
+    APPLY_DISCOUNT,
+    APPLY_DISCOUNT_PERCENTAGE,
+    APPLY_DISCOUNT_AMOUNT,
+    SET_MARGIN,
+    MATCH_COMPETITOR_PRICE,
+    BEAT_COMPETITOR_PRICE,
+    BUNDLE_DISCOUNT,
+    QUANTITY_DISCOUNT,
+    CUSTOM
+}
