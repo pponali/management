@@ -1,5 +1,7 @@
 package com.scaler.price.rule.domain;
 
+
+
 public enum RuleType {
     MARGIN,
     PRICE,

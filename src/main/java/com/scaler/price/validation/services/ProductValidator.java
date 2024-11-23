@@ -6,6 +6,7 @@ import com.scaler.price.rule.domain.Product;
 import com.scaler.price.rule.dto.ProductDTO;
 import com.scaler.price.rule.exceptions.ProductValidationException;
 import com.scaler.price.rule.exceptions.RuleValidationException;
+import com.scaler.price.rule.mapper.ProductMapper;
 import com.scaler.price.rule.service.CategoryService;
 import com.scaler.price.rule.service.ProductService;
 import com.scaler.price.rule.service.SellerService;
@@ -16,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.Set;
 
 @Component
@@ -25,6 +27,8 @@ public class ProductValidator {
     private final CategoryService categoryService;
     private final SellerService sellerService;
     private final SiteService siteService;
+    private final ProductService productService;
+    private final ProductMapper productMapper;
 
     private static final BigDecimal MIN_PRICE = new BigDecimal("0.01");
     private static final int MAX_PRODUCT_NAME_LENGTH = 255;
@@ -36,7 +40,7 @@ public class ProductValidator {
         validateSiteIds(product.getSiteIds());
         validateSeller(product.getSellerId());
         validateCategory(product.getCategoryId());
-        validateAttributes(product.getAttributes());
+        validateAttributes(product.getCustomAttributes());
     }
 
     private void validateBasicFields(Product product) throws ProductValidationException {
@@ -44,21 +48,21 @@ public class ProductValidator {
             throw new ProductValidationException("Product cannot be null");
         }
 
-        if (StringUtils.isBlank(product.getProductId())) {
+        if (StringUtils.isBlank(product.getId())) {
             throw new ProductValidationException("Product ID is required");
         }
 
-        if (!product.getProductId().matches(PRODUCT_ID_PATTERN)) {
+        if (!product.getId().matches(PRODUCT_ID_PATTERN)) {
             throw new ProductValidationException(
                     "Product ID must be 2-50 characters long and contain only letters, numbers, underscores, and hyphens"
             );
         }
 
-        if (StringUtils.isBlank(product.getProductName())) {
+        if (StringUtils.isBlank(product.getDisplayName())) {
             throw new ProductValidationException("Product name is required");
         }
 
-        if (product.getProductName().length() > MAX_PRODUCT_NAME_LENGTH) {
+        if (product.getDisplayName().length() > MAX_PRODUCT_NAME_LENGTH) {
             throw new ProductValidationException(
                     "Product name cannot exceed " + MAX_PRODUCT_NAME_LENGTH + " characters"
             );
@@ -109,16 +113,15 @@ public class ProductValidator {
         }
     }
 
-
-
-    private void validateAttributes(String attributes) throws ProductValidationException {
-        if (attributes != null) {
-            try {
-                // Validate JSON format
-                ObjectMapper mapper = new ObjectMapper();
-                mapper.readTree(attributes);
-            } catch (JsonProcessingException e) {
-                throw new ProductValidationException("Invalid JSON format in attributes");
+    private void validateAttributes(Map<String, String> attributes) throws ProductValidationException {
+        if (attributes != null && !attributes.isEmpty()) {
+            for (Map.Entry<String, String> entry : attributes.entrySet()) {
+                if (StringUtils.isBlank(entry.getKey())) {
+                    throw new ProductValidationException("Attribute key cannot be blank");
+                }
+                if (StringUtils.isBlank(entry.getValue())) {
+                    throw new ProductValidationException("Attribute value cannot be blank for key: " + entry.getKey());
+                }
             }
         }
     }
@@ -127,7 +130,7 @@ public class ProductValidator {
         validateProduct(updatedProduct);
 
         // Additional update-specific validations
-        if (!existingProduct.getProductId().equals(updatedProduct.getProductId())) {
+        if (!existingProduct.getId().equals(updatedProduct.getId())) {
             throw new ProductValidationException("Product ID cannot be changed");
         }
 
@@ -137,8 +140,6 @@ public class ProductValidator {
             throw new ProductValidationException("Invalid product version");
         }
     }
-
-    private final ProductService productService;
 
     public void validateProduct(String productId) throws RuleValidationException {
         validateProductExists(productId);
@@ -164,8 +165,8 @@ public class ProductValidator {
         ProductDTO product = productService.getProduct(productId);
 
         // Validate base price
-        if (product.getBasePrice() == null || product.getBasePrice().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new RuleValidationException("Invalid base price for product: " + productId);
+        if (product.getMrp() == null || product.getMrp().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuleValidationException("Invalid MRP for product: " + productId);
         }
 
         // Validate cost price
@@ -174,16 +175,22 @@ public class ProductValidator {
         }
 
         // Validate that base price is greater than cost price
-        if (product.getBasePrice().compareTo(product.getCostPrice()) < 0) {
-            throw new RuleValidationException("Base price cannot be less than cost price for product: " + productId);
+        if (product.getMrp().compareTo(product.getCostPrice()) < 0) {
+            throw new RuleValidationException("MRP cannot be less than cost price for product: " + productId);
         }
 
         // Validate margin
         validateProductMargin(product);
     }
 
+    private void validateProductMargin(ProductDTO productDTO) throws RuleValidationException {
+        // Convert DTO to domain object
+        Product product = productMapper.toEntity(productDTO);
+        validateProductMargin(product);
+    }
+
     private void validateProductMargin(Product product) throws RuleValidationException {
-        BigDecimal margin = calculateMargin(product.getBasePrice(), product.getCostPrice());
+        BigDecimal margin = calculateMargin(product.getMrp(), product.getCostPrice());
 
         if (margin.compareTo(BigDecimal.ZERO) < 0) {
             throw new RuleValidationException(
@@ -219,7 +226,7 @@ public class ProductValidator {
     }
 
     private void validateCategory(String categoryId) throws RuleValidationException {
-        if (!productService.isCategoryValid(categoryId)) {
+        if (!categoryService.isValidCategory(categoryId)) {
             throw new RuleValidationException("Invalid category: " + categoryId);
         }
     }
@@ -248,5 +255,10 @@ public class ProductValidator {
                             productId, requiredQuantity, availableQuantity)
             );
         }
+    }
+
+    public void validateForCreate(ProductDTO productDTO) throws ProductValidationException, RuleValidationException {
+        Product product = productMapper.toEntity(productDTO);
+        validateProduct(product);
     }
 }

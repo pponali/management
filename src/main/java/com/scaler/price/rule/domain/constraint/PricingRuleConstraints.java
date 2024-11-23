@@ -19,8 +19,10 @@ public class PricingRuleConstraints extends RuleConstraints {
     public PricingRuleConstraints(BigDecimal minimumPrice, BigDecimal maximumPrice, 
                                    BigDecimal minimumMargin, BigDecimal maximumMargin,
                                    LocalDateTime effectiveFrom, LocalDateTime effectiveTo,
-                                   Boolean isActive, Integer priority, RuleType ruleType,
+                                   RuleType ruleType, Boolean isActive, Integer priority,
                                    Instant startDate, Instant endDate) {
-     
+        super(minimumPrice, maximumPrice, minimumMargin, maximumMargin, 
+              effectiveFrom, effectiveTo, ruleType, isActive, priority, 
+              startDate, endDate);
     }
 }

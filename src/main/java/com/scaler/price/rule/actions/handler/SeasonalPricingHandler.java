@@ -1,5 +1,6 @@
 package com.scaler.price.rule.actions.handler;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.scaler.price.rule.domain.RuleAction;
 import com.scaler.price.validation.helper.ActionParameters;
 import com.scaler.price.rule.dto.RuleEvaluationContext;
@@ -69,7 +70,7 @@ public class SeasonalPricingHandler implements CustomActionHandler {
         return "winter";
     }
 
-    private ActionParameters parseParameters(Map parameters) {
+    private ActionParameters parseParameters(JsonNode parameters) {
         return new ActionParameters(parameters);
     }
 

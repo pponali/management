@@ -2,7 +2,9 @@ package com.scaler.price.rule.events;
 
 import com.scaler.price.rule.domain.AttributeEventType;
 import com.scaler.price.rule.domain.ProductAttribute;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -15,6 +17,8 @@ import java.util.UUID;
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@Getter
+@Setter
 public class AttributeEventPublisher {
     private final KafkaTemplate<String, AttributeEvent> kafkaTemplate;
     private final ApplicationEventPublisher eventPublisher;

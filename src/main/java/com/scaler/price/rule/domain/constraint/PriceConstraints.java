@@ -14,6 +14,8 @@ import java.time.LocalDateTime;
 import java.time.Instant;
 import java.util.*;
 
+import com.scaler.price.rule.domain.RuleType;
+
 @Entity
 @Table(name = "price_constraints")
 @Data
@@ -89,9 +91,6 @@ public class PriceConstraints extends RuleConstraints{
                           Map<String, BigDecimal> categorySpecificLimits,
                           List<PriceThreshold> priceThresholds,
                           Map<String, RegionalPriceAdjustment> regionalAdjustments) {
-        super(minimumPrice, maximumPrice, minimumMargin, maximumMargin,
-              effectiveFrom, effectiveTo, isActive, priority, ruleType,
-              startDate, endDate);
         this.maxPriceChangePercentage = maxPriceChangePercentage;
         this.maxPriceIncreaseAmount = maxPriceIncreaseAmount;
         this.maxPriceDecreaseAmount = maxPriceDecreaseAmount;

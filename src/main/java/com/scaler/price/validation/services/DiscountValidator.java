@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Component
 @Slf4j
@@ -102,7 +103,7 @@ public class DiscountValidator {
                     action.getCurrentPrice(),
                     action.getCostPrice(),
                     action.getDiscountValue(),
-                    action.getDiscountType()
+                    action.getDiscountType().name()
             );
 
             if (marginAfterDiscount.compareTo(MIN_MARGIN_AFTER_DISCOUNT) < 0) {
@@ -113,6 +114,57 @@ public class DiscountValidator {
             }
         }
     }
-}
 
-// TimeValidator.java
+    private BigDecimal calculateMaxDiscount(DiscountAction action) {
+        // If no discount value is provided, return 0
+        if (action.getDiscountValue() == null) {
+            return BigDecimal.ZERO;
+        }
+
+        // Calculate max discount based on discount type
+        switch (action.getDiscountType()) {
+            case PERCENTAGE:
+                return action.getDiscountValue();
+            case FIXED_AMOUNT:
+                // Calculate percentage discount for fixed amount
+                if (action.getCurrentPrice() != null && action.getCurrentPrice().compareTo(BigDecimal.ZERO) > 0) {
+                    return action.getDiscountValue()
+                            .divide(action.getCurrentPrice(), 2, RoundingMode.HALF_UP)
+                            .multiply(BigDecimal.valueOf(100));
+                }
+                return BigDecimal.ZERO;
+            default:
+                return BigDecimal.ZERO;
+        }
+    }
+
+    private BigDecimal calculateMarginAfterDiscount(
+            BigDecimal currentPrice,
+            BigDecimal costPrice,
+            BigDecimal discountValue,
+            String discountType
+    ) {
+        if (currentPrice == null || costPrice == null || discountValue == null) {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal discountedPrice;
+        switch (discountType) {
+            case "PERCENTAGE":
+                discountedPrice = currentPrice.multiply(BigDecimal.ONE.subtract(discountValue.divide(BigDecimal.valueOf(100))));
+                break;
+            case "FLAT":
+                discountedPrice = currentPrice.subtract(discountValue);
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid discount type: " + discountType);
+        }
+
+        // Calculate margin percentage
+        BigDecimal marginAmount = discountedPrice.subtract(costPrice);
+        BigDecimal marginPercentage = marginAmount.divide(discountedPrice, 2, RoundingMode.HALF_UP)
+                .multiply(BigDecimal.valueOf(100));
+
+        return marginPercentage;
+    }
+}

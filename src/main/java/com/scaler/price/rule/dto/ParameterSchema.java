@@ -11,5 +11,7 @@ import java.util.Map;
 public class ParameterSchema {
     private Map<String, ParameterDefinition> parameters;
     private List<String> requiredParameters;
+    private List<String> optionalParameters;
     private Map<String, List<String>> dependencyRules;
+
 }

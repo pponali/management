@@ -99,12 +99,12 @@ public class SellerSiteConfig {
     }
 
     public void setRule(PricingRule rule) {
-        if (this.rule != null && this.rule.getConfigs() != null) {
-            this.rule.getConfigs().remove(this);
+        if (this.rule != null && this.rule.getSellerSiteConfigs() != null) {
+            this.rule.getSellerSiteConfigs().remove(this);
         }
         this.rule = rule;
-        if (rule != null && rule.getConfigs() != null) {
-            rule.getConfigs().add(this);
+        if (rule != null && rule.getSellerSiteConfigs() != null) {
+            rule.getSellerSiteConfigs().add(this);
         }
     }
 }

@@ -5,9 +5,7 @@ import com.scaler.price.rule.dto.CategoryAttributes;
 import com.scaler.price.rule.domain.RuleType;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -25,7 +23,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper=false)
-@Builder
+
 public class CategoryConstraints extends RuleConstraints{
     @Id
     private String categoryId;
@@ -72,16 +70,13 @@ public class CategoryConstraints extends RuleConstraints{
     @Version
     private Long version;
 
-    @Builder(builderMethodName = "categoryConstraintsBuilder")
     public CategoryConstraints(String categoryId, String categoryName, String description,
                              BigDecimal minimumPrice, BigDecimal maximumPrice,
                              BigDecimal minimumMargin, BigDecimal maximumMargin,
                              LocalDateTime effectiveFrom, LocalDateTime effectiveTo,
                              Boolean isActive, Integer priority, RuleType ruleType,
                              Instant startDate, Instant endDate) {
-        super(minimumPrice, maximumPrice, minimumMargin, maximumMargin,
-              effectiveFrom, effectiveTo, isActive, priority, ruleType,
-              startDate, endDate);
+
         this.categoryId = categoryId;
         this.categoryName = categoryName;
         this.description = description;

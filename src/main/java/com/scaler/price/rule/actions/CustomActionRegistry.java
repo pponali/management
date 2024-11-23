@@ -4,11 +4,13 @@ import com.scaler.price.rule.actions.handler.CustomActionHandler;
 import com.scaler.price.rule.actions.handler.LocationPricingHandler;
 import com.scaler.price.rule.actions.handler.SeasonalPricingHandler;
 import com.scaler.price.rule.dto.CustomActionMetadata;
+import com.scaler.price.rule.dto.ParameterSchema;
 import com.scaler.price.rule.exceptions.ActionRegistrationException;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,7 +22,7 @@ public class CustomActionRegistry {
     private final Map<String, CustomActionMetadata> metadata = new ConcurrentHashMap<>();
 
     @PostConstruct
-    public void init() {
+    public void init() throws ActionRegistrationException {
         // Register default custom actions
         registerDefaultHandlers();
     }
@@ -84,7 +86,7 @@ public class CustomActionRegistry {
         }
     }
 
-    private void registerDefaultHandlers() {
+    private void registerDefaultHandlers() throws ActionRegistrationException {
         // Register Season-based Pricing Handler
         registerHandler(
                 "SEASON_PRICING",
@@ -108,5 +110,19 @@ public class CustomActionRegistry {
         );
 
         // Add more default handlers as needed
+    }
+
+    private ParameterSchema buildLocationPricingSchema() {
+        return ParameterSchema.builder()
+                .requiredParameters(List.of("location", "priceAdjustment"))
+                .optionalParameters(List.of("priceAdjustmentType"))
+                .build();
+    }
+
+    private ParameterSchema buildSeasonalPricingSchema() {
+        return ParameterSchema.builder()
+                .requiredParameters(List.of("season", "discount"))
+                .optionalParameters(List.of("discountType"))
+                .build();
     }
 }

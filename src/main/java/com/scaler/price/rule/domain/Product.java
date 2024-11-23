@@ -7,24 +7,29 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Entity
 @Table(name = "products")
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
-@EqualsAndHashCode(callSuper = false)
+
+@Getter
+@Setter
 public class Product {
     @Id
     private String id;
-
     private String displayName;
     private String imageUrl;
     private String metaTitle;
     private String metaDescription;
-
+    private String name;
+    private String categoryId;
+    private String brandId;
+    private String sellerId;
+    private String version;
+    
     @ElementCollection
     @CollectionTable(name = "product_tags")
     private Set<String> tags;
@@ -34,6 +39,18 @@ public class Product {
     @MapKeyColumn(name = "attribute_key")
     @Column(name = "attribute_value")
     private Map<String, String> customAttributes;
+
+    @ElementCollection
+    @CollectionTable(name = "product_site_ids")
+    private Set<String> siteIds = new HashSet<>();
+    
+    private BigDecimal mrp;
+    private BigDecimal costPrice;
+    private String currency;
+    private ProductStatus status;
+    
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     @OneToOne(cascade = CascadeType.ALL)
     private RuleConstraints marginConstraints;
@@ -57,12 +74,14 @@ public class Product {
     @Embedded
     private AuditInfo auditInfo;
 
+    private Integer quantity;
+
     public MarginConstraints getMarginConstraints() {
         return MarginConstraints.builder()
                 .siteId("DEFAULT")
-                .minMargin(BigDecimal.ZERO)
-                .maxMargin(BigDecimal.valueOf(100))
-                .targetMargin(BigDecimal.valueOf(20))
+                .minMarginPercentage(BigDecimal.ZERO)
+                .maxMarginOverride(BigDecimal.valueOf(100))
+                .defaultMargin(BigDecimal.valueOf(20))
                 .build();
     }
 
@@ -106,5 +125,9 @@ public class Product {
         ERROR,
         WARNING,
         INFO
+    }
+
+    public enum ProductStatus {
+        // Add your product status values here
     }
 }

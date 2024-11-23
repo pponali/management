@@ -2,11 +2,14 @@ package com.scaler.price.rule.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.scaler.price.core.management.service.ConfigurationService;
 import com.scaler.price.rule.domain.PricingRule;
 import com.scaler.price.rule.domain.RuleAction;
 import com.scaler.price.rule.domain.RuleCondition;
 import com.scaler.price.rule.dto.RuleEvaluationRequest;
 import com.scaler.price.rule.dto.RuleEvaluationResult;
+
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -24,11 +27,6 @@ public class RuleEngineService {
     private final ActionExecutorService actionExecutorService;
     private final ConfigurationService configService;
 
-    public RuleEngineService(ObjectMapper objectMapper, ActionExecutorService actionExecutorService, ConfigurationService configService) {
-        this.objectMapper = objectMapper;
-        this.actionExecutorService = actionExecutorService;
-        this.configService = configService;
-    }
 
     public RuleEvaluationResult evaluate(
             PricingRule rule,

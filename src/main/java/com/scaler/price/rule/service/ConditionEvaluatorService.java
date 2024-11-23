@@ -45,7 +45,7 @@ public class ConditionEvaluatorService {
                 case ATTRIBUTE_MATCH -> false;
                 case PRICE_RANGE -> evaluatePriceRange(condition, context);
                 case MARGIN_RANGE -> evaluateMarginRange(condition, context);
-                case DATE_RANGE -> evaluateDateRange(condition, context);;
+                case DATE_RANGE -> evaluateDateRange(condition, context);
                 case INVENTORY_LEVEL -> evaluateInventoryLevel(condition, context);
                 case COMPETITOR_PRICE -> evaluateCompetitorPrice(condition, context);
                 case SALES_VELOCITY -> evaluateSalesVelocity(condition, context);

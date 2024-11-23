@@ -74,7 +74,7 @@ public class Bundle {
         try {
             List<Product> products = productRepository.findAll();
             for (Product product : products) {
-                productIds.add(product.getProductId());
+                productIds.add(product.getId());
             }
         } catch (DataAccessException e) {
             log.error("Error fetching product IDs from the database", e);

@@ -19,8 +19,8 @@ public class ProductMapper {
         }
 
         return ProductDTO.builder()
-                .productId(product.getProductId())
-                .productName(product.getProductName())
+                .id(product.getId())
+                .name(product.getName())
                 .categoryId(product.getCategoryId())
                 .brandId(product.getBrandId())
                 .sellerId(product.getSellerId())
@@ -41,8 +41,8 @@ public class ProductMapper {
         }
 
         return Product.builder()
-                .productId(dto.getProductId())
-                .productName(dto.getProductName())
+                .id(dto.getId())
+                .name(dto.getName())
                 .categoryId(dto.getCategoryId())
                 .brandId(dto.getBrandId())
                 .sellerId(dto.getSellerId())
@@ -62,7 +62,7 @@ public class ProductMapper {
             return;
         }
 
-        if (dto.getProductName() != null) product.setProductName(dto.getProductName());
+        if (dto.getName() != null) product.setName(dto.getName());
         if (dto.getCategoryId() != null) product.setCategoryId(dto.getCategoryId());
         if (dto.getBrandId() != null) product.setBrandId(dto.getBrandId());
         if (dto.getSellerId() != null) product.setSellerId(dto.getSellerId());
@@ -82,7 +82,7 @@ public class ProductMapper {
         }
 
         return Product.builder()
-                .productId(priceDTO.getProductId())
+                .id(priceDTO.getProductId())
                 .sellerId(priceDTO.getSellerId())
                 .mrp(priceDTO.getMrp())
                 .currency(priceDTO.getCurrency())
@@ -98,7 +98,7 @@ public class ProductMapper {
         }
 
         return PriceDTO.builder()
-                .productId(product.getProductId())
+                .productId(product.getId())
                 .sellerId(product.getSellerId())
                 .mrp(product.getMrp())
                 .currency(product.getCurrency())
@@ -117,7 +117,7 @@ public class ProductMapper {
         }
 
         // Only update non-null values
-        if (source.getProductName() != null) target.setProductName(source.getProductName());
+        if (source.getName() != null) target.setName(source.getName());
         if (source.getCategoryId() != null) target.setCategoryId(source.getCategoryId());
         if (source.getBrandId() != null) target.setBrandId(source.getBrandId());
         if (source.getSellerId() != null) target.setSellerId(source.getSellerId());
@@ -141,8 +141,8 @@ public class ProductMapper {
         }
 
         return Product.builder()
-                .productId(source.getProductId())
-                .productName(source.getProductName())
+                .id(source.getId())
+                .name(source.getName())
                 .categoryId(source.getCategoryId())
                 .brandId(source.getBrandId())
                 .sellerId(source.getSellerId())

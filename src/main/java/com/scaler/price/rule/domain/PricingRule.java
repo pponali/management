@@ -1,6 +1,7 @@
 package com.scaler.price.rule.domain;
 
 import com.scaler.price.core.management.domain.AuditInfo;
+import com.scaler.price.rule.domain.constraint.PricingRuleConstraints;
 import com.scaler.price.rule.domain.constraint.RuleConstraints;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -36,6 +37,10 @@ public class PricingRule {
 
     @Enumerated(EnumType.STRING)
     private RuleType ruleType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "rule_status")
+    private RuleStatus status = RuleStatus.DRAFT;
 
     @Builder.Default
     private Set<String> sellerIds = new HashSet<>();
@@ -78,6 +83,9 @@ public class PricingRule {
 
     @Column(name = "maximum_margin")
     private BigDecimal maximumMargin;
+
+    @Column(name = "margin_percentage")
+    private BigDecimal marginPercentage;
 
     @Column(name = "priority")
     private Integer priority;
@@ -182,21 +190,36 @@ public class PricingRule {
     }
 
     public List<RuleConstraints> getConstraints() {
-
         List<RuleConstraints> constraints = new ArrayList<>();
-        constraints.add(new RuleConstraints(
+        constraints.add(new PricingRuleConstraints(
                 minimumPrice,
                 maximumPrice,
                 minimumMargin,
                 maximumMargin,
                 effectiveFrom,
                 effectiveTo,
+                ruleType,
                 isActive,
                 priority,
-                ruleType,
                 startDate,
                 endDate
         ));
         return constraints;
+    }
+
+    public BigDecimal getMarginPercentage() {
+        return marginPercentage;
+    }
+
+    public void setMarginPercentage(BigDecimal marginPercentage) {
+        this.marginPercentage = marginPercentage;
+    }
+
+    public RuleStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(RuleStatus status) {
+        this.status = status;
     }
 }

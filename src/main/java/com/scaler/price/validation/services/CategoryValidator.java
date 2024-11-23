@@ -6,15 +6,18 @@ import com.scaler.price.rule.domain.constraint.CategoryConstraints;
 import com.scaler.price.rule.dto.CategoryAttributes;
 import com.scaler.price.rule.repository.CategoryRepository;
 import com.scaler.price.rule.service.SiteService;
+import com.scaler.price.rule.validation.ValidationRules;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
 
 @Component
 @Slf4j
@@ -23,15 +26,67 @@ public class CategoryValidator {
     private final SiteService siteService;
     private final ConfigurationService configService;
     private final CategoryRepository categoryRepository;
+    private final ValidationRules categoryValidationRules;
+    private final ObjectMapper objectMapper;
+
+    public CategoryValidator(SiteService siteService, 
+                           ConfigurationService configService,
+                           CategoryRepository categoryRepository,
+                           ObjectMapper objectMapper) {
+        this.siteService = siteService;
+        this.configService = configService;
+        this.categoryRepository = categoryRepository;
+        this.objectMapper = objectMapper;
+        this.categoryValidationRules = initializeCategoryValidationRules();
+    }
+
+    private ValidationRules initializeCategoryValidationRules() {
+        return ValidationRules.builder()
+            .properties(Map.of(
+                "categoryId", ValidationRules.builder()
+                    .type("string")
+                    .pattern("^[A-Z0-9_]{2,50}$")
+                    .required(true)
+                    .build(),
+                "name", ValidationRules.builder()
+                    .type("string")
+                    .minLength(1)
+                    .maxLength(100)
+                    .required(true)
+                    .build(),
+                "attributes", ValidationRules.builder()
+                    .type("object")
+                    .additionalProperties(true)
+                    .build()
+            ))
+            .build();
+    }
+
+    protected void validateWithRules(JsonNode data, ValidationRules rules, String context) 
+        throws CategoryValidationException {
+        try {
+            rules.validate(data);
+        } catch (CategoryValidationException e) {
+            throw new CategoryValidationException(
+                String.format("Validation failed for %s: %s", context, e.getMessage())
+            );
+        }
+    }
 
     public void validateCategory(CategoryConstraints category) {
-        validateBasicFields(category);
-        validateHierarchy(category);
-        validateSiteMappings(category);
-        validateAttributes(category.getAttributes());
-        validatePriceAttributes(category.getAttributes());
-        validateUniqueness(category);
-        validateCircularDependency(category);
+        try {
+            JsonNode categoryNode = objectMapper.valueToTree(category);
+            validateWithRules(categoryNode, categoryValidationRules, "category");
+            validateBasicFields(category);
+            validateHierarchy(category);
+            validateSiteMappings(category);
+            validateAttributes(category.getAttributes());
+            validatePriceAttributes(category.getAttributes());
+            validateUniqueness(category);
+            validateCircularDependency(category);
+        } catch (Exception e) {
+            throw new CategoryValidationException("Category validation failed: " + e.getMessage());
+        }
     }
 
     public void validateCategoryUpdate(CategoryConstraints existingCategory, CategoryConstraints updatedCategory) {
@@ -299,10 +354,39 @@ public class CategoryValidator {
         // Validate site mapping changes
         if (!existing.getSiteIds().equals(updated.getSiteIds())) {
             validateSiteMappingChange(existing, updated);
-        }
-    }
-
-    private boolean hasHierarchyChanged(CategoryConstraints existing, CategoryConstraints updated) {
+                    }
+                }
+            
+                private void validateSiteMappingChange(CategoryConstraints existing, CategoryConstraints updated) {
+                    // Validate site mapping changes
+                    // This could include checks like:
+                    // 1. Ensuring no sites are removed if the category has existing content
+                    // 2. Checking permissions for site mapping changes
+                    // 3. Validating that the new site mappings are valid
+                
+                    // Example implementation:
+                    Set<String> existingSites = existing.getSiteIds();
+                    Set<String> updatedSites = updated.getSiteIds();
+                
+                    // Prevent removing all sites
+                    if (updatedSites.isEmpty()) {
+                        throw new CategoryValidationException("At least one site must be associated with the category");
+                    }
+                
+                    // Optional: Check if any sites are being removed
+                    Set<String> removedSites = new HashSet<>(existingSites);
+                    removedSites.removeAll(updatedSites);
+                
+                    if (!removedSites.isEmpty()) {
+                        // You might want to add additional logic here, such as:
+                        // - Checking if the category has content on the removed sites
+                        // - Verifying user permissions
+                        // For now, we'll just log a warning
+                        System.out.println("Warning: Sites " + removedSites + " are being removed from the category");
+                    }
+                }
+            
+                private boolean hasHierarchyChanged(CategoryConstraints existing, CategoryConstraints updated) {
         return (existing.getParentCategory() == null && updated.getParentCategory() != null) ||
                 (existing.getParentCategory() != null && updated.getParentCategory() == null) ||
                 (existing.getParentCategory() != null && updated.getParentCategory() != null &&
@@ -319,10 +403,32 @@ public class CategoryValidator {
         // Validate new parent if present
         if (updated.getParentCategory() != null) {
             validateNewParent(existing, updated.getParentCategory());
-        }
-    }
-
-    private void validateSubcategoryMigration(CategoryConstraints existing, CategoryConstraints updated) {
+                    }
+                }
+            
+                private void validateNewParent(CategoryConstraints existing, CategoryConstraints newParent) {
+                    // Prevent setting a subcategory as a parent
+                    if (existing.getSubCategories() != null && !existing.getSubCategories().isEmpty()) {
+                        throw new CategoryValidationException("Cannot change parent of a category with existing subcategories");
+                    }
+                
+                    // Prevent circular dependency
+                    CategoryConstraints currentParent = newParent;
+                    while (currentParent != null) {
+                        if (currentParent.getCategoryId().equals(existing.getCategoryId())) {
+                            throw new CategoryValidationException("Cannot set a category as its own ancestor");
+                        }
+                        currentParent = currentParent.getParentCategory();
+                    }
+                
+                    // Optional: Add additional validation rules for new parent
+                    int maxDepth = getMaxDepth(existing);
+                    if (newParent.getLevel() + 1 > maxDepth) {
+                        throw new CategoryValidationException("New parent would exceed maximum category hierarchy depth");
+                    }
+                }
+            
+                private void validateSubcategoryMigration(CategoryConstraints existing, CategoryConstraints updated) {
         int newLevel = updated.getParentCategory() != null ?
                 updated.getParentCategory().getLevel() + 1 : 1;
 

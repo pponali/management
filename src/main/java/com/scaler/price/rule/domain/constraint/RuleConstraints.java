@@ -1,6 +1,6 @@
 package com.scaler.price.rule.domain.constraint;
 
-import com.scaler.price.rule.domain.RuleType;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
@@ -8,11 +8,11 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.UUID;
+
+import com.scaler.price.rule.domain.RuleType;
 
 @MappedSuperclass
 @NoArgsConstructor
-@AllArgsConstructor
 public abstract class RuleConstraints {
     
     @Column(name = "minimum_price")
@@ -55,7 +55,7 @@ public abstract class RuleConstraints {
     public RuleConstraints(BigDecimal minimumPrice, BigDecimal maximumPrice,
                          BigDecimal minimumMargin, BigDecimal maximumMargin,
                          LocalDateTime effectiveFrom, LocalDateTime effectiveTo,
-                         Boolean active, Integer priority, RuleType ruleType,
+                         RuleType ruleType, Boolean isActive, Integer priority,
                          Instant startDate, Instant endDate) {
         this.minimumPrice = minimumPrice;
         this.maximumPrice = maximumPrice;
@@ -63,9 +63,9 @@ public abstract class RuleConstraints {
         this.maximumMargin = maximumMargin;
         this.effectiveFrom = effectiveFrom;
         this.effectiveTo = effectiveTo;
-        this.active = active;
-        this.priority = priority;
         this.ruleType = ruleType;
+        this.active = isActive;
+        this.priority = priority;
         this.startDate = startDate;
         this.endDate = endDate;
     }

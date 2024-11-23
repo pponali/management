@@ -1,10 +1,12 @@
 package com.scaler.price.rule.dto;
 
 import com.scaler.price.rule.domain.ProductStatus;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
@@ -14,15 +16,18 @@ import java.util.Map;
 import java.util.Set;
 
 @Data
+@Getter
+@Setter
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProductDTO {
-    private String productId;
-    private String productName;
+    private String id;
+    private String name;
     private String categoryId;
     private String brandId;
     private String sellerId;
+    private boolean active;
     
     @Builder.Default
     private Set<String> siteIds = new HashSet<>();
@@ -30,7 +35,13 @@ public class ProductDTO {
     private BigDecimal costPrice;
     private String currency;
     private ProductStatus status;
+    private BigDecimal basePrice;
+    private BigDecimal sellingPrice;
     
     @Builder.Default
     private Map<String, Object> attributes = new HashMap<>();
+
+    public boolean hasAttribute(String attributeName) {
+        return attributes.containsKey(attributeName);
+    }
 }

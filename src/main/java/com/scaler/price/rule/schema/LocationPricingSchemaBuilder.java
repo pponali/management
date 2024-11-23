@@ -20,7 +20,7 @@ public class LocationPricingSchemaBuilder {
                 .parameters(buildParameterDefinitions())
                 .requiredParameters(buildRequiredParameters())
                 .dependencyRules(buildDependencyRules())
-                .validationRules(buildValidationRules())
+                .dependencyRules(buildValidationRules())
                 .build();
     }
 

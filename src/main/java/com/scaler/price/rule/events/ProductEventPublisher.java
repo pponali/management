@@ -40,17 +40,20 @@ public class ProductEventPublisher {
         ProductEvent event = ProductEvent.builder()
                 .eventId(UUID.randomUUID().toString())
                 .eventType(eventType)
-                .productId(product.getProductId())
+                .productId(product.getId())
                 .payload(product)
                 .timestamp(LocalDateTime.now())
                 .build();
 
         try {
             kafkaTemplate.send("product-events", event)
-                    .addCallback(
-                            result -> log.debug("Published event: {}", event.getEventId()),
-                            ex -> log.error("Error publishing event: {}", ex.getMessage())
-                    );
+                    .whenComplete((result, ex) -> {
+                        if (ex == null) {
+                            log.debug("Published event: {}", event.getEventId());
+                        } else {
+                            log.error("Error publishing event: {}", ex.getMessage());
+                        }
+                    });
         } catch (Exception e) {
             log.error("Failed to publish event: {}", e.getMessage(), e);
         }

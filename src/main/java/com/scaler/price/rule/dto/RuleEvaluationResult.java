@@ -26,11 +26,17 @@ public class RuleEvaluationResult {
     private String appliedReason;
     private Map<String, Object> metadata;
     private LocalDateTime evaluatedAt;
+    private boolean success;
+    private String errorMessage;
 
     public void addMetadata(String key, Object value) {
         if (metadata == null) {
             metadata = new HashMap<>();
         }
         metadata.put(key, value);
+    }
+
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
     }
 }

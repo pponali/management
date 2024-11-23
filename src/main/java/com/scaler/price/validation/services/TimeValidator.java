@@ -3,6 +3,7 @@ package com.scaler.price.validation.services;
 import com.scaler.price.core.management.utils.PriceServiceMetrics;
 import com.scaler.price.rule.config.ConfigurationService;
 import com.scaler.price.rule.domain.DiscountAction;
+import com.scaler.price.rule.domain.DiscountType;
 import com.scaler.price.rule.domain.RuleCondition;
 import com.scaler.price.rule.dto.TimeRestrictions;
 import com.scaler.price.rule.exceptions.RuleValidationException;
@@ -127,7 +128,7 @@ public class TimeValidator {
         }
     }
 
-    public void validateDiscountValue(BigDecimal discountValue, String discountType) throws RuleValidationException {
+    public void validateDiscountValue(BigDecimal discountValue, DiscountType discountType) throws RuleValidationException {
         if (discountValue == null || discountValue.compareTo(BigDecimal.ZERO) <= 0) {
             throw new RuleValidationException("Discount value must be greater than zero");
         }

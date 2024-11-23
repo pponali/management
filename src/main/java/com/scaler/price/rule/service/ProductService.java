@@ -34,8 +34,6 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
     private final ProductValidator productValidator;
-    private final CategoryService categoryService;
-    private final SellerService sellerService;
     private final SiteService siteService;
     private final ProductEventPublisher eventPublisher;
 
@@ -43,9 +41,9 @@ public class ProductService {
     public ProductDTO createProduct(ProductDTO productDTO) {
         log.info("Creating new product: {}", productDTO.getProductId());
 
-        productValidator.validateForCreate(productDTO);
-
         Product product = productMapper.toEntity(productDTO);
+        productValidator.validateProduct(product);
+
         product.setCreatedAt(LocalDateTime.now());
         product.setStatus(ProductStatus.ACTIVE);
 
@@ -86,6 +84,7 @@ public class ProductService {
                 .map(productMapper::toDTO)
                 .toList();
     }
+
 
     @Transactional(readOnly = true)
     public List<ProductDTO> getProductsBySite(String siteId) {
@@ -183,8 +182,35 @@ public class ProductService {
     public Set<String> validateProducts(Set<String> productIds) {
         List<Product> activeProducts = productRepository.findActiveProductsByIds(productIds);
         return activeProducts.stream()
-                .map(Product::getProductId)
+                .map(Product::getId)
                 .collect(Collectors.toSet());
+    }
+
+    @Transactional(readOnly = true)
+    public boolean existsById(String productId) {
+        return productRepository.existsById(productId);
+    }
+
+    @Transactional(readOnly = true)
+    public int getAvailableQuantity(String productId) {
+        Product product = productRepository.findByProductId(productId)
+            .orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + productId));
+        
+        // Assuming you want to return the quantity from the Product entity
+        // Modify this logic based on your specific requirements for tracking available quantity
+        return product.getQuantity() != null ? product.getQuantity() : 0;
+    }
+
+    @Transactional(readOnly = true)
+    public Set<String> getProductCategories(String productId) {
+        Optional<Product> productOptional = productRepository.findByProductId(productId);
+        
+        if (productOptional.isEmpty()) {
+            throw new ProductNotFoundException("Product not found with ID: " + productId);
+        }
+        
+        Product product = productOptional.get();
+        return product.getCategories() != null ? product.getCategories() : new HashSet<>();
     }
 
     private Product getProductEntity(String productId) {

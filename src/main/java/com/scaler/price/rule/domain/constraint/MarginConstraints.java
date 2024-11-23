@@ -4,12 +4,12 @@ import com.scaler.price.core.management.domain.AuditInfo;
 import com.scaler.price.rule.domain.RuleType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -19,9 +19,11 @@ import java.util.*;
 
 @Entity
 @Table(name = "margin_constraints")
-@Data
 @NoArgsConstructor
+@AllArgsConstructor
 @EqualsAndHashCode(callSuper=false)
+@Getter
+@Setter
 @Builder
 public class MarginConstraints extends RuleConstraints {
     @Id
@@ -93,7 +95,7 @@ public class MarginConstraints extends RuleConstraints {
         }
     }
 
-    @Builder(builderMethodName = "marginConstraintsBuilder")
+
     public MarginConstraints(Long id, MarginCalculationType calculationType,
                            BigDecimal defaultMargin, BigDecimal minMarginOverride,
                            BigDecimal maxMarginOverride, Boolean enforceMinMargin,
@@ -105,9 +107,7 @@ public class MarginConstraints extends RuleConstraints {
                            LocalDateTime effectiveTo, Boolean isActive,
                            Integer priority, RuleType ruleType,
                            Instant startDate, Instant endDate, String siteId, BigDecimal minMargin, BigDecimal maxMargin, BigDecimal targetMargin, boolean active, AuditInfo auditInfo) {
-        super(minimumPrice, maximumPrice, minimumMargin, maximumMargin,
-              effectiveFrom, effectiveTo, isActive, priority, ruleType,
-              startDate, endDate);
+                        
         this.id = id;
         this.calculationType = calculationType;
         this.defaultMargin = defaultMargin;
@@ -165,24 +165,22 @@ public class MarginConstraints extends RuleConstraints {
         FIXED_AMOUNT
     }
 
-    @Builder.Default
+    
     @ElementCollection
     @CollectionTable(name = "category_margins", joinColumns = @JoinColumn(name = "margin_constraint_id"))
     private Map<String, CategoryMargin> categoryMargins = new HashMap<>();
 
-    @Builder.Default
+  
     @ElementCollection
     @CollectionTable(name = "margin_tiers", joinColumns = @JoinColumn(name = "margin_constraint_id"))
     private List<MarginTier> marginTiers = new ArrayList<>();
 
-    @Builder.Default
+
     @ElementCollection
     @CollectionTable(name = "seller_margins", joinColumns = @JoinColumn(name = "margin_constraint_id"))
     private Map<String, SellerMargin> sellerMargins = new HashMap<>();
 
     @Embeddable
-    @Data
-    @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class CategoryMargin {
@@ -232,8 +230,6 @@ public class MarginConstraints extends RuleConstraints {
     }
 
     @Embeddable
-    @Data
-    @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class MarginTier {
@@ -276,8 +272,6 @@ public class MarginConstraints extends RuleConstraints {
     }
 
     @Embeddable
-    @Data
-    @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SellerMargin {

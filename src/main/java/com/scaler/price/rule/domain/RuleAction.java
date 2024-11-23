@@ -35,6 +35,17 @@ public class RuleAction {
     @Column
     private Boolean isEnabled;
 
+    @Column
+    private String dependsOn;
+
+    public String getDependsOn() {
+        return dependsOn;
+    }
+
+    public void setDependsOn(String dependsOn) {
+        this.dependsOn = dependsOn;
+    }
+
     @Version
     private Long version;
 

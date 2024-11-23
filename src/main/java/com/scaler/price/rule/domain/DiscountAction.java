@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+import com.scaler.price.rule.dto.TimeRestrictions;
+
 @Entity
 @DiscriminatorValue("DISCOUNT")
 @Data
@@ -21,7 +23,7 @@ public class DiscountAction extends RuleAction {
 
     
     @Column(length = 20)
-    private String discountType; // PERCENTAGE or FIXED
+    private DiscountType discountType; // PERCENTAGE or FIXED
     
     @Column
     private boolean stackable;
@@ -44,7 +46,7 @@ public class DiscountAction extends RuleAction {
     @Column
     private BigDecimal maximumDiscountAmount;
 
-    public DiscountAction(BigDecimal discountValue, String discountType) {
+    public DiscountAction(BigDecimal discountValue, DiscountType discountType) {
         this.discountValue = discountValue;
         this.discountType = discountType;
         this.stackable = false;
@@ -129,7 +131,26 @@ public class DiscountAction extends RuleAction {
 
 
     @Column
-    public Instant endDate;
+    private Instant startDate;
+
+    @Column
+    private Instant endDate;
+
+    public Instant getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(Instant startDate) {
+        this.startDate = startDate;
+    }
+
+    public Instant getEndDate() {
+        return endDate;
+    }
+
+    public void setEndDate(Instant endDate) {
+        this.endDate = endDate;
+    }
 
     @Column
     public int duration;
@@ -142,4 +163,15 @@ public class DiscountAction extends RuleAction {
     
     @Column
     public BigDecimal costPrice;
+
+    @Transient
+    private TimeRestrictions timeRestrictions;
+
+    public TimeRestrictions getTimeRestrictions() {
+        return timeRestrictions;
+    }
+
+    public void setTimeRestrictions(TimeRestrictions timeRestrictions) {
+        this.timeRestrictions = timeRestrictions;
+    }
 }
