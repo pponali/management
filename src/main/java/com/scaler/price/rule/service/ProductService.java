@@ -1,14 +1,17 @@
 package com.scaler.price.rule.service;
 
-
 import com.scaler.price.rule.domain.Product;
 import com.scaler.price.rule.domain.ProductStatus;
 import com.scaler.price.rule.dto.ProductDTO;
 import com.scaler.price.rule.events.ProductEventPublisher;
+import com.scaler.price.rule.exceptions.ProductNotFoundException;
 import com.scaler.price.rule.exceptions.ProductValidationException;
 import com.scaler.price.rule.mapper.ProductMapper;
 import com.scaler.price.rule.repository.ProductRepository;
 import com.scaler.price.validation.services.ProductValidator;
+import com.scaler.price.rule.service.CategoryService;
+import com.scaler.price.rule.service.SellerService;
+import com.scaler.price.rule.service.SiteService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
@@ -20,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 

@@ -10,5 +10,6 @@ public class CompetitorService {
     }
 
     public boolean isValidCompetitor(String competitorId) {
+        return competitorId != null && competitorId.length() > 0;
     }
 }

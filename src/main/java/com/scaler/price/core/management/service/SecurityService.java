@@ -8,4 +8,6 @@ public interface SecurityService {
     String getCurrentSessionId();
 
     String getCurrentUser();
+    
+    String getCurrentUserId();
 }

@@ -1,7 +1,7 @@
 package com.scaler.price.rule.service;
 
 import com.scaler.price.audit.service.AuditService;
-import com.scaler.price.core.management.service.NotificationService;
+import com.scaler.price.rule.service.NotificationService;
 import com.scaler.price.rule.domain.PricingRule;
 import com.scaler.price.rule.domain.RuleStatus;
 import com.scaler.price.rule.dto.StatusChangeNotification;
@@ -100,7 +100,7 @@ public class RuleStatusManager {
         validateStatusTransition(oldStatus, newStatus);
 
         rule.setStatus(newStatus);
-        rule.getAuditInfo().setModifiedAt(LocalDateTime.now());
+        rule.getAuditInfo().setLastModifiedAt(LocalDateTime.now());
 
         // Record status change in audit
         auditService.logStatusChange(

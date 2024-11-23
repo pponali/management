@@ -23,6 +23,7 @@ public class RuleEvaluationContext {
     private Map<String, Object> attributes;
     private LocalDateTime evaluationTime;
     private Map<String, Object> cache;
+    private String timePeriod;
 
     public void addToCache(String key, Object value) {
         if (cache == null) {
@@ -33,5 +34,13 @@ public class RuleEvaluationContext {
 
     public Object getFromCache(String key) {
         return cache != null ? cache.get(key) : null;
+    }
+
+    public String getTimePeriod() {
+        return timePeriod;
+    }
+
+    public void setTimePeriod(String timePeriod) {
+        this.timePeriod = timePeriod;
     }
 }

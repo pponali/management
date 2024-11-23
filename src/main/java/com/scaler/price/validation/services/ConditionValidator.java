@@ -36,7 +36,7 @@ public class ConditionValidator {
             validateBasicConditionRules(conditions);
             conditions.forEach(this::validateCondition);
             metricsService.recordConditionValidation(conditions.size());
-        } catch (Exception e) {
+        } catch (Exception | RuleValidationException e) {
             metricsService.recordConditionValidationFailure();
             throw e;
         }

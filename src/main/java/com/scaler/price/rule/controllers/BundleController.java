@@ -1,6 +1,7 @@
 package com.scaler.price.rule.controllers;
 
 import com.scaler.price.rule.domain.Bundle;
+import com.scaler.price.rule.exceptions.ProductFetchException;
 import com.scaler.price.rule.service.BundleEligibility;
 import com.scaler.price.rule.service.BundleService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -65,7 +66,13 @@ public class BundleController {
             @PathVariable String bundleId,
             @RequestParam String productId,
             @RequestParam(required = false) Map<String, Object> attributes) {
-        return ResponseEntity.ok(bundleService.checkEligibility(bundleId, productId, attributes));
+        try {
+            return ResponseEntity.ok(bundleService.checkEligibility(bundleId, productId, attributes));
+        } catch (ProductFetchException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @Operation(summary = "Calculate bundle discount")

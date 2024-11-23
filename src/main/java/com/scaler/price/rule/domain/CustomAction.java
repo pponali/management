@@ -4,10 +4,12 @@ import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.hibernate.annotations.Type;
 
 @Entity
-@Data
+
+@EqualsAndHashCode(callSuper=false)
 public class CustomAction extends RuleAction {
     private String actionName;
     private String actionType;

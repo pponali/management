@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scaler.price.core.management.domain.Configuration;
 import com.scaler.price.core.management.exceptions.ConfigurationNotFoundException;
+import com.scaler.price.core.management.exceptions.ConfigurationUpdateException;
 import com.scaler.price.core.management.repository.ConfigurationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -97,35 +98,41 @@ public class ConfigurationService {
 
     @CacheEvict(key = "#key + '_' + #siteId")
     @Transactional
-    public void setValue(String key, String value, String siteId) throws ConfigurationException {
-        Configuration config = configRepository
-                .findByKeyAndSiteId(key, siteId)
-                .orElseThrow(() -> new ConfigurationNotFoundException(
-                        "Configuration not found: " + key
-                ));
+    public void setValue(String key, String value, String siteId) {
+        try {
+            Configuration config = configRepository
+                    .findByKeyAndSiteId(key, siteId)
+                    .orElseThrow(() -> new ConfigurationNotFoundException(
+                            "Configuration not found: " + key
+                    ));
 
-        if (!config.getIsMutable()) {
-            throw new ConfigurationException("Configuration is not mutable: " + key);
-        }
+            if (!config.getIsMutable()) {
+                throw new ConfigurationUpdateException("Configuration is not mutable: " + key);
+            }
 
-        validateValue(value, config.getType());
+            validateValue(value, config.getType());
 
-        String valueToStore = config.getIsEncrypted() ?
-                encryptValue(value) :
-                value;
+            String valueToStore = config.getIsEncrypted() ?
+                    encryptValue(value) :
+                    value;
 
-        int updated = configRepository.updateConfigurationValue(
-                key,
-                valueToStore,
-                siteId
-        );
-
-        if (updated == 0) {
-            throw new ConfigurationException(
-                    "Failed to update configuration: " + key
+            int updated = configRepository.updateConfigurationValue(
+                    key,
+                    valueToStore,
+                    siteId
             );
+
+            if (updated == 0) {
+                throw new ConfigurationUpdateException(
+                        "Failed to update configuration: " + key
+                );
+            }
+        } catch (ConfigurationException e) {
+            throw new ConfigurationUpdateException(e.getMessage(), e);
         }
     }
+
+    
 
     @Transactional(readOnly = true)
     public Map<String, String> getAllConfigurations(String siteId) {
@@ -181,11 +188,11 @@ public class ConfigurationService {
         }
     }
 
-    private String decryptValue(String value) throws ConfigurationException {
+    private String decryptValue(String value) throws ConfigurationNotFoundException {
         try {
             return encryptionService.decrypt(value);
         } catch (Exception e) {
-            throw new ConfigurationException(
+            throw new ConfigurationNotFoundException(
                     "Error decrypting value: " + e.getMessage()
             );
         }

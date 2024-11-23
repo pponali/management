@@ -17,14 +17,17 @@ import java.util.Map;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class RuleEngineService {
 
     private final ObjectMapper objectMapper;
     private final ActionExecutorService actionExecutorService;
+    private final ConfigurationService configService;
 
-    public RuleEngineService(ObjectMapper objectMapper, ActionExecutorService actionExecutorService) {
+    public RuleEngineService(ObjectMapper objectMapper, ActionExecutorService actionExecutorService, ConfigurationService configService) {
         this.objectMapper = objectMapper;
         this.actionExecutorService = actionExecutorService;
+        this.configService = configService;
     }
 
     public RuleEvaluationResult evaluate(
@@ -59,6 +62,24 @@ public class RuleEngineService {
         return true; // Placeholder implementation
     }
 
+    public RuleEvaluationResult evaluateRule(RuleAction action, Map<String, Object> context) {
+        RuleEvaluationContext evaluationContext = new RuleEvaluationContext();
+        evaluationContext.setParameters(context);
+        
+        RuleEvaluationResult result = new RuleEvaluationResult();
+        result.setSuccess(true);
+        
+        try {
+            actionExecutorService.executeAction(action, evaluationContext, result);
+        } catch (Exception e) {
+            log.error("Error executing rule action", e);
+            result.setSuccess(false);
+            result.setErrorMessage(e.getMessage());
+        }
+        
+        return result;
+    }
+
     private RuleEvaluationResult executeRuleActions(
             PricingRule rule,
             RuleEvaluationRequest request,
@@ -66,78 +87,80 @@ public class RuleEngineService {
 
         RuleEvaluationResult result = new RuleEvaluationResult();
         result.setRuleId(rule.getId());
-        result.setRuleName(rule.getRuleName());
+        result.setOriginalPrice(currentPrice);
 
         try {
-            Map<String, Object> executionContext = new HashMap<>();
-            executionContext.put("currentPrice", currentPrice);
-            executionContext.put("basePrice", request.getBasePrice());
-            executionContext.put("costPrice", request.getCostPrice());
+            Map<String, Object> context = new HashMap<>();
+            context.put("currentPrice", currentPrice);
+            context.put("costPrice", request.getCostPrice());
+            context.put("basePrice", request.getBasePrice());
+            context.put("productId", request.getProductId());
+            context.put("categoryId", request.getCategoryId());
 
             BigDecimal adjustedPrice = currentPrice;
             for (RuleAction action : rule.getActions()) {
-                adjustedPrice = actionExecutorService.executeAction(action, executionContext);
+                RuleEvaluationResult actionResult = evaluateRule(action, context);
+                if (!actionResult.isSuccess()) {
+                    return actionResult;
+                }
+                if (actionResult.getAdjustedPrice() != null) {
+                    adjustedPrice = actionResult.getAdjustedPrice();
+                }
             }
 
-            // Validate price bounds
             adjustedPrice = validatePriceBounds(adjustedPrice, rule, request.getCostPrice());
+            BigDecimal margin = calculateMargin(rule, request.getBasePrice());
 
+            result.setSuccess(true);
             result.setAdjustedPrice(adjustedPrice);
             result.setDiscountAmount(currentPrice.subtract(adjustedPrice));
-            result.setMarginPercentage(calculateMargin(adjustedPrice, request.getCostPrice()));
+            result.setMarginPercentage(margin);
 
             return result;
         } catch (Exception e) {
-            log.error("Error executing actions for rule {}: {}", 
-                    rule.getId(), e.getMessage());
-            return null;
+            log.error("Error executing actions for rule {}: {}", rule.getId(), e.getMessage());
+            result.setSuccess(false);
+            result.setErrorMessage(e.getMessage());
+            return result;
         }
     }
 
-    private BigDecimal validatePriceBounds(
-            BigDecimal price,
-            PricingRule rule,
-            BigDecimal costPrice) {
-
-        // Check minimum price
-        if (rule.getMinimumPrice() != null &&
-                price.compareTo(rule.getMinimumPrice()) < 0) {
-            return rule.getMinimumPrice();
+    public BigDecimal calculateMargin(PricingRule rule, BigDecimal basePrice) {
+        if (rule == null || basePrice == null) {
+            return BigDecimal.ZERO;
         }
 
-        // Check maximum price
-        if (rule.getMaximumPrice() != null &&
-                price.compareTo(rule.getMaximumPrice()) > 0) {
-            return rule.getMaximumPrice();
+        BigDecimal marginPercentage = rule.getMarginPercentage();
+        if (marginPercentage == null) {
+            marginPercentage = configService.getDefaultMargin();
         }
 
-        // Check minimum margin
-        if (rule.getMarginPercentage() != null && costPrice != null) {
-            BigDecimal currentMargin = calculateMargin(price, costPrice);
-            if (currentMargin.compareTo(rule.getMarginPercentage()) < 0) {
-                return calculatePriceWithMinimumMargin(
-                        costPrice, rule.getMarginPercentage());
-            }
+        if (marginPercentage.compareTo(configService.getMinimumMargin()) < 0) {
+            marginPercentage = configService.getMinimumMargin();
+        } else if (marginPercentage.compareTo(configService.getMaximumMargin()) > 0) {
+            marginPercentage = configService.getMaximumMargin();
+        }
+
+        return basePrice.multiply(marginPercentage)
+                .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal validatePriceBounds(BigDecimal price, PricingRule rule, BigDecimal costPrice) {
+        if (price == null) {
+            return costPrice;
+        }
+
+        BigDecimal minPrice = rule.getMinPrice();
+        BigDecimal maxPrice = rule.getMaxPrice();
+
+        if (minPrice != null && price.compareTo(minPrice) < 0) {
+            return minPrice;
+        }
+
+        if (maxPrice != null && price.compareTo(maxPrice) > 0) {
+            return maxPrice;
         }
 
         return price;
-    }
-
-    private BigDecimal calculateMargin(BigDecimal price, BigDecimal costPrice) {
-        if (price == null || costPrice == null || costPrice.compareTo(BigDecimal.ZERO) == 0) {
-            return BigDecimal.ZERO;
-        }
-        return price.subtract(costPrice)
-                .divide(costPrice, 4, RoundingMode.HALF_UP)
-                .multiply(new BigDecimal("100"));
-    }
-
-    private BigDecimal calculatePriceWithMinimumMargin(BigDecimal costPrice, BigDecimal marginPercentage) {
-        if (costPrice == null || marginPercentage == null) {
-            return costPrice;
-        }
-        BigDecimal marginMultiplier = BigDecimal.ONE.add(
-                marginPercentage.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP));
-        return costPrice.multiply(marginMultiplier).setScale(2, RoundingMode.HALF_UP);
     }
 }

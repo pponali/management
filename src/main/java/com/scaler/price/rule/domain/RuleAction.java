@@ -23,7 +23,7 @@ public class RuleAction {
     private PricingRule rule;
 
     @Column(nullable = false)
-    private String actionType;
+    private ActionType actionType;
 
     @Column(nullable = false)
     @Convert(converter = JsonNodeConverter.class)
@@ -38,15 +38,4 @@ public class RuleAction {
     @Version
     private Long version;
 
-    public String getType() {
-        return actionType;
-    }
-
-    public JsonNode getParameters() {
-        return parameters;
-    }
-
-    public Integer getSequence() {
-        return sequence;
-    }
 }

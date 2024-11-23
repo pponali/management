@@ -6,6 +6,7 @@ import com.scaler.price.rule.dto.RuleEvaluationRequest;
 import com.scaler.price.rule.dto.RuleEvaluationResult;
 import com.scaler.price.rule.dto.RuleSiteSummary;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 public interface PriceRuleService {
@@ -20,4 +21,5 @@ public interface PriceRuleService {
     RuleSiteSummary getSiteRulesSummary(Long siteId, RuleStatus status);
 
     RuleStatus activateRule(Long ruleId);
+    BigDecimal getCurrentPrice(String productId);
 }

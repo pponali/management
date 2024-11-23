@@ -1,6 +1,6 @@
 package com.scaler.price.rule.service;
 
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scaler.price.rule.domain.AttributeType;
 import com.scaler.price.rule.domain.ProductAttribute;
 import com.scaler.price.rule.events.AttributeEventPublisher;
@@ -16,14 +16,15 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.*;
 
-@Service
 @Slf4j
+@Service
 @RequiredArgsConstructor
 public class ProductAttributeService {
     private final ProductAttributeRepository attributeRepository;
     private final ProductService productService;
     private final AttributeValidationService validationService;
     private final AttributeEventPublisher eventPublisher;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public ProductAttribute createAttribute(ProductAttribute attribute) throws AttributeValidationException {

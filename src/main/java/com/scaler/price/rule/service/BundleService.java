@@ -6,6 +6,8 @@ import com.scaler.price.rule.exceptions.BundleNotFoundException;
 import com.scaler.price.rule.exceptions.ProductFetchException;
 import com.scaler.price.validation.helper.PriceActionParameters;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import com.scaler.price.rule.domain.DiscountType;
 
@@ -20,7 +22,7 @@ public class BundleService {
 
     @Autowired
     private BundleRepository bundleRepository;
-    private PriceActionParameters priceService;
+    private PriceRuleService priceService;
 
     // Create a new bundle
     public Bundle createBundle(Bundle bundle) {
@@ -35,6 +37,11 @@ public class BundleService {
     // Retrieve all bundles
     public List<Bundle> getAllBundles() {
         return bundleRepository.findAll();
+    }
+
+    // Retrieve all bundles with pagination
+    public Page<Bundle> getAllBundles(Pageable pageable) {
+        return bundleRepository.findAll(pageable);
     }
 
     // Update an existing bundle
@@ -167,5 +174,10 @@ public class BundleService {
         }
 
         return discount;
+    }
+
+    // Retrieve bundles for a specific product
+    public List<Bundle> getBundlesForProduct(String productId) {
+        return bundleRepository.findByProductsContaining(productId);
     }
 }

@@ -8,6 +8,7 @@ import com.scaler.price.rule.config.ConfigurationService;
 import com.scaler.price.rule.domain.ActionType;
 import com.scaler.price.rule.domain.RuleAction;
 import com.scaler.price.rule.exceptions.RuleValidationException;
+import com.scaler.price.validation.helper.CustomActionParameters;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -15,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+
+import static com.scaler.price.rule.domain.ActionType.*;
 
 @Component
 @Slf4j
@@ -58,7 +61,7 @@ public class ActionValidator {
     }
 
     private void validateAction(RuleAction action) throws RuleValidationException {
-        if (action.getType() == null) {
+        if (action.getActionType() == null) {
             throw new RuleValidationException("Action type is required");
         }
 
@@ -68,7 +71,7 @@ public class ActionValidator {
 
         validateActionParameters(action);
 
-        switch (action.getType()) {
+        switch (action.getActionType()) {
             case SET_PRICE -> priceValidator.validateSetPriceAction(action);
             case APPLY_DISCOUNT -> discountValidator.validateDiscountAction(action);
             case CUSTOM -> validateCustomAction(action);
@@ -77,6 +80,51 @@ public class ActionValidator {
             case BUNDLE_DISCOUNT -> validateBundleAction(action);
             case QUANTITY_DISCOUNT -> validateQuantityAction(action);
             default -> throw new RuleValidationException("Unsupported action type: " + action.getType());
+        }
+    }
+
+    private void validateCompetitorAction(RuleAction action) throws RuleValidationException {
+        try {
+            CustomActionParameters params = objectMapper.readValue(
+                    action.getParameters(),
+                    CustomActionParameters.class
+            );
+
+            if (params.getCompetitorId() == null) {
+                throw new RuleValidationException("Competitor ID is required for competitor actions");
+            }
+        } catch (JsonProcessingException e) {
+            throw new RuleValidationException("Invalid action parameters: " + e.getMessage());
+        }
+    }
+
+    private void validateQuantityAction(RuleAction action) throws RuleValidationException {
+        try {
+            CustomActionParameters params = objectMapper.readValue(
+                    action.getParameters(),
+                    CustomActionParameters.class
+            );
+
+            if (params.getQuantity() == null || params.getQuantity() <= 0) {
+                throw new RuleValidationException("Quantity must be greater than zero");
+            }
+        } catch (JsonProcessingException e) {
+            throw new RuleValidationException("Invalid action parameters: " + e.getMessage());
+        }
+    }
+
+    private void validateBundleAction(RuleAction action) throws RuleValidationException {
+        try {
+            CustomActionParameters params = objectMapper.readValue(
+                    action.getParameters(),
+                    CustomActionParameters.class
+            );
+
+            if (params.getBundleQuantity() == null || params.getBundleQuantity() <= 0) {
+                throw new RuleValidationException("Bundle quantity must be greater than zero");
+            }
+        } catch (JsonProcessingException e) {
+            throw new RuleValidationException("Invalid action parameters: " + e.getMessage());
         }
     }
 
@@ -93,15 +141,15 @@ public class ActionValidator {
         validateActionOrder(actions);
     }
 
-    private void validateActionOrder(List<RuleAction> actions) throws RuleValidationException {
+    private void validateActionOrder(Set<RuleAction> actions) throws RuleValidationException {
         for (int i = 0; i < actions.size() - 1; i++) {
             RuleAction current = actions.get(i);
             RuleAction next = actions.get(i + 1);
 
             if (!isValidActionOrder(current, next)) {
                 throw new RuleValidationException(
-                        "Invalid action order: " + current.getType() +
-                                " cannot be followed by " + next.getType()
+                        "Invalid action order: " + current.getActionType() +
+                                " cannot be followed by " + next.getActionType()
                 );
             }
         }
@@ -109,10 +157,10 @@ public class ActionValidator {
 
     private boolean isValidActionOrder(RuleAction first, RuleAction second) {
         // Define valid action sequences
-        return switch (first.getType()) {
-            case SET_PRICE -> !isPriceAction(second.getType());
-            case APPLY_DISCOUNT -> !isDiscountAction(second.getType());
-            case SET_MARGIN -> !isMarginAction(second.getType());
+        return switch (first.getActionType()) {
+            case SET_PRICE -> !isPriceAction(second.getActionType());
+            case APPLY_DISCOUNT -> !isDiscountAction(second.getActionType());
+            case SET_MARGIN -> !isMarginAction(second.getActionType());
             default -> true;
         };
     }
@@ -158,10 +206,38 @@ public class ActionValidator {
         validateMarginConflicts(actions);
     }
 
-    private void validateCustomAction(RuleAction action) {
+    private void validateMarginConflicts(Set<RuleAction> actions) throws RuleValidationException {
+        long marginActionCount = actions.stream()
+                .filter(a -> a.getActionType() == SET_MARGIN)
+                .count();
+
+        if (marginActionCount > 1) {
+            throw new RuleValidationException("Multiple margin-related actions are not allowed");
+        }
+    }
+
+    private void validateDiscountConflicts(Set<RuleAction> actions) throws RuleValidationException {
+        long discountActionCount = actions.stream()
+                .filter(a -> a.getActionType() == APPLY_DISCOUNT)
+                .count();
+
+        if (discountActionCount > 1) {
+            throw new RuleValidationException("Multiple discount-related actions are not allowed");
+        }
+    }
+
+    public void validateCustomAction(RuleAction action) throws RuleValidationException {
         CustomActionParameters params = parseCustomActionParams(action);
         validateCustomActionScript(params.getScript());
         validateCustomActionParameters(params.getParameters());
+    }
+
+    private CustomActionParameters parseCustomActionParams(RuleAction action) throws RuleValidationException {
+        try {
+            return objectMapper.readValue(action.getParameters(), CustomActionParameters.class);
+        } catch (JsonProcessingException e) {
+            throw new RuleValidationException("Invalid custom action parameters format: " + e.getMessage());
+        }
     }
 
     private void validateCustomActionScript(String script) throws RuleValidationException {
@@ -190,19 +266,56 @@ public class ActionValidator {
             }
 
             JsonNode paramsNode = objectMapper.readTree(params);
-            validateParameterTypes(paramsNode, action.getType());
-            validateParameterRanges(paramsNode, action.getType());
-            validateRequiredParameters(paramsNode, action.getType());
+            validateParameterTypes(paramsNode, action.getActionType());
+            validateParameterRanges(paramsNode, action.getActionType());
+            validateRequiredParameters(paramsNode, action.getActionType());
 
         } catch (JsonProcessingException e) {
             throw new RuleValidationException("Invalid action parameters format: " + e.getMessage());
         }
     }
 
+    private void validateRequiredParameters(JsonNode paramsNode, ActionType actionType) throws RuleValidationException {
+        List<String> requiredParams = getRequiredParameters(actionType);
+        for (String param : requiredParams) {
+            if (paramsNode.get(param) == null) {
+                throw new RuleValidationException("Missing required parameter: " + param);
+            }
+        }
+    }
+
+    private void validateParameterRanges(JsonNode paramsNode, ActionType actionType){
+        paramsNode.fields().forEachRemaining(entry -> {
+            String fieldName = entry.getKey();
+            JsonNode fieldValue = entry.getValue();
+
+            if (fieldValue.isNumber()) {
+                double value = fieldValue.asDouble();
+                if (value < 0) {
+                    try {
+                        throw new RuleValidationException("Parameter " + fieldName + " cannot be negative");
+                    } catch (RuleValidationException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                if (value > 1000000) {
+                    try {
+                        throw new RuleValidationException("Parameter " + fieldName + " exceeds maximum allowed value");
+                    } catch (RuleValidationException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
+        });
+    }
+
+    private void validateParameterTypes(JsonNode paramsNode, ActionType actionType) {
+    }
+
     private boolean isPriceAction(ActionType type) {
         return type == ActionType.SET_PRICE ||
-                type == ActionType.APPLY_DISCOUNT ||
-                type == ActionType.SET_MARGIN;
+                type == APPLY_DISCOUNT ||
+                type == SET_MARGIN;
     }
 }
 

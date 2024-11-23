@@ -45,21 +45,72 @@ public class ConditionEvaluatorService {
                 case ATTRIBUTE_MATCH -> false;
                 case PRICE_RANGE -> evaluatePriceRange(condition, context);
                 case MARGIN_RANGE -> evaluateMarginRange(condition, context);
-                case DATE_RANGE -> false;
+                case DATE_RANGE -> evaluateDateRange(condition, context);;
                 case INVENTORY_LEVEL -> evaluateInventoryLevel(condition, context);
                 case COMPETITOR_PRICE -> evaluateCompetitorPrice(condition, context);
                 case SALES_VELOCITY -> evaluateSalesVelocity(condition, context);
                 case CATEGORY_ATTRIBUTE -> evaluateCategoryAttribute(condition, context);
                 case PRODUCT_ATTRIBUTE -> evaluateProductAttribute(condition, context);
                 case TIME_BASED -> evaluateTimeBased(condition, context);
-                case CATEGORY_MATCH -> false;
-                case BRAND_MATCH -> false;
+                case CATEGORY_MATCH -> evaluateCategoryMatch(condition, context);
+                case BRAND_MATCH -> evaluateBrandMatch(condition, context);
                 case CUSTOM -> evaluateCustomCondition(condition, context);
+                case MIN_MARGIN_PERCENTAGE -> evaluateMarginRange(condition, context);
+                default -> {
+                    log.warn("Unhandled condition type: {}", condition.getType());
+                    yield false;
+                }
             };
         } catch (Exception e) {
             log.error("Error evaluating condition {}: {}", condition.getId(), e.getMessage());
             return false;
         }
+    }
+
+    private boolean evaluateDateRange(RuleCondition condition, RuleEvaluationContext context) throws JsonProcessingException {
+        Map<String, String> dateRange = objectMapper.readValue(condition.getValue(),
+                new TypeReference<Map<String, String>>() {});
+    
+        LocalDateTime startDate = LocalDateTime.parse(dateRange.get("startDate"));
+        LocalDateTime endDate = LocalDateTime.parse(dateRange.get("endDate"));
+        LocalDateTime evaluationTime = context.getEvaluationTime();
+    
+        return !evaluationTime.isBefore(startDate) && !evaluationTime.isAfter(endDate);
+    }
+
+    private boolean evaluateBrandMatch(RuleCondition condition, RuleEvaluationContext context) {
+        String brandId = context.getBrandId();
+        if (brandId == null) {
+            return false;
+        }
+    
+        return switch (condition.getOperator()) {
+            case EQUALS -> brandId.equals(condition.getValue());
+            case IN -> {
+                List<String> validBrands = List.of(condition.getValue().split(","));
+                yield validBrands.contains(brandId);
+            }
+            default -> false;
+        };
+    }
+
+    private boolean evaluateCategoryMatch(RuleCondition condition, RuleEvaluationContext context) {
+        String contextCategoryId = context.getCategoryId();
+        
+        if (contextCategoryId == null) {
+            return false;
+        }
+    
+        String conditionCategoryId = condition.getValue();
+    
+        return switch (condition.getOperator()) {
+            case EQUALS -> contextCategoryId.equals(conditionCategoryId);
+            case IN -> {
+                List<String> validCategories = List.of(conditionCategoryId.split(","));
+                yield validCategories.contains(contextCategoryId);
+            }
+            default -> false;
+        };
     }
 
     private boolean evaluateCategoryAttribute(RuleCondition condition, RuleEvaluationContext context) {
@@ -95,7 +146,7 @@ public class ConditionEvaluatorService {
 
         if (salesVelocity == null) {
             // Example: Fetch sales velocity from an external service
-            salesVelocity = evaluateSalesVelocity(context.getProductId(), context.getTimePeriod());
+            //salesVelocity = evaluateSalesVelocity(context.getProductId(), context.getTimePeriod());
             context.addToCache("salesVelocity", salesVelocity);
         }
 

@@ -12,7 +12,6 @@ import com.scaler.price.rule.events.RuleEventPublisher;
 import com.scaler.price.rule.exceptions.RuleNotFoundException;
 import com.scaler.price.rule.repository.RuleRepository;
 import com.scaler.price.rule.service.*;
-import com.scaler.price.rules.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

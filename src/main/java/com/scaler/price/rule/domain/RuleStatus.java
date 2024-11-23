@@ -7,5 +7,8 @@ public enum RuleStatus {
     SCHEDULED,
     EXPIRED,
     ARCHIVED,
-    SUSPENDED
+    SUSPENDED,
+    PENDING_APPROVAL,
+    APPROVED,
+    REJECTED
 }

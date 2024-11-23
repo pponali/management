@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 
 
 @Data
-public class PriceActionParameters {
+public class PriceActionParameters extends ActionParameters {
     private final BigDecimal currentPrice;
     private final BigDecimal price;
     private final BigDecimal costPrice;

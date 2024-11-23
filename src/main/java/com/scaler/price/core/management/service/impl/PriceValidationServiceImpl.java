@@ -3,10 +3,12 @@ package com.scaler.price.core.management.service.impl;
 import com.scaler.price.core.management.exceptions.PriceValidationException;
 import com.scaler.price.core.management.dto.PriceDTO;
 import com.scaler.price.core.management.service.PriceValidationService;
+import com.scaler.price.rule.domain.PricingRule;
+import com.scaler.price.rule.dto.RuleEvaluationContext;
+
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Service
 public class PriceValidationServiceImpl implements PriceValidationService {
@@ -52,19 +54,31 @@ public class PriceValidationServiceImpl implements PriceValidationService {
     }
 
     private void validateDates(PriceDTO priceDTO) throws PriceValidationException {
-        LocalDateTime now = LocalDateTime.now();
-
         if (priceDTO.getEffectiveFrom() == null) {
-            throw new PriceValidationException("Effective from date is required");
+            throw new PriceValidationException("Start date is required");
+        }
+    
+        if (priceDTO.getEffectiveTo() != null && priceDTO.getEffectiveTo().isBefore(priceDTO.getEffectiveFrom())) {
+            throw new PriceValidationException("End date must be after start date");
+        }
+    }
+
+    @Override
+    public BigDecimal validatePriceBounds(BigDecimal adjustedPrice, PricingRule rule, RuleEvaluationContext context) throws PriceValidationException {
+        // Implement price bounds validation logic here
+        if (adjustedPrice == null) {
+            throw new PriceValidationException("Adjusted price cannot be null");
         }
 
-        if (priceDTO.getEffectiveFrom().isBefore(now)) {
-            throw new PriceValidationException("Effective from date cannot be in the past");
+        // Example validation: Check if the price is within the rule's bounds
+        if (rule.getMinimumPrice() != null && adjustedPrice.compareTo(rule.getMinimumPrice()) < 0) {
+            throw new PriceValidationException("Price is below the minimum allowed price");
         }
 
-        if (priceDTO.getEffectiveTo() != null &&
-                priceDTO.getEffectiveTo().isBefore(priceDTO.getEffectiveFrom())) {
-            throw new PriceValidationException("Effective to date must be after effective from date");
+        if (rule.getMaximumPrice() != null && adjustedPrice.compareTo(rule.getMaximumPrice()) > 0) {
+            throw new PriceValidationException("Price is above the maximum allowed price");
         }
+
+        return adjustedPrice;
     }
 }

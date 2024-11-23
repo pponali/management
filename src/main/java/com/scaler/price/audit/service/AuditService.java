@@ -7,10 +7,12 @@ import com.scaler.price.audit.domain.AuditEntry;
 import com.scaler.price.audit.domain.AuditEventType;
 import com.scaler.price.audit.exception.AuditSearchException;
 import com.scaler.price.audit.repository.AuditEventRepository;
+import com.scaler.price.core.management.dto.PriceEvent;
 import com.scaler.price.core.management.service.SecurityService;
 import com.scaler.price.rule.domain.AuditAction;
 import com.scaler.price.rule.domain.ChangeDiff;
 import com.scaler.price.rule.domain.PricingRule;
+import com.scaler.price.rule.domain.RuleStatus;
 import com.scaler.price.rule.domain.SellerSiteConfig;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +36,7 @@ public class AuditService {
     private final AuditEventPublisher eventPublisher;
 
     @Transactional
-    public void auditRuleCreation(PricingRule rule) {
+    public void auditRuleCreation(PricingRule rule) throws AuditSearchException {
         log.debug("Auditing rule creation for rule: {}", rule.getId());
         try {
             AuditEntry audit = AuditEntry.builder()
@@ -54,7 +56,7 @@ public class AuditService {
     }
 
     @Transactional
-    public void auditRuleUpdate(PricingRule newRule, PricingRule oldRule) {
+    public void auditRuleUpdate(PricingRule newRule, PricingRule oldRule) throws AuditSearchException {
         log.debug("Auditing rule update for rule: {}", newRule.getId());
         try {
             Map<String, ChangeDiff> changes = detectChanges(oldRule, newRule);
@@ -78,7 +80,7 @@ public class AuditService {
     }
 
     @Transactional
-    public void auditRuleActivation(PricingRule rule, String reason) {
+    public void auditRuleActivation(PricingRule rule, String reason) throws AuditSearchException {
         log.debug("Auditing rule activation for rule: {}", rule.getId());
         try {
             AuditEntry audit = AuditEntry.builder()
@@ -100,7 +102,7 @@ public class AuditService {
     }
 
     @Transactional
-    public void auditRuleDeactivation(PricingRule rule, String reason) {
+    public void auditRuleDeactivation(PricingRule rule, String reason) throws AuditSearchException {
         log.debug("Auditing rule deactivation for rule: {}", rule.getId());
         try {
             AuditEntry audit = AuditEntry.builder()
@@ -126,7 +128,7 @@ public class AuditService {
             PricingRule rule,
             BigDecimal oldPrice,
             BigDecimal newPrice,
-            String reason) {
+            String reason) throws AuditSearchException {
         log.debug("Auditing price override for rule: {}", rule.getId());
         try {
             Map<String, ChangeDiff> changes = Map.of(
@@ -161,7 +163,7 @@ public class AuditService {
             Set<String> addedSellers,
             Set<String> removedSellers,
             Set<String> addedSites,
-            Set<String> removedSites) {
+            Set<String> removedSites) throws AuditSearchException {
         log.debug("Auditing seller-site update for rule: {}", rule.getId());
         try {
             Map<String, ChangeDiff> changes = new HashMap<>();
@@ -195,6 +197,53 @@ public class AuditService {
         } catch (Exception e) {
             log.error("Error auditing seller-site update for rule: {}", rule.getId(), e);
             throw new AuditSearchException("Failed to audit seller-site update", e);
+        }
+    }
+
+    @Transactional
+    public void logPriceCreation(PriceEvent priceEvent) {
+        log.debug("Auditing price creation event: {}", priceEvent);
+        try {
+            AuditEntry audit = AuditEntry.builder()
+                    .ruleId(Long.parseLong(priceEvent.getRuleId()))
+                    .ruleName(priceEvent.getRuleName())
+                    .ruleType(priceEvent.getRuleType())
+                    .action(AuditAction.PRICE_CREATED)
+                    .timestamp(Instant.now())
+                    .userId(securityService.getCurrentUserId())
+                    .eventData(objectMapper.writeValueAsString(priceEvent))
+                    .build();
+
+            saveAndPublish(audit);
+        } catch (Exception e) {
+            log.error("Error auditing price creation event: {}", priceEvent, e);
+            throw new RuntimeException("Failed to audit price creation", e);
+        }
+    }
+
+    @Transactional
+    public void logStatusChange(Long ruleId, RuleStatus oldStatus, RuleStatus newStatus, String reason) throws AuditSearchException {
+        log.debug("Logging status change for rule: {} from {} to {}", ruleId, oldStatus, newStatus);
+        try {
+            Map<String, ChangeDiff> changes = new HashMap<>();
+            changes.put("status", new ChangeDiff(
+                    oldStatus != null ? oldStatus.name() : null,
+                    newStatus != null ? newStatus.name() : null
+            ));
+
+            AuditEntry audit = AuditEntry.builder()
+                    .ruleId(ruleId)
+                    .action(AuditAction.STATUS_CHANGE)
+                    .changes(changes)
+                    .timestamp(Instant.now())
+                    .userId(securityService.getCurrentUserId())
+                    .comment(reason)
+                    .build();
+
+            saveAndPublish(audit);
+        } catch (Exception e) {
+            log.error("Error logging status change for rule: {}", ruleId, e);
+            throw new AuditSearchException("Failed to log status change", e);
         }
     }
 

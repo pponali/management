@@ -2,6 +2,7 @@ package com.scaler.price.rule.domain;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
@@ -11,6 +12,7 @@ import java.time.Instant;
 @DiscriminatorValue("DISCOUNT")
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode(callSuper=false)
 public class DiscountAction extends RuleAction {
     
     @Column(precision = 10, scale = 2)

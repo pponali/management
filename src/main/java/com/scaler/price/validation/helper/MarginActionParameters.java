@@ -5,7 +5,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Data
-public class MarginActionParameters {
+public class MarginActionParameters extends ActionParameters {
     private final BigDecimal margin;
     private final BigDecimal costPrice;
     private final BigDecimal currentPrice;

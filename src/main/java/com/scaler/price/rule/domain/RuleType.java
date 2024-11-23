@@ -1,12 +1,12 @@
 package com.scaler.price.rule.domain;
 
 public enum RuleType {
-    PRICE_OVERRIDE,
-    DISCOUNT,
     MARGIN,
-    TAX,
-    SHIPPING,
+    PRICE,
+    CATEGORY,
+    BRAND,
+    SELLER,
+    PRODUCT,
     BUNDLE,
-    PROMOTION,
-    CUSTOM
+    TIME_BASED
 }

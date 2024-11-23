@@ -5,7 +5,6 @@ import com.scaler.price.rule.dto.RuleDTO;
 import com.scaler.price.rule.dto.RuleEvaluationContext;
 import com.scaler.price.rule.dto.RuleEvaluationRequest;
 import com.scaler.price.rule.dto.RuleEvaluationResult;
-import com.scaler.price.rules.dto.*;
 import com.scaler.price.rule.exceptions.ActionExecutionException;
 import com.scaler.price.rule.exceptions.ActionRegistrationException;
 import com.scaler.price.rule.exceptions.RuleEvaluationException;

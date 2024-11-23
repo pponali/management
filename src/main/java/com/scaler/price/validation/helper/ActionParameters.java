@@ -29,6 +29,7 @@ public class ActionParameters {
     private String priceSource;            // BASE_PRICE, COST_PRICE, MRP
 
     // Discount Parameters
+    private BigDecimal discountAmount;     // New property for direct discount amount
     private BigDecimal maxDiscountAmount;  // Maximum discount amount
     private BigDecimal minDiscountAmount;  // Minimum discount amount
     private BigDecimal maxDiscountPercent; // Maximum discount percentage
@@ -54,13 +55,16 @@ public class ActionParameters {
     private Set<String> bundleIds;         // Multiple bundle identifiers
     private Integer minBundleQuantity;     // Minimum quantity for bundle
     private String bundleDiscountType;     // PERCENTAGE, FIXED_AMOUNT
+    private BigDecimal bundleDiscountPercentage;     // Percentage discount for bundle
     private Boolean applyToAll;            // Apply to all items in bundle
     private Map<String, BigDecimal> itemDiscounts; // Item-specific discounts
 
     // Quantity Discount Parameters
     private String minQuantity;            // Minimum quantity
     private String maxQuantity;            // Maximum quantity
-    private BigDecimal tierIncrement;      // Discount increment per tier
+    private Integer minimumQuantity;      // Minimum quantity for discount
+    private BigDecimal baseDiscount;      // Base discount percentage
+    private BigDecimal tierIncrement;     // Discount increment per tier
     private Integer tierSize;              // Size of each tier
     private Map<Integer, BigDecimal> quantityTiers; // Quantity-discount mapping
     private Boolean applyToIncremental;    // Apply to incremental units only
@@ -89,7 +93,7 @@ public class ActionParameters {
     private Boolean skipMinPriceValidation; // Skip minimum price validation
     private Boolean skipMaxPriceValidation; // Skip maximum price validation
     private Boolean skipDiscountValidation; // Skip discount validation
-    private Integer discountPercentage;    // Discount percentage for validation
+    private BigDecimal discountPercentage;    // Discount percentage for validation
 
     @SuppressWarnings("unchecked")
     public ActionParameters(Map<String, Object> parameters) {
@@ -119,6 +123,10 @@ public class ActionParameters {
         
         if (parameters.get("maxDiscountPercent") != null) {
             this.maxDiscountPercent = new BigDecimal(parameters.get("maxDiscountPercent").toString());
+        }
+        
+        if (parameters.get("discountAmount") != null) {
+            this.discountAmount = new BigDecimal(parameters.get("discountAmount").toString());
         }
         
         this.stackable = (Boolean) parameters.get("stackable");
@@ -264,5 +272,10 @@ public class ActionParameters {
         if (minQuantity == null) {
             throw new IllegalArgumentException("Minimum quantity is required");
         }
+    }
+
+    public String getCompetitorId() {
+        return this.competitor != null ? this.competitor : 
+               (this.competitors != null && !this.competitors.isEmpty() ? this.competitors.iterator().next() : null);
     }
 }

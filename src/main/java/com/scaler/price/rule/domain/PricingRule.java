@@ -37,6 +37,7 @@ public class PricingRule {
     @Enumerated(EnumType.STRING)
     private RuleType ruleType;
 
+    @Builder.Default
     private Set<String> sellerIds = new HashSet<>();
 
     @ElementCollection
@@ -45,6 +46,7 @@ public class PricingRule {
             joinColumns = @JoinColumn(name = "rule_id")
     )
     @Column(name = "site_id")
+    @Builder.Default
     private Set<String> siteIds = new HashSet<>();
 
     @ElementCollection
@@ -53,6 +55,7 @@ public class PricingRule {
             joinColumns = @JoinColumn(name = "rule_id")
     )
     @Column(name = "category_id")
+    @Builder.Default
     private Set<String> categoryIds = new HashSet<>();
 
     @ElementCollection
@@ -61,6 +64,7 @@ public class PricingRule {
             joinColumns = @JoinColumn(name = "rule_id")
     )
     @Column(name = "brand_id")
+    @Builder.Default
     private Set<String> brandIds = new HashSet<>();
 
     @Column(name = "minimum_price")
@@ -83,6 +87,7 @@ public class PricingRule {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
+    @Builder.Default
     private Set<RuleCondition> conditions = new HashSet<>();
 
     @OneToMany(
@@ -90,6 +95,7 @@ public class PricingRule {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
+    @Builder.Default
     private Set<RuleAction> actions = new HashSet<>();
 
     @Column(name = "effective_from")
@@ -114,9 +120,7 @@ public class PricingRule {
     @Column(name = "end_date")
     private Instant endDate;
 
-    public RuleStatus getStatus() {
-        return null;
-    }
+
 
     @OneToMany(
             mappedBy = "rule",

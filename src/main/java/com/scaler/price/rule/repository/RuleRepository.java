@@ -1,9 +1,7 @@
 package com.scaler.price.rule.repository;
 
-
 import com.scaler.price.core.management.dto.ConflictSummary;
 import com.scaler.price.rule.domain.*;
-import com.scaler.price.rules.domain.*;
 import com.scaler.price.rule.dto.RuleSiteSummary;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
@@ -216,7 +214,7 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
     );
 
     @Query("""
-        SELECT new com.scaler.price.rules.dto.RuleConflict(
+        SELECT new com.scaler.price.rule.dto.RuleConflict(
             pr1.id,
             pr2.id,
             pr1.ruleName,
@@ -372,7 +370,7 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
     long countActiveRulesForSeller(@Param("sellerId") String sellerId);
 
     @Query("""
-        SELECT new com.scaler.price.rules.dto.ConflictSummary(
+        SELECT new com.scaler.price.rule.dto.ConflictSummary(
             pr1.id,
             pr2.id,
             pr1.ruleName,
@@ -524,7 +522,7 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
     );
 
     @Query("""
-        SELECT new com.scaler.price.rules.dto.RuleCount(
+        SELECT new com.scaler.price.rule.dto.RuleCount(
             site,
             COUNT(DISTINCT pr),
             COUNT(DISTINCT CASE WHEN pr.isActive = true THEN pr.id ELSE null END)
@@ -695,7 +693,7 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
     );
 
     @Query("""
-        SELECT new com.scaler.price.rules.dto.RuleSiteSummary(
+        SELECT new com.scaler.price.rule.dto.RuleSiteSummary(
             s,
             COUNT(pr),
             COUNT(CASE WHEN pr.isActive = true THEN 1 END),

@@ -2,43 +2,42 @@ package com.scaler.price.core.management.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 @Embeddable
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class AuditInfo {
-    @Column(nullable = false, updatable = false)
-    private String createdBy;
-
-    @Column(nullable = false, updatable = false)
+    
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    private String modifiedBy;
-    private LocalDateTime modifiedAt;
-    private String approvedBy;
-    private LocalDateTime approvedAt;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
-    @PrePersist
-    public void prePersist() {
-        createdAt = LocalDateTime.now();
+    @Column(name = "created_by")
+    private String createdBy;
+
+    @Column(name = "updated_by")
+    private String updatedBy;
+
+    @Column(name = "version")
+    private Long version = 0L;
+
+    public void setLastModifiedBy(String updatedBy) {
+        this.updatedBy = updatedBy;
     }
 
-    @PreUpdate
-    public void preUpdate() {
-        modifiedAt = LocalDateTime.now();
-    }
-    private String status; // DRAFT, PENDING_APPROVAL, APPROVED, REJECTED
-
-    public void setLastModifiedBy(String userId) {
-        this.modifiedBy = userId;
-        this.modifiedAt = LocalDateTime.now();
+    public void setLastModifiedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
-    public void setLastModifiedAt(LocalDateTime now) {
-        this.modifiedAt = now;
+    public void setModifiedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }
