@@ -2,7 +2,8 @@ package com.scaler.price.rule.repository;
 
 
 import com.scaler.price.rule.domain.Product;
-import com.scaler.price.rule.domain.ProductStatus;
+import com.scaler.price.rule.domain.Product.ProductStatus;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -54,5 +55,5 @@ public interface ProductRepository extends JpaRepository<Product, String> {
         """)
     List<Product> findActiveProductsByIds(Set<String> productIds);
 
-    boolean existsByProductIdAndStatus(String productId, ProductStatus status);
+    boolean existsByProductIdAndStatus(String productId, ProductStatus active);
 }

@@ -14,9 +14,10 @@ import java.util.*;
 @Table(name = "products")
 @Data
 @NoArgsConstructor
-
+@AllArgsConstructor
 @Getter
 @Setter
+@Builder
 public class Product {
     @Id
     private String id;
@@ -128,6 +129,10 @@ public class Product {
     }
 
     public enum ProductStatus {
-        // Add your product status values here
+        DRAFT,
+        ACTIVE,
+        INACTIVE,
+        OUT_OF_STOCK,
+        DISCONTINUED
     }
 }

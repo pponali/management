@@ -1,6 +1,6 @@
 package com.scaler.price.rule.dto;
 
-import com.scaler.price.rule.domain.ProductStatus;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,6 +14,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import com.scaler.price.rule.domain.Product.ProductStatus;
 
 @Data
 @Getter

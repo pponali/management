@@ -422,10 +422,20 @@ public class ActionValidator {
             if (fieldValue.isNumber()) {
                 double value = fieldValue.asDouble();
                 if (value < 0) {
-                    throw new RuleValidationException("Parameter " + fieldName + " cannot be negative");
+                    try {
+                        throw new RuleValidationException("Parameter " + fieldName + " cannot be negative");
+                    } catch (RuleValidationException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
                 }
                 if (value > 1000000) {
-                    throw new RuleValidationException("Parameter " + fieldName + " exceeds maximum allowed value");
+                    try {
+                        throw new RuleValidationException("Parameter " + fieldName + " exceeds maximum allowed value");
+                    } catch (RuleValidationException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
                 }
             }
         });

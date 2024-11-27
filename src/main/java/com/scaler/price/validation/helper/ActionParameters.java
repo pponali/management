@@ -1,11 +1,11 @@
 package com.scaler.price.validation.helper;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -16,7 +16,8 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-@Data
+@Setter
+@Getter
 public class ActionParameters {
     // Common Parameters
     private String value;             // The primary value for the action (price/discount/margin)

@@ -62,38 +62,74 @@ public class PriceServiceMetrics {
     }
 
     public void recordActionValidation(int size) {
+        meterRegistry.counter("rules.validation.actions.total").increment(size);
+        meterRegistry.counter("rules.validation.actions.success").increment();
     }
 
     public void recordActionValidationFailure() {
-
+        meterRegistry.counter("rules.validation.actions.failure").increment();
     }
 
     public void recordTimeValidationFailure() {
+        meterRegistry.counter("rules.validation.time.failure").increment();
     }
 
     public void recordTimeValidation() {
+        meterRegistry.counter("rules.validation.time.success").increment();
     }
 
     public void recordDiscountValidation() {
+        meterRegistry.counter("rules.validation.discount.success").increment();
     }
 
     public void recordDiscountValidationFailure() {
-
+        meterRegistry.counter("rules.validation.discount.failure").increment();
     }
 
     public void recordConditionValidation(int size) {
+        meterRegistry.counter("rules.validation.conditions.total").increment(size);
+        meterRegistry.counter("rules.validation.conditions.success").increment();
     }
 
     public void recordConditionValidationFailure() {
-
+        meterRegistry.counter("rules.validation.conditions.failure").increment();
     }
 
-    public void recordEventPublished(RuleEventType eventType, RuleType ruleType, int size, int size1) {
+    public void recordEventPublished(RuleEventType eventType, RuleType ruleType, int sellerCount, int siteCount) {
+        Tags tags = Tags.of(
+            "eventType", eventType.toString(),
+            "ruleType", ruleType.toString(),
+            "sellerCount", String.valueOf(sellerCount),
+            "siteCount", String.valueOf(siteCount)
+        );
+        meterRegistry.counter("rules.events.published", tags).increment();
     }
 
     public void incrementEventPublishFailure(RuleEventType eventType) {
+        meterRegistry.counter("rules.events.publish.failure",
+            Tags.of("eventType", eventType.toString())).increment();
     }
 
     public void incrementEventPublishSuccess(RuleEventType eventType) {
+        meterRegistry.counter("rules.events.publish.success",
+            Tags.of("eventType", eventType.toString())).increment();
+    }
+
+    public void recordGaugeValue(String metricName, Long value, String metricType, String siteId) {
+        meterRegistry.gauge(metricName,
+            Tags.of(
+                "type", metricType,
+                "siteId", siteId
+            ),
+            value);
+    }
+
+    public void recordGaugeValue(String metricName, Double value, String metricType, String siteId) {
+        meterRegistry.gauge(metricName,
+            Tags.of(
+                "type", metricType,
+                "siteId", siteId
+            ),
+            value);
     }
 }

@@ -2,6 +2,7 @@ package com.scaler.price.audit.controller;
 
 import com.scaler.price.audit.domain.AuditEntry;
 import com.scaler.price.audit.domain.AuditEventType;
+import com.scaler.price.audit.exception.AuditSearchException;
 import com.scaler.price.audit.service.AuditService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -48,7 +49,7 @@ public class AuditController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant startTime,
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant endTime,
-            Pageable pageable) {
+            Pageable pageable) throws AuditSearchException {
         return ResponseEntity.ok(auditService.findByComplexCriteria(
                 userId, eventType, startTime, endTime, pageable));
     }

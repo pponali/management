@@ -1,14 +1,14 @@
 package com.scaler.price.rule.service;
 
+import com.scaler.price.rule.domain.Bundle;
 import com.scaler.price.rule.domain.PricingRule;
-import com.scaler.price.rule.dto.RuleDTO;
-import com.scaler.price.rule.dto.RuleEvaluationContext;
-import com.scaler.price.rule.dto.RuleEvaluationRequest;
-import com.scaler.price.rule.dto.RuleEvaluationResult;
+import com.scaler.price.rule.dto.*;
 import com.scaler.price.rule.exceptions.ActionExecutionException;
 import com.scaler.price.rule.exceptions.ActionRegistrationException;
+import com.scaler.price.rule.exceptions.ProductFetchException;
 import com.scaler.price.rule.exceptions.RuleEvaluationException;
 import com.scaler.price.rule.repository.RuleRepository;
+import com.scaler.price.core.management.exceptions.PriceValidationException;
 import com.scaler.price.core.management.service.PriceValidationService;
 import com.scaler.price.core.management.utils.PriceServiceMetrics;
 import lombok.RequiredArgsConstructor;
@@ -18,10 +18,8 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -32,12 +30,11 @@ public class RuleEvaluationService {
     private final ActionExecutorService actionExecutor;
     private final PriceValidationService priceValidator;
     private final PriceServiceMetrics metricsService;
-    private BundleService bundleService;
+    private final BundleService bundleService;
 
-    public List<RuleEvaluationResult> evaluateRules(RuleEvaluationRequest request) throws RuleEvaluationException {
+    public List<RuleEvaluationResult> evaluateRules(RuleEvaluationRequest request) throws RuleEvaluationException, ActionExecutionException, ActionRegistrationException, ProductFetchException, PriceValidationException {
         log.info("Starting rule evaluation for request: {}", request);
 
-        // Find applicable rules
         List<PricingRule> applicableRules = findApplicableRules(request);
 
         if (applicableRules.isEmpty()) {
@@ -45,10 +42,7 @@ public class RuleEvaluationService {
             return Collections.emptyList();
         }
 
-        // Create evaluation context
         RuleEvaluationContext context = createEvaluationContext(request);
-
-        // Evaluate rules and collect results
         List<RuleEvaluationResult> results = new ArrayList<>();
         BigDecimal currentPrice = request.getBasePrice();
 
@@ -93,20 +87,61 @@ public class RuleEvaluationService {
                 .build();
     }
 
+    public RuleEvaluationResult evaluateBundlePrice(Long bundleId) throws ProductFetchException {
+        try {
+            BundleEligibility eligibility = bundleService.checkEligibility(
+                    bundleId.toString(),
+                    null,
+                    null
+            );
+    
+            // Add null checks and handle potential empty bundle scenarios
+            String productId = Optional.ofNullable(eligibility.getBundleId())
+                .flatMap(id -> bundleService.getBundleById(bundleId))
+                .map(bundle -> {
+                    Set<String> productIds = null;
+                    try {
+                        productIds = bundle.getProductIds();
+                    } catch (ProductFetchException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                    return productIds != null && !productIds.isEmpty() 
+                        ? productIds.iterator().next() 
+                        : null;
+                })
+                .orElseThrow(() -> new ProductFetchException("No products found in bundle " + bundleId));
+    
+            BigDecimal bundlePrice = bundleService.getBundleDiscount(bundleId.toString(), productId);
+    
+            RuleEvaluationResult result = new RuleEvaluationResult();
+            result.setAdjustedPrice(bundlePrice);
+            result.setOriginalPrice(eligibility.getOriginalPrice());
+            result.setDiscountAmount(eligibility.getDiscountAmount());
+            result.setMarginPercentage(eligibility.getMarginPercentage());
+    
+            return result;
+        } catch (ProductFetchException e) {
+            log.error("Product fetch error for bundle {}: {}", bundleId, e.getMessage(), e);
+            throw e;  // Re-throw the specific exception
+        } catch (Exception e) {
+            log.error("Error evaluating bundle price: {}", e.getMessage(), e);
+            throw new RuleEvaluationException("Failed to evaluate bundle price", e);
+        }
+    }
+
     private RuleEvaluationResult evaluateRule(
             PricingRule rule,
             RuleEvaluationContext context,
-            BigDecimal currentPrice) throws RuleEvaluationException {
+            BigDecimal currentPrice) throws RuleEvaluationException, ActionExecutionException, ActionRegistrationException, ProductFetchException, PriceValidationException {
 
         log.debug("Evaluating rule: {} for context: {}", rule.getId(), context);
 
-        // Check if all conditions are met
         if (!conditionEvaluator.evaluateConditions(rule.getConditions(), context)) {
             log.debug("Rule {} conditions not met", rule.getId());
             return null;
         }
 
-        // Execute actions
         RuleEvaluationResult result = actionExecutor.executeActions(
                 rule.getActions(),
                 context,
@@ -114,7 +149,6 @@ public class RuleEvaluationService {
         );
 
         if (result != null) {
-            // Validate price bounds
             result.setAdjustedPrice(
                     priceValidator.validatePriceBounds(
                             result.getAdjustedPrice(),
@@ -123,53 +157,11 @@ public class RuleEvaluationService {
                     )
             );
 
-            result.setRuleId(rule.getId());
-            result.setRuleName(rule.getRuleName());
-            result.setRuleType(rule.getRuleType());
+            calculateMetrics(result, context);
+            enrichResultWithRuleInfo(result, rule);
         }
 
         return result;
-    }
-
-    private RuleEvaluationResult evaluateRule(
-            PricingRule rule,
-            RuleEvaluationContext context) throws RuleEvaluationException, ActionRegistrationException, ActionExecutionException {
-
-        try {
-            // Evaluate conditions
-            if (!conditionEvaluator.evaluateConditions(rule.getConditions(), context)) {
-                log.debug("Rule {} conditions not met", rule.getId());
-                return null;
-            }
-
-            // Execute actions
-            RuleEvaluationResult result = actionExecutor.executeActions(
-                    rule.getActions(), context, context.getBasePrice());
-
-            if (result != null) {
-                // Validate price bounds
-                result.setAdjustedPrice(
-                        priceValidator.validatePriceBounds(
-                                result.getAdjustedPrice(),
-                                rule,
-                                context
-                        )
-                );
-
-                // Calculate metrics
-                calculateMetrics(result, context);
-
-                // Set rule information
-                enrichResultWithRuleInfo(result, rule);
-            }
-
-            return result;
-
-        } catch (Exception e) {
-            log.error("Error evaluating rule {}: {}", rule.getId(), e.getMessage(), e);
-            metricsService.recordRuleEvaluationError(rule.getId());
-            return null;
-        }
     }
 
     private void calculateMetrics(RuleEvaluationResult result, RuleEvaluationContext context) {
@@ -193,82 +185,21 @@ public class RuleEvaluationService {
         result.setRuleType(rule.getRuleType());
     }
 
-    public RuleEvaluationResult previewRuleApplication(RuleDTO ruleDTO, RuleEvaluationRequest ruleEvaluationRequest ) throws ActionRegistrationException, ActionExecutionException, RuleEvaluationException {
-        RuleEvaluationContext context = createEvaluationContext(ruleEvaluationRequest);
-        RuleEvaluationResult result = new RuleEvaluationResult();
-
-        try {
-            // Evaluate conditions
-            if (!conditionEvaluator.evaluateConditions(ruleDTO.getConditions(), context)) {
-                log.debug("Rule conditions not met");
-                return null;
-            }
-
-            // Execute actions
-            result = actionExecutor.executeActions(
-                    ruleDTO.getActions(), context, context.getBasePrice());
-
-            if (result != null) {
-                // Validate price bounds
-                result.setAdjustedPrice(
-                        priceValidator.validatePriceBounds(
-                                result.getAdjustedPrice(),
-                                null,
-                                context
-                        )
-                );
-
-                // Calculate metrics
-                calculateMetrics(result, context);
-            }
-
-            return result;
-
-        } catch (Exception e) {
-            log.error("Error previewing rule application: {}", e.getMessage(), e);
-            return null;
-        }
+    public RuleEvaluationResult previewRuleApplication(RuleDTO ruleDTO, RuleEvaluationRequest request) 
+            throws ActionRegistrationException, ActionExecutionException, RuleEvaluationException, 
+                   ProductFetchException, PriceValidationException {
+        RuleEvaluationContext context = createEvaluationContext(request);
+        PricingRule rule = convertDTOToPricingRule(ruleDTO);
+        return evaluateRule(rule, context, request.getBasePrice());
     }
 
-    public RuleEvaluationResult evaluatePrice(RuleEvaluationRequest ruleEvaluationRequest) {
-        try {
-            List<RuleEvaluationResult> results = evaluateRules(ruleEvaluationRequest);
-            if (results.isEmpty()) {
-                return new RuleEvaluationResult(
-                        ruleEvaluationRequest.getBasePrice(),
-                        ruleEvaluationRequest.getBasePrice(),
-                        BigDecimal.ZERO,
-                        BigDecimal.ZERO
-                );
-            } else {
-                return results.get(results.size() - 1);
-            }
-        } catch (RuleEvaluationException e) {
-            log.error("Error evaluating price: {}", e.getMessage(), e);
-            return null;
-        }
-
-    }
-
-    public RuleEvaluationResult evaluateBundlePrice(Long bundleId) {
-        try {
-            // Fetch bundle details
-            BundleEligibility eligibility = bundleService.checkEligibility(bundleId.toString());
-
-            // Evaluate bundle price
-            BigDecimal bundlePrice = bundleService.getBundleDiscount(bundleId.toString());
-
-            // Create RuleEvaluationResult
-            RuleEvaluationResult result = new RuleEvaluationResult();
-            result.setAdjustedPrice(bundlePrice);
-            result.setOriginalPrice(eligibility.getOriginalPrice());
-            result.setDiscountAmount(eligibility.getDiscountAmount());
-            result.setMarginPercentage(eligibility.getMarginPercentage());
-
-            return result;
-        } catch (Exception e) {
-            log.error("Error evaluating bundle price: {}", e.getMessage(), e);
-            return null;
-        }
+    private PricingRule convertDTOToPricingRule(RuleDTO dto) {
+        PricingRule rule = new PricingRule();
+        rule.setId(dto.getId());
+        rule.setRuleName(dto.getName());
+        rule.setRuleType(dto.getType());
+        rule.setConditions(dto.getConditions());
+        rule.setActions(dto.getActions());
+        return rule;
     }
 }

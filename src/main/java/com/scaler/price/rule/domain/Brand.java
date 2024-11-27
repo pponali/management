@@ -1,6 +1,7 @@
 package com.scaler.price.rule.domain;
 
 
+import com.scaler.price.core.management.domain.AuditInfo;
 import com.scaler.price.rule.domain.constraint.CategoryConstraints;
 import jakarta.persistence.*;
 import lombok.*;
@@ -16,7 +17,7 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
-public class Brand extends BaseEntity {
+public class Brand extends AuditInfo {
 
     @Column(nullable = false, unique = true)
     @EqualsAndHashCode.Include

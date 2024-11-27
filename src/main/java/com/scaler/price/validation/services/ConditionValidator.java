@@ -32,13 +32,32 @@ public class ConditionValidator {
 
     @SneakyThrows
     public void validateConditions(Set<RuleCondition> conditions) throws RuleValidationException {
+        long startTime = System.currentTimeMillis();
+        int totalConditions = conditions != null ? conditions.size() : 0;
+        int validatedConditions = 0;
+        
         try {
             validateBasicConditionRules(conditions);
-            conditions.forEach(this::validateCondition);
-            metricsService.recordConditionValidation(conditions.size());
-        } catch (Exception | RuleValidationException e) {
-            metricsService.recordConditionValidationFailure();
+            for (RuleCondition condition : conditions) {
+                validateCondition(condition);
+                validatedConditions++;
+            }
+            metricsService.recordRuleEvaluation(
+                "conditions",
+                totalConditions,
+                validatedConditions,
+                System.currentTimeMillis() - startTime
+            );
+        } catch (RuleValidationException e) {
+            // Get the rule ID from the first condition if available
+            Long ruleId = conditions != null && !conditions.isEmpty() ? 
+                conditions.iterator().next().getRule().getId() : null;
+            if (ruleId != null) {
+                metricsService.recordRuleEvaluationError(ruleId);
+            }
             throw e;
+        } finally {
+            metricsService.recordProcessingTime(System.currentTimeMillis() - startTime);
         }
     }
 
@@ -80,18 +99,27 @@ public class ConditionValidator {
     }
 
     private void validateConditionValue(RuleCondition condition) throws RuleValidationException {
-        switch (condition.getType()) {
-            case PRICE_RANGE -> validatePriceRangeCondition(condition);
-            case MARGIN_RANGE -> validateSimpleRangeCondition(condition, "margin", BigDecimal.ZERO, new BigDecimal("100"));
-            case INVENTORY_LEVEL -> validateNumericCondition(condition, "inventory", 0L);
-            case TIME_BASED -> timeValidator.validateTimeCondition(condition);
-            case COMPETITOR_PRICE -> validateCompetitorPriceCondition(condition);
-            case SALES_VELOCITY -> validateNumericRangeCondition(condition, "velocity", 0.0);
-            case CATEGORY_ATTRIBUTE -> validateStringCondition(condition);
-            case CUSTOM -> validateCustomCondition(condition);
-            default -> throw new RuleValidationException(
-                    "Unsupported condition type: " + condition.getType()
-            );
+        long startTime = System.currentTimeMillis();
+        try {
+            switch (condition.getType()) {
+                case PRICE_RANGE -> validatePriceRangeCondition(condition);
+                case MARGIN_RANGE -> validateSimpleRangeCondition(condition, "margin", BigDecimal.ZERO, new BigDecimal("100"));
+                case INVENTORY_LEVEL -> validateNumericCondition(condition, "inventory", 0L);
+                case TIME_BASED -> timeValidator.validateTimeCondition(condition);
+                case COMPETITOR_PRICE -> validateCompetitorPriceCondition(condition);
+                case SALES_VELOCITY -> validateNumericRangeCondition(condition, "velocity", 0.0);
+                case CATEGORY_ATTRIBUTE -> validateStringCondition(condition);
+                case CUSTOM -> validateCustomCondition(condition);
+                default -> throw new RuleValidationException(
+                        "Unsupported condition type: " + condition.getType()
+                );
+            }
+            metricsService.recordPriceOperation("validate_" + condition.getType().name().toLowerCase());
+        } catch (Exception e) {
+            metricsService.recordRuleEvaluationError(condition.getId());
+            throw e;
+        } finally {
+            metricsService.recordProcessingTime(System.currentTimeMillis() - startTime);
         }
     }
 

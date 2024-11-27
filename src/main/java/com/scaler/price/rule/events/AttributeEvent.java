@@ -4,9 +4,11 @@ import com.scaler.price.rule.domain.AttributeEventType;
 import com.scaler.price.rule.domain.ProductAttribute;
 import java.time.LocalDateTime;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Setter
+@Getter
 @Builder
 public class AttributeEvent {
     private String eventId;

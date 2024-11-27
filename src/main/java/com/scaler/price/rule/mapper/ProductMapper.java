@@ -28,7 +28,7 @@ public class ProductMapper {
                 .mrp(product.getMrp())
                 .costPrice(product.getCostPrice())
                 .currency(product.getCurrency())
-                .status(product.getStatus())
+                .status(Product.ProductStatus.valueOf(product.getStatus().name()))
                 .build();
     }
 
@@ -50,7 +50,7 @@ public class ProductMapper {
                 .mrp(dto.getMrp())
                 .costPrice(dto.getCostPrice())
                 .currency(dto.getCurrency())
-                .status(dto.getStatus())
+                .status(dto.getStatus() != null ? Product.ProductStatus.valueOf(dto.getStatus().name()) : null)
                 .build();
     }
 
@@ -70,7 +70,19 @@ public class ProductMapper {
         if (dto.getMrp() != null) product.setMrp(dto.getMrp());
         if (dto.getCostPrice() != null) product.setCostPrice(dto.getCostPrice());
         if (dto.getCurrency() != null) product.setCurrency(dto.getCurrency());
-        if (dto.getStatus() != null) product.setStatus(dto.getStatus());
+        if (dto.getStatus() != null) product.setStatus(Product.ProductStatus.valueOf(dto.getStatus().name()));
+    }
+
+    /**
+     * Update existing Product entity with ProductDTO data and return the updated entity
+     */
+    public Product updateEntity(Product product, ProductDTO dto) {
+        if (dto == null || product == null) {
+            return product;
+        }
+
+        updateProductFromDTO(dto, product);
+        return product;
     }
 
     /**
@@ -127,7 +139,7 @@ public class ProductMapper {
         if (source.getMrp() != null) target.setMrp(source.getMrp());
         if (source.getCostPrice() != null) target.setCostPrice(source.getCostPrice());
         if (source.getCurrency() != null) target.setCurrency(source.getCurrency());
-        if (source.getStatus() != null) target.setStatus(source.getStatus());
+        if (source.getStatus() != null) target.setStatus(Product.ProductStatus.valueOf(source.getStatus().name()));
 
         return target;
     }
@@ -150,7 +162,7 @@ public class ProductMapper {
                 .mrp(source.getMrp())
                 .costPrice(source.getCostPrice())
                 .currency(source.getCurrency())
-                .status(source.getStatus())
+                .status(Product.ProductStatus.valueOf(source.getStatus().name()))
                 .build();
     }
 }

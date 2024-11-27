@@ -1,17 +1,15 @@
 package com.scaler.price.rule.service;
 
 import com.scaler.price.rule.domain.Product;
-import com.scaler.price.rule.domain.ProductStatus;
+import com.scaler.price.rule.domain.Product.ProductStatus;
 import com.scaler.price.rule.dto.ProductDTO;
 import com.scaler.price.rule.events.ProductEventPublisher;
 import com.scaler.price.rule.exceptions.ProductNotFoundException;
 import com.scaler.price.rule.exceptions.ProductValidationException;
+import com.scaler.price.rule.exceptions.RuleValidationException;
 import com.scaler.price.rule.mapper.ProductMapper;
 import com.scaler.price.rule.repository.ProductRepository;
 import com.scaler.price.validation.services.ProductValidator;
-import com.scaler.price.rule.service.CategoryService;
-import com.scaler.price.rule.service.SellerService;
-import com.scaler.price.rule.service.SiteService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
@@ -38,14 +36,14 @@ public class ProductService {
     private final ProductEventPublisher eventPublisher;
 
     @Transactional
-    public ProductDTO createProduct(ProductDTO productDTO) {
-        log.info("Creating new product: {}", productDTO.getProductId());
+    public ProductDTO createProduct(ProductDTO productDTO) throws RuleValidationException, ProductValidationException {
+        log.info("Creating new product: {}", productDTO.getId());
 
         Product product = productMapper.toEntity(productDTO);
         productValidator.validateProduct(product);
 
         product.setCreatedAt(LocalDateTime.now());
-        product.setStatus(ProductStatus.ACTIVE);
+        product.setStatus(product.getStatus());
 
         Product savedProduct = productRepository.save(product);
         eventPublisher.publishProductCreated(savedProduct);
@@ -54,11 +52,11 @@ public class ProductService {
     }
 
     @Transactional
-    public ProductDTO updateProduct(String productId, ProductDTO productDTO) {
+    public ProductDTO updateProduct(String productId, ProductDTO productDTO) throws RuleValidationException, ProductValidationException {
         log.info("Updating product: {}", productId);
 
         Product existingProduct = getProductEntity(productId);
-        productValidator.validateForUpdate(productDTO, existingProduct);
+        productValidator.validateProductUpdate(productDTO, existingProduct);
 
         Product updatedProduct = productMapper.updateEntity(existingProduct, productDTO);
         updatedProduct.setUpdatedAt(LocalDateTime.now());
@@ -131,7 +129,12 @@ public class ProductService {
         // Validate sites
         siteIds.forEach(siteId -> {
             if (!siteService.isValidSite(siteId)) {
-                throw new ProductValidationException("Invalid site: " + siteId);
+                try {
+                    throw new ProductValidationException("Invalid site: " + siteId);
+                } catch (ProductValidationException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
             }
         });
 
@@ -147,7 +150,7 @@ public class ProductService {
     @Transactional
     public ProductDTO updateProductPrices(
             String productId,
-            Map<String, Object> priceUpdate) {
+            Map<String, Object> priceUpdate) throws ProductValidationException {
         log.info("Updating prices for product: {}", productId);
 
         Product product = getProductEntity(productId);
@@ -193,7 +196,7 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public int getAvailableQuantity(String productId) {
-        Product product = productRepository.findByProductId(productId)
+        Product product = productRepository.findById(productId)
             .orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + productId));
         
         // Assuming you want to return the quantity from the Product entity
@@ -203,14 +206,14 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public Set<String> getProductCategories(String productId) {
-        Optional<Product> productOptional = productRepository.findByProductId(productId);
+        Optional<Product> productOptional = productRepository.findById(productId);
         
         if (productOptional.isEmpty()) {
             throw new ProductNotFoundException("Product not found with ID: " + productId);
         }
         
         Product product = productOptional.get();
-        return product.getCategories() != null ? product.getCategories() : new HashSet<>();
+        return product.getCategoryId() != null ? Set.of(product.getCategoryId()) : new HashSet<>();
     }
 
     private Product getProductEntity(String productId) {

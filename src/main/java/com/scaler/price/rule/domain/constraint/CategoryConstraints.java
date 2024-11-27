@@ -6,9 +6,11 @@ import com.scaler.price.rule.domain.RuleType;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+
 import org.hibernate.annotations.Type;
 
 import java.math.BigDecimal;
@@ -20,6 +22,7 @@ import java.util.Set;
 @Entity
 @Table(name = "categories")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper=false)
@@ -105,4 +108,6 @@ public class CategoryConstraints extends RuleConstraints{
             auditInfo.setCreatedAt(auditInfo.getUpdatedAt());
         }
     }
+
+  
 }

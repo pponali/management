@@ -34,4 +34,16 @@ public class RuleEvaluationRequest {
     private BigDecimal costPrice;
 
     private Map<String, Object> attributes;
+
+    private int quantity = 1; // Default quantity to 1 if not specified
+
+    private String customerSegment;
+
+    public int getQuantity() {
+        return quantity;
+    }
+
+    public String getCustomerSegment() {
+        return customerSegment;
+    }
 }

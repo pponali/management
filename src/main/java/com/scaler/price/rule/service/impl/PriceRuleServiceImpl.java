@@ -1,6 +1,7 @@
 package com.scaler.price.rule.service.impl;
 
 import com.scaler.price.core.management.domain.AuditInfo;
+import com.scaler.price.audit.exception.AuditSearchException;
 import com.scaler.price.audit.service.AuditService;
 import com.scaler.price.rule.actions.CustomActionRegistry;
 import com.scaler.price.rule.domain.PricingRule;
@@ -9,11 +10,16 @@ import com.scaler.price.rule.dto.RuleEvaluationRequest;
 import com.scaler.price.rule.dto.RuleEvaluationResult;
 import com.scaler.price.rule.dto.RuleSiteSummary;
 import com.scaler.price.rule.events.RuleEventPublisher;
+import com.scaler.price.rule.exceptions.ActionExecutionException;
+import com.scaler.price.rule.exceptions.ActionRegistrationException;
+import com.scaler.price.rule.exceptions.ProductFetchException;
 import com.scaler.price.rule.exceptions.RuleNotFoundException;
 import com.scaler.price.rule.repository.RuleRepository;
 import com.scaler.price.rule.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +27,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -31,13 +38,10 @@ public class PriceRuleServiceImpl implements PriceRuleService {
     private final RuleEngineService ruleEngine;
     private final PriceValidationService validationService;
     private final AuditService auditService;
-    private final RuleEvaluationService evaluationService;
-    private final CustomActionRegistry actionRegistry;
-    private final ProductAttributeService productAttributeService;
     private final RuleEventPublisher eventPublisher;
 
     @Override
-    public List<RuleEvaluationResult> evaluateRules(RuleEvaluationRequest request) {
+    public List<RuleEvaluationResult> evaluateRules(RuleEvaluationRequest request) throws ActionRegistrationException, ProductFetchException {
         log.info("Evaluating pricing rules for product: {}", request.getProductId());
 
         // Get applicable rules
@@ -57,8 +61,12 @@ public class PriceRuleServiceImpl implements PriceRuleService {
                     results.add(result);
                     currentPrice = result.getAdjustedPrice();
                 }
+            } catch (ActionExecutionException e) {
+                log.error("Action execution failed for rule {}: {}", rule.getId(), e.getMessage(), e);
+                // Optionally, you can choose to rethrow or handle differently
+                throw new RuntimeException("Failed to evaluate rule: " + rule.getId(), e);
             } catch (Exception e) {
-                log.error("Error evaluating rule {}: {}", rule.getId(), e.getMessage());
+                log.error("Unexpected error evaluating rule {}: {}", rule.getId(), e.getMessage(), e);
             }
         }
 
@@ -88,7 +96,7 @@ public class PriceRuleServiceImpl implements PriceRuleService {
 
 
 
-    public PricingRule createRule(PricingRule rule) {
+    public PricingRule createRule(PricingRule rule) throws AuditSearchException {
         log.info("Creating new pricing rule: {}", rule.getRuleName());
         validationService.validateRule(rule);
 
@@ -145,20 +153,54 @@ public class PriceRuleServiceImpl implements PriceRuleService {
 
     @Override
     public RuleSiteSummary getSiteRulesSummary(Long siteId, RuleStatus status) {
-
+        // Convert Long siteId to String for repository method
+        String siteIdStr = siteId.toString();
+        
+        // Find all rules for the site
+        List<PricingRule> siteRules = ruleRepository.findRulesBySite(siteIdStr);
+        
+        // Filter rules by status if provided
+        if (status != null) {
+            siteRules = siteRules.stream()
+                .filter(rule -> rule.getStatus() == status)
+                .collect(Collectors.toList());
+        }
+        
+        // Calculate summary metrics
+        long totalRules = siteRules.size();
+        long activeRules = siteRules.stream()
+            .filter(PricingRule::getIsActive)
+            .count();
+        
+        LocalDateTime earliestRule = siteRules.stream()
+            .map(PricingRule::getEffectiveFrom)
+            .min(LocalDateTime::compareTo)
+            .orElse(null);
+        
+        LocalDateTime latestRule = siteRules.stream()
+            .map(PricingRule::getEffectiveTo)
+            .max(LocalDateTime::compareTo)
+            .orElse(null);
+        
+        return new RuleSiteSummary(
+            siteIdStr, 
+            totalRules, 
+            activeRules, 
+            earliestRule, 
+            latestRule
+        );
     }
 
-    public PricingRule activateRule(Long id) {
+    public RuleStatus activateRule(Long id) {
         PricingRule rule = getRule(id);
         rule.setIsActive(true);
         rule.getAuditInfo().setModifiedAt(LocalDateTime.now());
-
+    
         PricingRule savedRule = ruleRepository.save(rule);
         eventPublisher.publishRuleActivated(savedRule);
-
-        return savedRule;
+    
+        return RuleStatus.ACTIVE; // Or create a method to convert PricingRule to RuleStatus
     }
-
     public PricingRule deactivateRule(Long id) {
         PricingRule rule = getRule(id);
         rule.setIsActive(false);
@@ -215,9 +257,17 @@ public class PriceRuleServiceImpl implements PriceRuleService {
         });
 
         // Update audit info
-        existingRule.getAuditInfo().setModifiedBy(
+        existingRule.getAuditInfo().setLastModifiedBy(
                 SecurityContextHolder.getContext().getAuthentication().getName());
         existingRule.getAuditInfo().setModifiedAt(LocalDateTime.now());
+    }
+
+
+
+    @Override
+    public BigDecimal getCurrentPrice(String productId) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getCurrentPrice'");
     }
 
 

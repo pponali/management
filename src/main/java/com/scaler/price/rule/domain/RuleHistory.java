@@ -5,16 +5,19 @@ import com.scaler.price.core.management.domain.AuditInfo;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+
 import org.hibernate.annotations.Type;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "rule_history")
-@Data
+@Setter
+@Getter
 @Builder
-public class RuleHistory {
+public class RuleHistory extends AuditInfo {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

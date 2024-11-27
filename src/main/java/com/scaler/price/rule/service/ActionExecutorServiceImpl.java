@@ -18,7 +18,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
@@ -33,7 +32,6 @@ public class ActionExecutorServiceImpl implements ActionExecutorService {
     private final BundleService bundleService;
     private final CustomActionRegistry customActionRegistry;
 
-    
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
     private static final int PRICE_SCALE = 2;
 
@@ -68,68 +66,76 @@ public class ActionExecutorServiceImpl implements ActionExecutorService {
         return result;
     }
 
-        @Override
-        public RuleEvaluationResult executeAction(
-                RuleAction action,
-                RuleEvaluationContext context,
-                RuleEvaluationResult result) throws ActionExecutionException, ActionRegistrationException, ProductFetchException {
-            if (action == null) {
-                throw new ActionExecutionException("Action cannot be null");
+    @Override
+    public RuleEvaluationResult executeAction(
+            RuleAction action,
+            RuleEvaluationContext context,
+            RuleEvaluationResult result) throws ActionExecutionException, ActionRegistrationException, ProductFetchException {
+        validateActionParameters(action, context, result);
+
+        log.debug("Executing action: {}", action);
+
+        try {
+            switch (action.getActionType()) {
+                case SET_PRICE:
+                    executeSetPrice(action, context, result);
+                    break;
+                case DISCOUNT_PERCENTAGE:
+                    executeDiscountPercentage(action, context, result);
+                    break;
+                case DISCOUNT_AMOUNT:
+                    executeDiscountAmount(action, context, result);
+                    break;
+                case MATCH_COMPETITOR_PRICE:
+                    executeMatchCompetitor(action, context, result);
+                    break;
+                case SET_MARGIN:
+                    executeSetMargin(action, context, result);
+                    break;
+                case BEAT_COMPETITOR:
+                    executeBeatCompetitor(action, context, result);
+                    break;
+                case BUNDLE_DISCOUNT:
+                    executeBundleDiscount(action, context, result);
+                    break;
+                case QUANTITY_DISCOUNT:
+                    executeQuantityDiscount(action, context, result);
+                    break;
+                case CUSTOM:
+                    executeCustomAction(action, context, result);
+                    break;
+                default:
+                    throw new ActionExecutionException("Unsupported action type: " + action.getActionType());
             }
-            if (context == null) {
-                throw new ActionExecutionException("Context cannot be null");
-            }
-            if (result == null) {
-                throw new ActionExecutionException("Result cannot be null");
-            }
-            
-            log.debug("Executing action: {}", action);
-            
-            try {
-                switch (action.getActionType()) {
-                    case SET_PRICE:
-                        executeSetPrice(action, context, result);
-                        break;
-                    case DISCOUNT_PERCENTAGE:
-                        executeDiscountPercentage(action, context, result);
-                        break;
-                    case DISCOUNT_AMOUNT:
-                        executeDiscountAmount(action, context, result);
-                        break;
-                    case MATCH_COMPETITOR_PRICE:
-                        executeMatchCompetitor(action, context, result);
-                        break;
-                    case SET_MARGIN:
-                        executeSetMargin(action, context, result);
-                        break;
-                    case BEAT_COMPETITOR:
-                        executeBeatCompetitor(action, context, result);
-                        break;
-                    case BUNDLE_DISCOUNT:
-                        executeBundleDiscount(action, context, result);
-                        break;
-                    case QUANTITY_DISCOUNT:
-                        executeQuantityDiscount(action, context, result);
-                        break;
-                    case CUSTOM:
-                        executeCustomAction(action, context, result);
-                        break;
-                    default:
-                        throw new ActionExecutionException("Unsupported action type: " + action.getActionType());
-                }
-                
-                validateResult(result);
-                log.debug("Action execution completed successfully: {}", result);
-                
-            } catch (Exception e) {
-                log.error("Error executing action {}: {}", action.getActionType(), e.getMessage(), e);
-                throw new ActionExecutionException("Failed to execute action: " + action.getActionType(), e);
-            }
-            
-            return result;
+        } catch (Exception e) {
+            log.error("Error executing action {}: {}", action, e.getMessage(), e);
+            throw new ActionExecutionException("Failed to execute action: " + action.getActionType(), e);
         }
 
-        private ActionParameters parseParameters(JsonNode parameters) throws ActionExecutionException {
+        validateResult(result);
+        log.debug("Action execution completed successfully: {}", result);
+
+        return result;
+    }
+
+    private void validateActionParameters(RuleAction action, RuleEvaluationContext context, RuleEvaluationResult result)
+            throws ActionExecutionException {
+        if (action == null) {
+            throw new ActionExecutionException("Action cannot be null");
+        }
+        if (context == null) {
+            throw new ActionExecutionException("Context cannot be null");
+        }
+        if (result == null) {
+            throw new ActionExecutionException("Result cannot be null");
+        }
+
+        if (action.getParameters() == null || action.getParameters().isEmpty()) {
+            log.warn("Action {} has no parameters", action.getActionType());
+        }
+    }
+
+    private ActionParameters parseParameters(JsonNode parameters) throws ActionExecutionException {
         try {
             return objectMapper.treeToValue(parameters, ActionParameters.class);
         } catch (JsonProcessingException e) {
@@ -138,16 +144,16 @@ public class ActionExecutorServiceImpl implements ActionExecutorService {
     }
 
     private void executeSetPrice(
-        RuleAction action,
-        RuleEvaluationContext context,
-        RuleEvaluationResult result) throws ActionExecutionException {
-    ActionParameters params = parseParameters(action.getParameters());
-    String priceValue = params.getValue();
-    BigDecimal newPrice = priceValue != null ? new BigDecimal(priceValue) : null;
-    if (newPrice == null) {
-        throw new ActionExecutionException("Price parameter cannot be null for SET_PRICE action");
-    }
-    result.setAdjustedPrice(newPrice.setScale(PRICE_SCALE, RoundingMode.HALF_UP));
+            RuleAction action,
+            RuleEvaluationContext context,
+            RuleEvaluationResult result) throws ActionExecutionException {
+        ActionParameters params = parseParameters(action.getParameters());
+        String priceValue = params.getValue();
+        BigDecimal newPrice = priceValue != null ? new BigDecimal(priceValue) : null;
+        if (newPrice == null) {
+            throw new ActionExecutionException("Price parameter cannot be null for SET_PRICE action");
+        }
+        result.setAdjustedPrice(newPrice.setScale(PRICE_SCALE, RoundingMode.HALF_UP));
     }
 
     private void executeDiscountPercentage(
@@ -242,19 +248,19 @@ public class ActionExecutorServiceImpl implements ActionExecutorService {
     }
 
     private void executeQuantityDiscount(
-        RuleAction action,
-        RuleEvaluationContext context,
-        RuleEvaluationResult result) throws ActionExecutionException {
+            RuleAction action,
+            RuleEvaluationContext context,
+            RuleEvaluationResult result) throws ActionExecutionException {
         try {
             ActionParameters params = parseParameters(action.getParameters());
-            
+
             // Validate params
             if (params == null) {
                 throw new IllegalArgumentException("Action parameters cannot be null");
             }
-            
+
             Integer quantity = context.getQuantity();
-            
+
             // Safely parse minimum quantity with default value
             Integer minimumQuantity = 0;
             if (params.getMinQuantity() != null) {
@@ -265,25 +271,25 @@ public class ActionExecutorServiceImpl implements ActionExecutorService {
                     log.warn("Invalid minimum quantity: {}. Using default of 0.", params.getMinQuantity());
                 }
             }
-            
+
             if (quantity == null) {
                 log.warn("Quantity is null. Skipping quantity discount.");
                 return;
             }
-            
+
             if (quantity >= minimumQuantity) {
                 BigDecimal discountPercentage = calculateTieredDiscount(
                         quantity,
                         minimumQuantity,
                         params.getBaseDiscount(),
                         params.getTierIncrement());
-                
+
                 BigDecimal currentPrice = result.getAdjustedPrice();
                 if (currentPrice == null) {
                     log.warn("Current price is null. Skipping quantity discount.");
                     return;
                 }
-                
+
                 BigDecimal discountAmount = currentPrice.multiply(discountPercentage)
                         .divide(HUNDRED, PRICE_SCALE, RoundingMode.HALF_UP);
                 result.setAdjustedPrice(currentPrice.subtract(discountAmount));

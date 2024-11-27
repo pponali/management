@@ -9,11 +9,12 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 
+import com.scaler.price.core.management.domain.AuditInfo;
 import com.scaler.price.rule.domain.RuleType;
 
 @MappedSuperclass
 @NoArgsConstructor
-public abstract class RuleConstraints {
+public abstract class RuleConstraints extends AuditInfo{
     
     @Column(name = "minimum_price")
     private BigDecimal minimumPrice;

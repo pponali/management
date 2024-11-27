@@ -43,4 +43,11 @@ public class RuleEvaluationContext {
     public void setTimePeriod(String timePeriod) {
         this.timePeriod = timePeriod;
     }
+
+    public void setParameters(Map<String, Object> parameters) {
+        if (this.attributes == null) {
+            this.attributes = new ConcurrentHashMap<>();
+        }
+        this.attributes.putAll(parameters);
+    }
 }

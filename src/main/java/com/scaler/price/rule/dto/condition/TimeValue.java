@@ -1,17 +1,22 @@
 package com.scaler.price.rule.dto.condition;
 
 import com.scaler.price.rule.dto.TimeRestrictions;
+
+import jakarta.annotation.Generated;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.DayOfWeek;
 import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
 
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor

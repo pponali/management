@@ -1,5 +1,6 @@
 package com.scaler.price.rule.config;
 
+import com.scaler.price.core.management.domain.Configuration;
 import com.scaler.price.core.management.repository.ConfigurationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -126,11 +127,24 @@ public class ConfigurationService {
         return getIntegerConfigurationValue("max.rule.hierarchy.depth", 5);
     }
 
+    // Rule Duration Configuration
+    public int getMaxRuleDurationDays() {
+        return getIntegerConfigurationValue("max.rule.duration.days", 365);
+    }
+
     public int getBusinessHourStart() {
         return 0;
     }
 
     public int getBusinessHourEnd() {
         return 0;
+    }
+
+    public int getMaxRulesPerSeller() {
+        return getIntegerConfigurationValue("max.rules.per.seller", 100);
+    }
+
+    public int getMaxRulesPerSite() {
+        return getIntegerConfigurationValue("max.rules.per.site", 500);
     }
 }

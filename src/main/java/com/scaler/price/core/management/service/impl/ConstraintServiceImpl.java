@@ -414,14 +414,14 @@ public class ConstraintServiceImpl implements ConstraintService {
             existing.setMaxMarginPercentage(constraints.getMaxMarginPercentage());
             existing.setTargetMarginPercentage(constraints.getTargetMarginPercentage());
             existing.setLastModifiedBy(constraints.getLastModifiedBy());
-            existing.setLastModifiedDate(constraints.getLastModifiedDate());
+            existing.setUpdatedAt(constraints.getUpdatedAt());
             savedConstraints = marginConstraintsRepository.save(existing);
 
             auditEventPublisher.publishRuleModifiedEvent(
                     null,
                     constraints.getLastModifiedBy(),
                     Map.of("type", "MARGIN_CONSTRAINTS_UPDATE",
-                            "categoryId", constraints.getCategoryId().toString())
+                            "categoryId", constraints.getId().toString())
             );
         } else {
             // Create new constraints
@@ -434,7 +434,7 @@ public class ConstraintServiceImpl implements ConstraintService {
         }
 
         log.info("Successfully set margin constraints for category {}: {}",
-                constraints.getCategoryId(), savedConstraints);
+                constraints.getId(), savedConstraints);
         return savedConstraints;
     }
 
@@ -452,7 +452,7 @@ public class ConstraintServiceImpl implements ConstraintService {
         // Check if constraints already exist for the category
 
         Optional<PriceConstraints> existingConstraints =
-                priceConstraintsRepository.findByCategoryId(constraints.getCategoryId());
+                priceConstraintsRepository.findByCategoryId(constraints.getId());
 
         PriceConstraints savedConstraints;
         if (existingConstraints.isPresent()) {
@@ -462,15 +462,15 @@ public class ConstraintServiceImpl implements ConstraintService {
             existing.setMaxPrice(constraints.getMaxPrice());
             existing.setMinDiscountPercentage(constraints.getMinDiscountPercentage());
             existing.setMaxDiscountPercentage(constraints.getMaxDiscountPercentage());
-            existing.setLastModifiedBy(constraints.getLastModifiedBy());
-            existing.setLastModifiedDate(constraints.getLastModifiedDate());
+            existing.setLastModifiedBy(constraints.getUpdatedBy());
+            existing.setUpdatedAt(constraints.getUpdatedAt());
             savedConstraints = priceConstraintsRepository.save(existing);
 
             auditEventPublisher.publishRuleModifiedEvent(
                     null,
-                    constraints.getLastModifiedBy(),
+                    constraints.getUpdatedBy(),
                     Map.of("type", "PRICE_CONSTRAINTS_UPDATE",
-                            "categoryId", constraints.getCategoryId().toString())
+                            "categoryId", constraints.getId().toString())
             );
         } else {
             // Create new constraints
@@ -478,12 +478,12 @@ public class ConstraintServiceImpl implements ConstraintService {
 
             auditEventPublisher.publishRuleCreatedEvent(
                     null,
-                    constraints.getLastModifiedBy()
+                    constraints.getUpdatedBy()
             );
         }
 
         log.info("Successfully set price constraints for category {}: {}",
-                constraints.getCategoryId(), savedConstraints);
+                constraints.getId(), savedConstraints);
         return savedConstraints;
     }
 
@@ -509,13 +509,13 @@ public class ConstraintServiceImpl implements ConstraintService {
             existing.setMinDuration(constraints.getMinDuration());
             existing.setMaxDuration(constraints.getMaxDuration());
             existing.setBlackoutPeriods(constraints.getBlackoutPeriods());
-            existing.setLastModifiedBy(constraints.getLastModifiedBy());
+            existing.setUpdatedAt(constraints.getUpdatedAt());
             existing.setLastModifiedDate(constraints.getLastModifiedDate());
             savedConstraints = timeConstraintsRepository.save(existing);
 
             auditEventPublisher.publishRuleModifiedEvent(
                     null,
-                    constraints.getLastModifiedBy(),
+                    constraints.getUpdatedBy(),
                     Map.of("type", "TIME_CONSTRAINTS_UPDATE",
                             "categoryId", constraints.getCategoryId().toString())
             );
@@ -525,7 +525,7 @@ public class ConstraintServiceImpl implements ConstraintService {
 
             auditEventPublisher.publishRuleCreatedEvent(
                     null,
-                    constraints.getLastModifiedBy()
+                    constraints.getUpdatedBy()
             );
         }
 
@@ -536,7 +536,7 @@ public class ConstraintServiceImpl implements ConstraintService {
 
     @Override
     @Transactional(readOnly = true)
-    public CategoryAttributes getCategoryConstraints(Long categoryId) {
+    public CategoryAttributes getCategoryConstraints(String categoryId) {
         log.debug("Retrieving category constraints for categoryId: {}", categoryId);
 
         if (categoryId == null) {
@@ -592,7 +592,7 @@ public class ConstraintServiceImpl implements ConstraintService {
             violations.add("Price constraints cannot be null");
             return;
         }
-        if (constraints.getCategoryId() == null) {
+        if (constraints.getId() == null) {
             violations.add("Category ID cannot be null");
         }
         if (constraints.getMinPrice() != null &&
@@ -602,7 +602,7 @@ public class ConstraintServiceImpl implements ConstraintService {
         }
         if (constraints.getMinDiscountPercentage() != null &&
                 constraints.getMaxDiscountPercentage() != null &&
-                constraints.getMinDiscountPercentage() > constraints.getMaxDiscountPercentage()) {
+                constraints.getMinDiscountPercentage().compareTo(constraints.getMaxDiscountPercentage()) > 0 ) {
             violations.add("Minimum discount percentage cannot be greater than maximum discount percentage");
         }
     }

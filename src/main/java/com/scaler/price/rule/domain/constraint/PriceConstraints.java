@@ -48,6 +48,12 @@ public class PriceConstraints extends RuleConstraints{
     @Column(name = "allow_price_increase")
     private Boolean allowPriceIncrease = true;
     
+    @Column(name = "minimum_price", precision = 10, scale = 2)
+    private BigDecimal minimumPrice;
+
+    @Column(name = "maximum_price", precision = 10, scale = 2)
+    private BigDecimal maximumPrice;
+    
     @ElementCollection
     @CollectionTable(name = "price_constraint_excluded_categories",
             joinColumns = @JoinColumn(name = "price_constraint_id"))
@@ -103,6 +109,8 @@ public class PriceConstraints extends RuleConstraints{
         this.categorySpecificLimits = categorySpecificLimits != null ? categorySpecificLimits : new HashMap<>();
         this.priceThresholds = priceThresholds != null ? priceThresholds : new ArrayList<>();
         this.regionalAdjustments = regionalAdjustments != null ? regionalAdjustments : new HashMap<>();
+        this.minimumPrice = minimumPrice;
+        this.maximumPrice = maximumPrice;
     }
     
     @Embeddable
@@ -195,5 +203,9 @@ public class PriceConstraints extends RuleConstraints{
             case ROUND_TO_NEAREST -> RoundingMode.HALF_UP;
             default -> RoundingMode.HALF_UP;
         };
+    }
+
+    public BigDecimal getMinPrice() {
+        return minimumPrice;
     }
 }

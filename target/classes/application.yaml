@@ -1,0 +1,104 @@
+spring:
+  application:
+    name: price-management-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/price_management
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: true
+  
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: price-management-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+file:
+  upload-dir: ${FILE_UPLOAD_DIR:/data/uploads}
+  error-dir: ${FILE_ERROR_DIR:/data/errors}
+  retention-days: 30
+
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /api
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    root: INFO
+    com.scaler.price: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# Swagger OpenAPI Properties
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: method
+    enabled: true
+  packages-to-scan: com.scaler.price
+  paths-to-match: /api/**
+
+# Server URLs
+openapi:
+  dev-url: http://localhost:8080
+  prod-url: https://api.scaler.com
+
+# Default Configuration Values
+price:
+  margin:
+    default: 0.15
+    minimum: 0.05
+    maximum: 0.50
+  constraints:
+    minimum-price: 0.01
+    maximum-price: 999999.99
+  category:
+    max-name-length: 255
+    max-depth: 5
+    max-site-mappings: 100
+    max-custom-attributes: 50
+    max-attribute-value-length: 1000
+    max-validation-rules: 20
+    max-tags: 10
+  rules:
+    max-per-category: 50
+    max-actions: 10
+    max-conditions: 5
+
+app:
+  config:
+    default-site-id: DEFAULT
+    cache:
+      ttl: 3600
+    retry:
+      max-attempts: 3
+      initial-interval: 1000
+      multiplier: 2.0

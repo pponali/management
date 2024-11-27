@@ -846,4 +846,6 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
 
         return new ArrayList<>(rulesWithConfigs.values());
     }
+
+    List<PricingRule> findRulesBySite(String siteIdStr);
 }

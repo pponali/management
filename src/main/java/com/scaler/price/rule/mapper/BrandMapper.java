@@ -4,6 +4,8 @@ import com.scaler.price.rule.domain.Brand;
 import com.scaler.price.rule.domain.constraint.CategoryConstraints;
 import com.scaler.price.rule.dto.BrandDTO;
 import com.scaler.price.rule.repository.CategoryRepository;
+
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -35,7 +37,7 @@ public class BrandMapper {
                 .contactPhone(brand.getContactPhone())
                 .websiteUrl(brand.getWebsiteUrl())
                 .categoryIds(mapToStringIds(brand.getCategories().stream()
-                        .map(CategoryConstraints::getId)
+                        .map(CategoryConstraints::getCategoryId)
                         .collect(Collectors.toSet())))
                 .createdAt(brand.getCreatedAt())
                 .updatedAt(brand.getUpdatedAt())
@@ -68,31 +70,35 @@ public class BrandMapper {
     }
 
     private Set<CategoryConstraints> mapToCategories(Set<String> categoryIds) {
-        if (categoryIds == null || categoryIds.isEmpty()) {
-            return Collections.emptySet();
-        }
-
-        return categoryIds.stream()
-                .map(id -> {
-                    try {
-                        return categoryRepository.findById(Long.parseLong(id))
-                                .orElseThrow(() -> new EntityNotFoundException(
-                                        String.format("Category not found with id: %s", id)));
-                    } catch (NumberFormatException e) {
-                        log.error("Invalid category id format: {}", id);
-                        throw new IllegalArgumentException("Invalid category id format: " + id);
-                    }
-                })
-                .collect(Collectors.toSet());
+            if (categoryIds == null || categoryIds.isEmpty()) {
+                return Collections.emptySet();
+            }
+        
+            return categoryIds.stream()
+            .map(this::convertToCategoryConstraint)
+            .collect(Collectors.toSet());
     }
+    
 
-    private Set<String> mapToStringIds(Set<Long> ids) {
+
+    // Add this overloaded method to handle Set<String>
+    private Set<String> mapToStringIds(Set<String> ids) {
         if (ids == null || ids.isEmpty()) {
             return Collections.emptySet();
         }
-        return ids.stream()
-                .map(String::valueOf)
-                .collect(Collectors.toSet());
+        return ids;
+    }
+
+    private CategoryConstraints convertToCategoryConstraint(Object input) {
+        if (input instanceof String) {
+            String categoryId = (String) input;
+            return categoryRepository.findById(categoryId)
+                    .orElseThrow(() -> new EntityNotFoundException("Category not found with ID: " + categoryId));
+        } else if (input instanceof CategoryConstraints) {
+            return (CategoryConstraints) input;
+        } else {
+            throw new IllegalArgumentException("Input must be either a category ID or a CategoryConstraints object");
+        }
     }
 
     public void updateEntityFromDTO(BrandDTO dto, Brand brand) {
@@ -110,9 +116,7 @@ public class BrandMapper {
 
         if (dto.getCategoryIds() != null) {
             Set<CategoryConstraints> categories = dto.getCategoryIds().stream()
-                    .map(categoryRepository::findById)
-                    .filter(java.util.Optional::isPresent)
-                    .map(java.util.Optional::get)
+                    .map((String categoryId) -> convertToCategoryConstraint(categoryId))
                     .collect(Collectors.toSet());
             brand.setCategories(categories);
         } else {

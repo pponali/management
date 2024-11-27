@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -33,20 +34,6 @@ public class CategoryAttributes {
     @Builder.Default
     private Map<String, ValidationRule> validationRules = new HashMap<>();
 
-    public MarginConstraints getMarginConstraints() {
-        return MarginConstraints.builder()
-                .categoryMargins(priceAttributes.values().stream()
-                        .map(priceAttribute -> MarginConstraints.CategoryMargin.builder()
-                                .minMargin(priceAttribute.getMinimumMargin())
-                                .maxMargin(priceAttribute.getMaximumMargin())
-                                .targetMargin(priceAttribute.getMinimumMargin())
-                                .enforceStrict(priceAttribute.getEnforceMinPrice())
-                                .excludedProducts(priceAttribute.getExcludedProducts())
-                                .additionalRules(new HashMap<>())
-                                .build())
-                        .collect(HashMap::new, (m, v) -> m.put(v.getCategoryId(), v), HashMap::putAll))
-                .build();
-    }
 
     @Data
     @Builder

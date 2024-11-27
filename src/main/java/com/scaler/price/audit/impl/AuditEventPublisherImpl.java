@@ -198,11 +198,15 @@ public class AuditEventPublisherImpl implements AuditEventPublisher {
     private void publishAndPersistEvent(Map<String, Object> eventData) {
         try {
             // Create and persist audit event
-            AuditEntry auditEvent = AuditEvent.builder()
+            AuditEntry auditEvent = AuditEntry.builder()
                     .eventType(AuditEventType.valueOf((String) eventData.get("eventType")))
                     .timestamp(Instant.now())
                     .userId((String) eventData.get("userId"))
                     .eventData(objectMapper.writeValueAsString(eventData))
+                    .source((String) eventData.get("source"))
+                    .comment("Auto-generated audit event")  // Add a default comment
+                    .createdAt(Instant.now())
+                    .updatedAt(Instant.now())
                     .build();
             
             auditEventRepository.save(auditEvent);

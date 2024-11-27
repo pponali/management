@@ -1,5 +1,6 @@
 package com.scaler.price.audit.domain;
 
+import com.scaler.price.core.management.domain.AuditInfo;
 import com.scaler.price.rule.domain.AuditAction;
 import com.scaler.price.rule.domain.ChangeDiff;
 import com.scaler.price.rule.domain.RuleType;
@@ -9,7 +10,10 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import org.hibernate.annotations.Type;
 
 import java.time.Instant;
@@ -19,16 +23,14 @@ import java.util.Map;
 
 @Entity
 @Table(name = "rule_audit_log")
-@Data
+@Setter
+@Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "Audit Event Model")
-public class AuditEntry {
-    @Schema(description = "Audit Event ID", example = "1")
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class AuditEntry extends AuditInfo{
+
     
     @Schema(description = "Rule ID", example = "1")
     @Column(nullable = false)
@@ -93,21 +95,6 @@ public class AuditEntry {
 
     private String correlationId;
 
-    @Column(nullable = false)
-    private Instant createdAt;
 
-    @Column(nullable = false)
-    private Instant updatedAt;
 
-    @PrePersist
-    protected void onCreate() {
-        Instant now = Instant.now();
-        createdAt = now;
-        updatedAt = now;
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = Instant.now();
-    }
 }

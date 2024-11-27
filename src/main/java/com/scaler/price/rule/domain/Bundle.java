@@ -1,5 +1,6 @@
 package com.scaler.price.rule.domain;
 
+import com.scaler.price.core.management.domain.AuditInfo;
 import com.scaler.price.rule.exceptions.ProductFetchException;
 import com.scaler.price.rule.repository.ProductRepository;
 import jakarta.persistence.*;
@@ -20,11 +21,7 @@ import java.util.Set;
 @Slf4j
 @NoArgsConstructor
 @Table(name = "bundles")
-public class Bundle {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Bundle extends AuditInfo{
 
     @Column(nullable = false)
     private String name;
@@ -69,7 +66,7 @@ public class Bundle {
         this.products = products;
     }
 
-    public Collection<String> getProductIds() throws ProductFetchException {
+    public Set<String> getProductIds() throws ProductFetchException {
         Set<String> productIds = new HashSet<>();
         try {
             List<Product> products = productRepository.findAll();
@@ -82,4 +79,6 @@ public class Bundle {
         }
         return productIds;
     }
+
+
 }

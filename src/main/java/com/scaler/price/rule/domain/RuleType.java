@@ -10,5 +10,5 @@ public enum RuleType {
     SELLER,
     PRODUCT,
     BUNDLE,
-    TIME_BASED
+    TIME_BASED, DISCOUNT
 }

@@ -1,17 +1,25 @@
 package com.scaler.price.rule.dto;
 
+import jakarta.persistence.Column;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.validator.constraints.URL;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class BrandDTO {
-    private Long id;
+    private String  id;
 
     @NotBlank(message = "Brand name is required")
     @Size(min = 2, max = 100, message = "Brand name must be between 2 and 100 characters")
@@ -35,5 +43,9 @@ public class BrandDTO {
     @URL(message = "Invalid website URL")
     private String websiteUrl;
 
-    private Set<Long> categoryIds;
+    private Set<String> categoryIds;
+
+    private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
 }

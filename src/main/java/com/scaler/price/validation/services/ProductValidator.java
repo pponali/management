@@ -126,14 +126,18 @@ public class ProductValidator {
         }
     }
 
-    public void validateProductUpdate(Product existingProduct, Product updatedProduct) throws ProductValidationException, RuleValidationException {
+    public void validateProductUpdate(Object proposedProduct, Product existingProduct) throws ProductValidationException, RuleValidationException {
+        Product updatedProduct = (proposedProduct instanceof ProductDTO) 
+            ? productMapper.toEntity((ProductDTO) proposedProduct) 
+            : (Product) proposedProduct;
+        
         validateProduct(updatedProduct);
-
+    
         // Additional update-specific validations
         if (!existingProduct.getId().equals(updatedProduct.getId())) {
             throw new ProductValidationException("Product ID cannot be changed");
         }
-
+    
         // Validate version for optimistic locking
         if (updatedProduct.getVersion() == null ||
                 !updatedProduct.getVersion().equals(existingProduct.getVersion())) {

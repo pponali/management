@@ -1,5 +1,6 @@
 package com.scaler.price.rule.domain.constraint;
 
+import com.scaler.price.core.management.domain.AuditInfo;
 import com.scaler.price.rule.domain.PriceAdjustment;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
@@ -18,7 +19,7 @@ import java.util.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TimeConstraints {
+public class TimeConstraints extends RuleConstraints{
 
     public enum BlackoutType {
         HOLIDAY,

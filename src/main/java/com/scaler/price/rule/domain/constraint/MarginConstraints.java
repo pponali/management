@@ -323,4 +323,10 @@ public class MarginConstraints extends RuleConstraints {
     public BigDecimal getTargetMarginPercentage() {
         return targetMargin;
     }
+
+
+    public void setTargetMarginPercentage(BigDecimal targetMarginPercentage) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'setTargetMarginPercentage'");
+    }
 }

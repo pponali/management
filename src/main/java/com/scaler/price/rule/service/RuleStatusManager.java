@@ -1,5 +1,6 @@
 package com.scaler.price.rule.service;
 
+import com.scaler.price.audit.exception.AuditSearchException;
 import com.scaler.price.audit.service.AuditService;
 import com.scaler.price.rule.service.NotificationService;
 import com.scaler.price.rule.domain.PricingRule;
@@ -81,6 +82,7 @@ public class RuleStatusManager {
     private final AuditService auditService;
     private final NotificationService notificationService;
 
+    
     public void validateStatusTransition(RuleStatus currentStatus, RuleStatus newStatus) throws InvalidStatusTransitionException {
         if (currentStatus == newStatus) {
             return;
@@ -102,13 +104,19 @@ public class RuleStatusManager {
         rule.setStatus(newStatus);
         rule.getAuditInfo().setLastModifiedAt(LocalDateTime.now());
 
-        // Record status change in audit
-        auditService.logStatusChange(
-                rule.getId(),
-                oldStatus,
-                newStatus,
-                reason
-        );
+        try {
+            // Record status change in audit
+            auditService.logStatusChange(
+                    rule.getId(),
+                    oldStatus,
+                    newStatus,
+                    reason
+            );
+        } catch (AuditSearchException e) {
+            // Log the error and potentially rethrow as a runtime exception
+            log.error("Failed to log status change for rule: {}", rule.getId(), e);
+            throw new RuntimeException("Audit logging failed", e);
+        }
 
         // Send notifications
         notifyStatusChange(rule, oldStatus, newStatus, reason);

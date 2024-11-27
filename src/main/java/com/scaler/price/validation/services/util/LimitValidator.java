@@ -1,7 +1,16 @@
 package com.scaler.price.validation.services.util;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scaler.price.rule.config.ConfigurationService;
+import com.scaler.price.rule.domain.ActionType;
+import com.scaler.price.rule.domain.DiscountAction;
+import com.scaler.price.rule.domain.DiscountType;
 import com.scaler.price.rule.domain.PricingRule;
+import com.scaler.price.rule.domain.RuleAction;
 import com.scaler.price.rule.domain.SellerLimits;
 import com.scaler.price.rule.domain.SiteLimits;
 import com.scaler.price.rule.exceptions.RuleValidationException;
@@ -16,8 +25,9 @@ public class LimitValidator {
     private final RuleRepository ruleRepository;
     private final SellerService sellerService;
     private final SiteService siteService;
+    private final ObjectMapper objectMapper;
 
-    public void validate(PricingRule rule) {
+    public void validate(PricingRule rule) throws RuleValidationException, JsonProcessingException, IllegalArgumentException {
         validateAgainstSystemLimits(rule);
 
         for (String sellerId : rule.getSellerIds()) {
@@ -52,7 +62,7 @@ public class LimitValidator {
         }
     }
 
-    private void validateAgainstSellerLimits(PricingRule rule, String sellerId) throws RuleValidationException {
+    private void validateAgainstSellerLimits(PricingRule rule, String sellerId) throws RuleValidationException, JsonProcessingException, IllegalArgumentException {
         SellerLimits limits = sellerService.getSellerLimits(sellerId);
 
         if (limits.getMaxRules() > 0) {
@@ -69,7 +79,7 @@ public class LimitValidator {
         }
     }
 
-    private void validateAgainstSiteLimits(PricingRule rule, String siteId) throws RuleValidationException {
+    private void validateAgainstSiteLimits(PricingRule rule, String siteId) throws RuleValidationException, JsonProcessingException, IllegalArgumentException {
         SiteLimits limits = siteService.getSiteLimits(siteId);
 
         if (limits.getMaxRules() > 0) {
@@ -84,5 +94,37 @@ public class LimitValidator {
         if (limits.getMaxDiscount() != null) {
             validateDiscountAgainstLimit(rule, limits.getMaxDiscount());
         }
+    }
+
+    private void validateDiscountAgainstLimit(PricingRule rule, BigDecimal maxDiscount) throws RuleValidationException, JsonProcessingException, IllegalArgumentException {
+        for (RuleAction action : rule.getActions()) {
+            if (action.getActionType() == ActionType.APPLY_DISCOUNT) {
+                DiscountAction discountAction = objectMapper.treeToValue(action.getParameters(), DiscountAction.class);
+                BigDecimal discountValue = discountAction.getDiscountValue();
+                
+                if (discountAction.getDiscountType() == DiscountType.PERCENTAGE) {
+                    if (discountValue.compareTo(maxDiscount) > 0) {
+                        throw new RuleValidationException("Discount percentage " + discountValue + 
+                            " exceeds maximum allowed discount of " + maxDiscount + "%");
+                    }
+                } else if (discountAction.getDiscountType() == DiscountType.FIXED_AMOUNT) {
+                    // For fixed amounts, convert to percentage based on current price
+                    if (discountAction.getCurrentPrice() != null && discountAction.getCurrentPrice().compareTo(BigDecimal.ZERO) > 0) {
+                        BigDecimal percentageDiscount = discountValue
+                            .divide(discountAction.getCurrentPrice(), 2, RoundingMode.HALF_UP)
+                            .multiply(BigDecimal.valueOf(100));
+                        if (percentageDiscount.compareTo(maxDiscount) > 0) {
+                            throw new RuleValidationException("Fixed discount amount " + discountValue +
+                                " exceeds maximum allowed discount of " + maxDiscount + "%");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void validateDiscountAction(PricingRule rule, BigDecimal maxDiscount) throws RuleValidationException, JsonProcessingException, IllegalArgumentException {
+        // Reuse the same validation logic since both methods serve the same purpose
+        validateDiscountAgainstLimit(rule, maxDiscount);
     }
 }

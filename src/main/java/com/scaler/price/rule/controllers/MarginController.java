@@ -3,6 +3,9 @@ package com.scaler.price.rule.controllers;
 
 import com.scaler.price.core.management.service.ConstraintService;
 import com.scaler.price.rule.domain.constraint.MarginConstraints;
+import com.scaler.price.rule.domain.constraint.RuleConstraints;
+import com.scaler.price.rule.dto.CategoryAttributes;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -25,11 +28,11 @@ public class MarginController {
         return ResponseEntity.ok(constraintService.setMarginConstraints(constraints));
     }
 
-    @Operation(summary = "Get margin constraints by category")
-    @GetMapping("/constraints/{categoryId}")
-    public ResponseEntity<MarginConstraints> getMarginConstraints(
+   @GetMapping("/constraints/{categoryId}")
+    public ResponseEntity<RuleConstraints> getMarginConstraints(
             @PathVariable Long categoryId) {
-        return ResponseEntity.ok(constraintService.getCategoryConstraints(categoryId)
-                .getMarginConstraints());
+        CategoryAttributes categoryAttributes = constraintService.getCategoryConstraints(categoryId);
+        RuleConstraints marginConstraints = categoryAttributes.getMarginConstraints();
+        return ResponseEntity.ok(marginConstraints);
     }
 }
