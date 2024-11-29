@@ -63,8 +63,8 @@ public class BundleController {
     @Operation(summary = "Check bundle eligibility")
     @GetMapping("/{bundleId}/eligibility")
     public ResponseEntity<BundleEligibility> checkEligibility(
-            @PathVariable String bundleId,
-            @RequestParam String productId,
+            @PathVariable Long bundleId,
+            @RequestParam Long productId,
             @RequestParam(required = false) Map<String, Object> attributes) {
         try {
             return ResponseEntity.ok(bundleService.checkEligibility(bundleId, productId, attributes));
@@ -78,15 +78,15 @@ public class BundleController {
     @Operation(summary = "Calculate bundle discount")
     @GetMapping("/{bundleId}/discount")
     public ResponseEntity<BigDecimal> getBundleDiscount(
-            @PathVariable String bundleId,
-            @RequestParam String productId) {
+            @PathVariable Long bundleId,
+            @RequestParam Long productId) {
         return ResponseEntity.ok(bundleService.getBundleDiscount(bundleId, productId));
     }
 
     @Operation(summary = "Get active bundles for a product")
     @GetMapping("/product/{productId}")
     public ResponseEntity<List<Bundle>> getBundlesForProduct(
-            @PathVariable String productId) {
+            @PathVariable Long productId) {
         return ResponseEntity.ok(bundleService.getBundlesForProduct(productId));
     }
 }

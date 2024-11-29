@@ -14,7 +14,7 @@ public class BundleEligibility {
     private BigDecimal originalPrice;
     private BigDecimal discountAmount;
     private BigDecimal marginPercentage;
-    private String bundleId;
+    private Long bundleId;
     private Instant validUntil;
     private String ineligibilityReason;
     private int itemCount;

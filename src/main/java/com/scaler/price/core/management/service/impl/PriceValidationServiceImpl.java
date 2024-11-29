@@ -30,7 +30,7 @@ public class PriceValidationServiceImpl implements PriceValidationService {
     }
 
     private void validateBasicFields(PriceDTO priceDTO) throws PriceValidationException {
-        if (priceDTO.getProductId() == null || priceDTO.getProductId().trim().isEmpty()) {
+        if (priceDTO.getProductId() == null) {
             throw new PriceValidationException("Product ID is required");
         }
 

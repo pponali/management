@@ -5,6 +5,7 @@ import com.scaler.price.core.management.domain.AuditInfo;
 import com.scaler.price.rule.domain.constraint.CategoryConstraints;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -15,7 +16,7 @@ import java.util.Set;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@SuperBuilder
 @EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
 public class Brand extends AuditInfo {
 

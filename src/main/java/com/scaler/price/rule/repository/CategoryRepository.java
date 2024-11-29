@@ -11,13 +11,13 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface CategoryRepository extends JpaRepository<CategoryConstraints, String> {
+public interface CategoryRepository extends JpaRepository<CategoryConstraints, Long> {
 
-    Optional<CategoryConstraints> findByCategoryId(String categoryId);
+    Optional<CategoryConstraints> findByCategoryId(Long categoryId);
 
-    List<CategoryConstraints> findByParentCategoryId(String parentCategoryId);
+    List<CategoryConstraints> findByParentCategoryId(Long parentCategoryId);
 
-    List<CategoryConstraints> findBySiteIdsContaining(String siteId);
+    List<CategoryConstraints> findBySiteIdsContaining(Long siteId);
 
     @Query("""
         SELECT c FROM Category c

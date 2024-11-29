@@ -25,8 +25,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Service
 @Slf4j
+@Service
 @RequiredArgsConstructor
 public class ProductService {
     private final ProductRepository productRepository;
@@ -52,7 +52,7 @@ public class ProductService {
     }
 
     @Transactional
-    public ProductDTO updateProduct(String productId, ProductDTO productDTO) throws RuleValidationException, ProductValidationException {
+    public ProductDTO updateProduct(Long productId, ProductDTO productDTO) throws RuleValidationException, ProductValidationException {
         log.info("Updating product: {}", productId);
 
         Product existingProduct = getProductEntity(productId);
@@ -69,13 +69,13 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     @Cacheable(value = "productCache", key = "#productId")
-    public ProductDTO getProduct(String productId) {
+    public ProductDTO getProduct(Long productId) {
         log.debug("Fetching product: {}", productId);
         return productMapper.toDTO(getProductEntity(productId));
     }
 
     @Transactional(readOnly = true)
-    public List<ProductDTO> getProductsBySeller(String sellerId) {
+    public List<ProductDTO> getProductsBySeller(Long sellerId) {
         log.debug("Fetching products for seller: {}", sellerId);
         return productRepository.findActiveProductsBySeller(sellerId)
                 .stream()
@@ -85,7 +85,7 @@ public class ProductService {
 
 
     @Transactional(readOnly = true)
-    public List<ProductDTO> getProductsBySite(String siteId) {
+    public List<ProductDTO> getProductsBySite(Long siteId) {
         log.debug("Fetching products for site: {}", siteId);
         return productRepository.findActiveProductsBySite(siteId)
                 .stream()
@@ -94,7 +94,7 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProductDTO> getProductsByCategory(String categoryId) {
+    public List<ProductDTO> getProductsByCategory(Long categoryId) {
         log.debug("Fetching products for category: {}", categoryId);
         return productRepository.findActiveProductsByCategory(categoryId)
                 .stream()
@@ -104,7 +104,7 @@ public class ProductService {
 
     @Transactional
     public ProductDTO updateProductStatus(
-            String productId,
+            Long productId,
             ProductStatus status) {
         log.info("Updating status for product: {} to {}", productId, status);
 
@@ -120,8 +120,8 @@ public class ProductService {
 
     @Transactional
     public ProductDTO updateProductSites(
-            String productId,
-            Set<String> siteIds) {
+            Long productId,
+            Set<Long> siteIds) {
         log.info("Updating sites for product: {}", productId);
 
         Product product = getProductEntity(productId);
@@ -149,7 +149,7 @@ public class ProductService {
 
     @Transactional
     public ProductDTO updateProductPrices(
-            String productId,
+            Long productId,
             Map<String, Object> priceUpdate) throws ProductValidationException {
         log.info("Updating prices for product: {}", productId);
 
@@ -174,7 +174,7 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public boolean isProductActive(String productId) {
+    public boolean isProductActive(Long productId) {
         return productRepository.existsByProductIdAndStatus(
                 productId,
                 ProductStatus.ACTIVE
@@ -182,7 +182,7 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public Set<String> validateProducts(Set<String> productIds) {
+    public Set<Long> validateProducts(Set<Long> productIds) {
         List<Product> activeProducts = productRepository.findActiveProductsByIds(productIds);
         return activeProducts.stream()
                 .map(Product::getId)
@@ -190,12 +190,12 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public boolean existsById(String productId) {
+    public boolean existsById(Long productId) {
         return productRepository.existsById(productId);
     }
 
     @Transactional(readOnly = true)
-    public int getAvailableQuantity(String productId) {
+    public int getAvailableQuantity(Long productId) {
         Product product = productRepository.findById(productId)
             .orElseThrow(() -> new ProductNotFoundException("Product not found with ID: " + productId));
         
@@ -205,7 +205,7 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public Set<String> getProductCategories(String productId) {
+    public Set<Long> getProductCategories(Long productId) {
         Optional<Product> productOptional = productRepository.findById(productId);
         
         if (productOptional.isEmpty()) {
@@ -216,7 +216,7 @@ public class ProductService {
         return product.getCategoryId() != null ? Set.of(product.getCategoryId()) : new HashSet<>();
     }
 
-    private Product getProductEntity(String productId) {
+    private Product getProductEntity(Long productId) {
         return productRepository.findById(productId)
                 .orElseThrow(() -> new ProductNotFoundException(
                         "Product not found: " + productId

@@ -1,24 +1,16 @@
 package com.scaler.price.core.management.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Embeddable;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.persistence.*;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 
-import org.springframework.data.annotation.Id;
-
-import io.swagger.v3.oas.annotations.media.Schema;
-
 @Embeddable
-@Data
+@Setter
+@Getter
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 public class AuditInfo {
@@ -55,7 +47,7 @@ public class AuditInfo {
         this.updatedAt = updatedAt;
     }
 
-        @PrePersist
+    @PrePersist
     protected void onCreate() {
         LocalDateTime now = LocalDateTime.now();
         createdAt = now;

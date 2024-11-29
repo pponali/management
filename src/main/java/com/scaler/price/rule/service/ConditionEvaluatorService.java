@@ -79,7 +79,7 @@ public class ConditionEvaluatorService {
     }
 
     private boolean evaluateBrandMatch(RuleCondition condition, RuleEvaluationContext context) {
-        String brandId = context.getBrandId();
+        Long brandId = context.getBrandId();
         if (brandId == null) {
             return false;
         }
@@ -95,7 +95,7 @@ public class ConditionEvaluatorService {
     }
 
     private boolean evaluateCategoryMatch(RuleCondition condition, RuleEvaluationContext context) {
-        String contextCategoryId = context.getCategoryId();
+        Long contextCategoryId = context.getCategoryId();
         
         if (contextCategoryId == null) {
             return false;
@@ -114,7 +114,7 @@ public class ConditionEvaluatorService {
     }
 
     private boolean evaluateCategoryAttribute(RuleCondition condition, RuleEvaluationContext context) {
-        String categoryId = context.getCategoryId();
+        Long categoryId = context.getCategoryId();
         if (categoryId == null) {
             return false;
         }
@@ -219,7 +219,7 @@ public class ConditionEvaluatorService {
         if (competitorPrice == null) {
             competitorPrice = competitorPriceService.getCompetitorPrice(
                     context.getProductId(),
-                    condition.getValue() // competitor identifier
+                    Long.parseLong(condition.getValue()) // competitor identifier
             );
             context.addToCache("competitorPrice", competitorPrice);
         }

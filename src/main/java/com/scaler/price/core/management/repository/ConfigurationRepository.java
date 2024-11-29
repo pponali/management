@@ -13,7 +13,7 @@ import java.util.Optional;
 @Repository
 public interface ConfigurationRepository extends JpaRepository<Configuration, Long> {
 
-    Optional<Configuration> findByKeyAndSiteId(String key, String siteId);
+    Optional<Configuration> findByKeyAndSiteId(String key, Long siteId);
 
     Optional<Configuration> findByKeyAndSiteIdAndIsActive(
             String key,
@@ -21,7 +21,7 @@ public interface ConfigurationRepository extends JpaRepository<Configuration, Lo
             Boolean isActive
     );
 
-    List<Configuration> findBySiteId(String siteId);
+    List<Configuration> findBySiteId(Long siteId);
 
     List<Configuration> findByType(Configuration.ConfigType type);
 
@@ -31,7 +31,7 @@ public interface ConfigurationRepository extends JpaRepository<Configuration, Lo
         AND (c.siteId = :siteId OR c.siteId IS NULL)
         ORDER BY c.siteId NULLS LAST
         """)
-    List<Configuration> findActiveConfigurations(@Param("siteId") String siteId);
+    List<Configuration> findActiveConfigurations(@Param("siteId") Long siteId);
 
     @Query("""
         SELECT c FROM Configuration c
@@ -42,7 +42,7 @@ public interface ConfigurationRepository extends JpaRepository<Configuration, Lo
         """)
     List<Configuration> findByKeyPattern(
             @Param("keyPattern") String keyPattern,
-            @Param("siteId") String siteId
+            @Param("siteId") Long siteId
     );
 
     @Query("""
@@ -55,7 +55,7 @@ public interface ConfigurationRepository extends JpaRepository<Configuration, Lo
         """)
     List<Configuration> findConfigurationsWithMetadata(
             @Param("type") Configuration.ConfigType type,
-            @Param("siteId") String siteId
+            @Param("siteId") Long siteId
     );
 
     @Modifying
@@ -69,7 +69,7 @@ public interface ConfigurationRepository extends JpaRepository<Configuration, Lo
     int updateConfigurationValue(
             @Param("key") String key,
             @Param("value") String value,
-            @Param("siteId") String siteId
+            @Param("siteId") Long siteId
     );
 
     @Query(value = """

@@ -18,7 +18,7 @@ import java.util.Objects;
 public class CategoryService {
     private final CategoryRepository categoryRepository;
 
-    public boolean isValidCategory(String categoryId) {
+    public boolean isValidCategory(Long categoryId) {
         return categoryRepository.existsById(categoryId);
     }
 
@@ -26,7 +26,7 @@ public class CategoryService {
     private final CategoryValidator categoryValidator;
 
     @Transactional(readOnly = true)
-    public CategoryConstraints getCategory(String categoryId) {
+    public CategoryConstraints getCategory(Long categoryId) {
         return categoryRepository.findByCategoryId(categoryId)
                 .orElseThrow(() -> new CategoryNotFoundException(
                         "Category not found: " + categoryId
@@ -41,7 +41,7 @@ public class CategoryService {
     }
 
     @Transactional
-    public CategoryConstraints updateCategory(String categoryId, CategoryConstraints updatedCategory) {
+    public CategoryConstraints updateCategory(Long categoryId, CategoryConstraints updatedCategory) {
         CategoryConstraints existingCategory = getCategory(categoryId);
         categoryValidator.validateCategoryUpdate(existingCategory, updatedCategory);
         updateCategoryFields(existingCategory, updatedCategory);

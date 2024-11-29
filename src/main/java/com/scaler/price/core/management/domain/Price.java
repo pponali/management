@@ -2,6 +2,8 @@ package com.scaler.price.core.management.domain;
 
 import lombok.Data;
 import jakarta.persistence.*;
+import lombok.experimental.SuperBuilder;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -14,10 +16,8 @@ import java.time.LocalDateTime;
         }
 )
 @Data
-public class Price {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+@SuperBuilder
+public class Price extends AuditInfo{
 
     @Column(name = "product_id", nullable = false)
     private String productId;

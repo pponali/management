@@ -98,7 +98,7 @@ public class ConfigurationService {
 
     @CacheEvict(key = "#key + '_' + #siteId")
     @Transactional
-    public void setValue(String key, String value, String siteId) {
+    public void setValue(String key, String value, Long siteId) {
         try {
             Configuration config = configRepository
                     .findByKeyAndSiteId(key, siteId)
@@ -135,7 +135,7 @@ public class ConfigurationService {
     
 
     @Transactional(readOnly = true)
-    public Map<String, String> getAllConfigurations(String siteId) {
+    public Map<String, String> getAllConfigurations(Long siteId) {
         return configRepository.findActiveConfigurations(siteId)
                 .stream()
                 .collect(Collectors.toMap(

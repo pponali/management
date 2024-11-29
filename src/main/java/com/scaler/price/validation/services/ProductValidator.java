@@ -1,7 +1,5 @@
 package com.scaler.price.validation.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scaler.price.rule.domain.Product;
 import com.scaler.price.rule.dto.ProductDTO;
 import com.scaler.price.rule.exceptions.ProductValidationException;
@@ -48,14 +46,8 @@ public class ProductValidator {
             throw new ProductValidationException("Product cannot be null");
         }
 
-        if (StringUtils.isBlank(product.getId())) {
+        if (product.getId() == null) {
             throw new ProductValidationException("Product ID is required");
-        }
-
-        if (!product.getId().matches(PRODUCT_ID_PATTERN)) {
-            throw new ProductValidationException(
-                    "Product ID must be 2-50 characters long and contain only letters, numbers, underscores, and hyphens"
-            );
         }
 
         if (StringUtils.isBlank(product.getDisplayName())) {
@@ -91,20 +83,20 @@ public class ProductValidator {
         }
     }
 
-    private void validateSiteIds(Set<String> siteIds) throws ProductValidationException {
+    private void validateSiteIds(Set<Long> siteIds) throws ProductValidationException {
         if (siteIds == null || siteIds.isEmpty()) {
             throw new ProductValidationException("At least one site ID is required");
         }
 
-        for (String siteId : siteIds) {
+        for (Long siteId : siteIds) {
             if (!siteService.isValidSite(siteId)) {
                 throw new ProductValidationException("Invalid site ID: " + siteId);
             }
         }
     }
 
-    private void validateSeller(String sellerId) throws ProductValidationException {
-        if (StringUtils.isBlank(sellerId)) {
+    private void validateSeller(Long sellerId) throws ProductValidationException {
+        if (sellerId == null) {
             throw new ProductValidationException("Seller ID is required");
         }
 
@@ -145,27 +137,27 @@ public class ProductValidator {
         }
     }
 
-    public void validateProduct(String productId) throws RuleValidationException {
+    public void validateProduct(Long productId) throws RuleValidationException {
         validateProductExists(productId);
         validateProductStatus(productId);
         validateProductPricing(productId);
         validateProductCategories(productId);
     }
 
-    private void validateProductExists(String productId) throws RuleValidationException {
+    private void validateProductExists(Long productId) throws RuleValidationException {
         if (!productService.existsById(productId)) {
             throw new RuleValidationException("Product not found: " + productId);
         }
     }
 
-    private void validateProductStatus(String productId) throws RuleValidationException {
+    private void validateProductStatus(Long productId) throws RuleValidationException {
         ProductDTO product = productService.getProduct(productId);
         if (!product.isActive()) {
             throw new RuleValidationException("Product is not active: " + productId);
         }
     }
 
-    private void validateProductPricing(String productId) throws RuleValidationException {
+    private void validateProductPricing(Long productId) throws RuleValidationException {
         ProductDTO product = productService.getProduct(productId);
 
         // Validate base price
@@ -216,26 +208,26 @@ public class ProductValidator {
                 .divide(costPrice, 2, BigDecimal.ROUND_HALF_UP);
     }
 
-    private void validateProductCategories(String productId) throws RuleValidationException {
-        Set<String> categories = productService.getProductCategories(productId);
+    private void validateProductCategories(Long productId) throws RuleValidationException {
+        Set<Long> categories = productService.getProductCategories(productId);
 
         if (categories == null || categories.isEmpty()) {
             throw new RuleValidationException("Product must belong to at least one category: " + productId);
         }
 
         // Validate each category exists and is active
-        for (String categoryId : categories) {
+        for (Long categoryId : categories) {
             validateCategory(categoryId);
         }
     }
 
-    private void validateCategory(String categoryId) throws RuleValidationException {
+    private void validateCategory(Long categoryId) throws RuleValidationException {
         if (!categoryService.isValidCategory(categoryId)) {
             throw new RuleValidationException("Invalid category: " + categoryId);
         }
     }
 
-    public void validateProductCompatibility(String productId, Set<String> requiredAttributes)
+    public void validateProductCompatibility(Long productId, Set<String> requiredAttributes)
             throws RuleValidationException {
         ProductDTO product = productService.getProduct(productId);
 
@@ -249,7 +241,7 @@ public class ProductValidator {
         }
     }
 
-    public void validateProductAvailability(String productId, int requiredQuantity)
+    public void validateProductAvailability(Long productId, int requiredQuantity)
             throws RuleValidationException {
         int availableQuantity = productService.getAvailableQuantity(productId);
 

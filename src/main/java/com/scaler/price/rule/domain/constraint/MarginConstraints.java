@@ -1,15 +1,10 @@
 package com.scaler.price.rule.domain.constraint;
 
-import com.scaler.price.core.management.domain.AuditInfo;
 import com.scaler.price.rule.domain.RuleType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -19,16 +14,25 @@ import java.util.*;
 
 @Entity
 @Table(name = "margin_constraints")
+@Getter
+@Setter
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper=false)
-@Getter
-@Setter
-@Builder
 public class MarginConstraints extends RuleConstraints {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+
+
+    @Column(name = "maximum_price")
+    private BigDecimal maximumPrice;
+
+    @Column(name = "minimum_margin")
+    private BigDecimal minimumMargin;
+
+
+    @Column(name = "maximum_margin")
+    private BigDecimal maximumMargin;
+
 
     @Column(name = "calculation_type", nullable = false)
     @Enumerated(EnumType.STRING)
@@ -55,9 +59,6 @@ public class MarginConstraints extends RuleConstraints {
     @Column(name = "max_margin_percentage", precision = 10, scale = 2)
     private BigDecimal maxMarginPercentage;
 
-    @Column(name = "last_modified_by")
-    private String lastModifiedBy;
-
     @Column(name = "site_id")
     private String siteId;
 
@@ -80,22 +81,6 @@ public class MarginConstraints extends RuleConstraints {
     @Column(name = "is_active")
     private boolean active;
 
-    @Embedded
-    private AuditInfo auditInfo;
-
-    @PrePersist
-    @PreUpdate
-    protected void onUpdate() {
-        if (auditInfo == null) {
-            auditInfo = new AuditInfo();
-        }
-        auditInfo.setUpdatedAt(LocalDateTime.now());
-        if (auditInfo.getCreatedAt() == null) {
-            auditInfo.setCreatedAt(auditInfo.getUpdatedAt());
-        }
-    }
-
-
     public MarginConstraints(Long id, MarginCalculationType calculationType,
                            BigDecimal defaultMargin, BigDecimal minMarginOverride,
                            BigDecimal maxMarginOverride, Boolean enforceMinMargin,
@@ -106,9 +91,9 @@ public class MarginConstraints extends RuleConstraints {
                            BigDecimal maximumMargin, LocalDateTime effectiveFrom,
                            LocalDateTime effectiveTo, Boolean isActive,
                            Integer priority, RuleType ruleType,
-                           Instant startDate, Instant endDate, String siteId, BigDecimal minMargin, BigDecimal maxMargin, BigDecimal targetMargin, boolean active, AuditInfo auditInfo) {
+                           Instant startDate, Instant endDate, String siteId, BigDecimal minMargin, BigDecimal maxMargin, BigDecimal targetMargin, boolean active) {
                         
-        this.id = id;
+        this.setId(id);
         this.calculationType = calculationType;
         this.defaultMargin = defaultMargin;
         this.minMarginOverride = minMarginOverride;
@@ -117,14 +102,23 @@ public class MarginConstraints extends RuleConstraints {
         this.enforceMaxMargin = enforceMaxMargin;
         this.minMarginPercentage = minMarginPercentage;
         this.maxMarginPercentage = maxMarginPercentage;
-        this.lastModifiedBy = lastModifiedBy;
-        this.siteId = siteId;
+        this.setLastModifiedBy(lastModifiedBy);
+        this.setMinimumPrice(minimumPrice);
+        this.setMaximumPrice(maximumPrice);
+        this.setMinimumMargin(minimumMargin);
+        this.setMaximumMargin(maximumMargin);
+        this.setEffectiveFrom(effectiveFrom);
+        this.setEffectiveTo(effectiveTo);
+        this.setActive(isActive);
+        this.setPriority(priority);
         this.ruleType = ruleType;
+        this.setStartDate(startDate);
+        this.setEndDate(endDate);
+        this.siteId = siteId;
         this.minMargin = minMargin;
         this.maxMargin = maxMargin;
         this.targetMargin = targetMargin;
         this.active = active;
-        this.auditInfo = auditInfo;
     }
 
     public BigDecimal calculateMargin(BigDecimal basePrice, BigDecimal costPrice) {
@@ -183,6 +177,8 @@ public class MarginConstraints extends RuleConstraints {
     @Embeddable
     @NoArgsConstructor
     @AllArgsConstructor
+    @Getter
+    @Setter
     public static class CategoryMargin {
         @Column(name = "category_id")
         private String categoryId;
@@ -199,39 +195,13 @@ public class MarginConstraints extends RuleConstraints {
         private Set<String> excludedProducts;
         @Column(name = "additional_rules")
         private Map<String, Object> additionalRules;
-
-        public String getCategoryId() {
-            return categoryId;
-        }
-
-        public BigDecimal getMinMargin() {
-            return minMargin;
-        }
-
-        public BigDecimal getMaxMargin() {
-            return maxMargin;
-        }
-
-        public BigDecimal getTargetMargin() {
-            return targetMargin;
-        }
-
-        public Boolean getEnforceStrict() {
-            return enforceStrict;
-        }
-
-        public Set<String> getExcludedProducts() {
-            return excludedProducts;
-        }
-
-        public Map<String, Object> getAdditionalRules() {
-            return additionalRules;
-        }
     }
 
     @Embeddable
     @NoArgsConstructor
     @AllArgsConstructor
+    @Getter
+    @Setter
     public static class MarginTier {
         @Column(name = "from_price")
         private BigDecimal fromPrice;
@@ -245,35 +215,13 @@ public class MarginConstraints extends RuleConstraints {
         private TierType tierType;
         @Column(name = "conditions")
         private Map<String, Object> conditions;
-
-        public BigDecimal getFromPrice() {
-            return fromPrice;
-        }
-
-        public BigDecimal getToPrice() {
-            return toPrice;
-        }
-
-        public BigDecimal getMarginPercentage() {
-            return marginPercentage;
-        }
-
-        public String getApplicabilityRule() {
-            return applicabilityRule;
-        }
-
-        public TierType getTierType() {
-            return tierType;
-        }
-
-        public Map<String, Object> getConditions() {
-            return conditions;
-        }
     }
 
     @Embeddable
     @NoArgsConstructor
     @AllArgsConstructor
+    @Getter
+    @Setter
     public static class SellerMargin {
         @Column(name = "seller_id")
         private String sellerId;
@@ -286,26 +234,6 @@ public class MarginConstraints extends RuleConstraints {
         private Boolean overrideGlobal;
         @Column(name = "validation_behavior")
         private ValidationBehavior validationBehavior;
-
-        public String getSellerId() {
-            return sellerId;
-        }
-
-        public BigDecimal getDefaultMargin() {
-            return defaultMargin;
-        }
-
-        public Map<String, BigDecimal> getCategoryMargins() {
-            return categoryMargins;
-        }
-
-        public Boolean getOverrideGlobal() {
-            return overrideGlobal;
-        }
-
-        public ValidationBehavior getValidationBehavior() {
-            return validationBehavior;
-        }
     }
 
     public enum TierType {

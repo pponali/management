@@ -12,14 +12,14 @@ import java.util.List;
 import java.util.Set;
 
 @Repository
-public interface ProductRepository extends JpaRepository<Product, String> {
+public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query("""
         SELECT p FROM Product p
         WHERE p.sellerId = :sellerId
         AND p.status = 'ACTIVE'
         """)
-    List<Product> findActiveProductsBySeller(String sellerId);
+    List<Product> findActiveProductsBySeller(Long sellerId);
 
     @Query("""
         SELECT p FROM Product p
@@ -27,14 +27,14 @@ public interface ProductRepository extends JpaRepository<Product, String> {
         WHERE s = :siteId
         AND p.status = 'ACTIVE'
         """)
-    List<Product> findActiveProductsBySite(String siteId);
+    List<Product> findActiveProductsBySite(Long siteId);
 
     @Query("""
         SELECT p FROM Product p
         WHERE p.categoryId = :categoryId
         AND p.status = 'ACTIVE'
         """)
-    List<Product> findActiveProductsByCategory(String categoryId);
+    List<Product> findActiveProductsByCategory(Long categoryId);
 
     @Query("""
         SELECT DISTINCT p FROM Product p
@@ -53,7 +53,7 @@ public interface ProductRepository extends JpaRepository<Product, String> {
         WHERE p.productId IN :productIds
         AND p.status = 'ACTIVE'
         """)
-    List<Product> findActiveProductsByIds(Set<String> productIds);
+    List<Product> findActiveProductsByIds(Set<Long> productIds);
 
-    boolean existsByProductIdAndStatus(String productId, ProductStatus active);
+    boolean existsByProductIdAndStatus(Long productId, ProductStatus active);
 }

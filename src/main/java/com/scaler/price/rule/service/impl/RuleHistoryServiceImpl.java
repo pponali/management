@@ -121,7 +121,7 @@ public class RuleHistoryServiceImpl implements RuleHistoryService {
 
         PricingRule restoredRule = oldVersion.get();
         restoredRule.setLastModifiedBy(userId);
-        restoredRule.setLastModifiedDate(LocalDateTime.now());
+        restoredRule.setLastModifiedAt(LocalDateTime.now());
         
         PricingRule savedRule = ruleRepository.save(restoredRule);
         recordRuleChange(savedRule, "RESTORE", userId, 

@@ -1,13 +1,15 @@
 package com.scaler.price.rule.domain.constraint;
 
-import com.scaler.price.core.management.domain.AuditInfo;
 import com.scaler.price.rule.domain.PriceAdjustment;
+import com.scaler.price.rule.domain.constraint.TimeConstraints.SpecialTimeWindow;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
+
 import org.hibernate.annotations.Type;
 
 import java.math.BigDecimal;
@@ -15,8 +17,7 @@ import java.time.*;
 import java.util.*;
 
 @Embeddable
-@Data
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 public class TimeConstraints extends RuleConstraints{
@@ -49,11 +50,16 @@ public class TimeConstraints extends RuleConstraints{
     @Builder.Default
     private Set<DayOfWeek> allowedDays = new HashSet<>();
 
-    @Column
-    private LocalTime startTime;
+    @ElementCollection
+    @CollectionTable(name = "special_time_windows")
+    @Builder.Default
+    private Map<String, SpecialTimeWindow> specialWindows = new HashMap<>();
 
     @Column
-    private LocalTime endTime;
+    private LocalTime mainStartTime;
+
+    @Column
+    private LocalTime mainEndTime;
 
     @Column
     private String timezoneId;
@@ -68,7 +74,7 @@ public class TimeConstraints extends RuleConstraints{
     private String maxDuration;
 
     @Column
-    private String categoryId;
+    private Long categoryId;
 
     @Column
     private Date lastModifiedDate;
@@ -77,11 +83,6 @@ public class TimeConstraints extends RuleConstraints{
     @CollectionTable(name = "blackout_periods")
     @Builder.Default
     private List<BlackoutPeriod> blackoutPeriods = new ArrayList<>();
-
-    @ElementCollection
-    @CollectionTable(name = "special_time_windows")
-    @Builder.Default
-    private Map<String, SpecialTimeWindow> specialWindows = new HashMap<>();
 
     @ElementCollection
     @CollectionTable(name = "time_slots")
@@ -108,6 +109,16 @@ public class TimeConstraints extends RuleConstraints{
         
         @ElementCollection
         private Set<String> applicableCategories;
+
+        // New field to track days of the week
+        @ElementCollection
+        @Enumerated(EnumType.STRING)
+        private Set<DayOfWeek> applicableDays;
+
+        public Set<DayOfWeek> getDaysOfWeek() {
+            return this.applicableDays != null ? this.applicableDays : Collections.emptySet();
+        }
+
     }
 
     @Embeddable
@@ -153,6 +164,18 @@ public class TimeConstraints extends RuleConstraints{
         private SlotStatus status;
     }
 
+    public Set<DayOfWeek> getAllowedDays() {
+        return this.allowedDays != null ? this.allowedDays : Collections.emptySet();
+    }
+
+    public List<BlackoutPeriod> getBlackoutPeriods() {
+        return this.blackoutPeriods != null ? this.blackoutPeriods : Collections.emptyList();
+    }
+
+    public void setBlackoutPeriods(List<BlackoutPeriod> blackoutPeriods) {
+        this.blackoutPeriods = blackoutPeriods != null ? blackoutPeriods : new ArrayList<>();
+    }
+
     public boolean isTimeWithinConstraints(LocalDateTime dateTime) {
         try {
             if (allowedDays != null && !allowedDays.contains(dateTime.getDayOfWeek())) {
@@ -160,12 +183,12 @@ public class TimeConstraints extends RuleConstraints{
             }
 
             LocalTime time = dateTime.toLocalTime();
-            if (startTime != null && endTime != null) {
-                if (startTime.isBefore(endTime)) {
-                    return !time.isBefore(startTime) && !time.isAfter(endTime);
+            if (mainStartTime != null && mainEndTime != null) {
+                if (mainStartTime.isBefore(mainEndTime)) {
+                    return !time.isBefore(mainStartTime) && !time.isAfter(mainEndTime);
                 } else {
                     // Handle overnight time ranges
-                    return !time.isBefore(startTime) || !time.isAfter(endTime);
+                    return !time.isBefore(mainStartTime) || !time.isAfter(mainEndTime);
                 }
             }
 
@@ -221,5 +244,45 @@ public class TimeConstraints extends RuleConstraints{
                 slot.getApplicableDays().contains(dateTime.getDayOfWeek()) &&
                 !dateTime.toLocalTime().isBefore(slot.getStartTime()) &&
                 !dateTime.toLocalTime().isAfter(slot.getEndTime());
+    }
+
+    public LocalTime getMainStartTime() {
+        return this.mainStartTime;
+    }
+
+    public LocalTime getMainEndTime() {
+        return this.mainEndTime;
+    }
+
+    public void setMainStartTime(LocalTime startTime) {
+        this.mainStartTime = startTime;
+    }
+
+    public void setMainEndTime(LocalTime endTime) {
+        this.mainEndTime = endTime;
+    }
+
+    public Map<String, SpecialTimeWindow> getSpecialWindows() {
+        return specialWindows;
+    }
+
+    public String getMinDuration() {
+        return this.minDuration;
+    }
+
+    public void setMinDuration(String minDuration) {
+        this.minDuration = minDuration;
+    }
+
+    public String getMaxDuration() {
+        return this.maxDuration;
+    }
+
+    public void setMaxDuration(String maxDuration) {
+        this.maxDuration = maxDuration;
+    }
+
+    public Long getCategoryId() {
+        return this.categoryId;
     }
 }

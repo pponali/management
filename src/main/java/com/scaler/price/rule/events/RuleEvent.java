@@ -21,8 +21,8 @@ public class RuleEvent {
     private Long ruleId;
     private String ruleName;
     private RuleType ruleType;
-    private Set<String> sellerIds;
-    private Set<String> siteIds;
+    private Set<Long> sellerIds;
+    private Set<Long> siteIds;
     private Long version;
     private LocalDateTime effectiveFrom;
     private LocalDateTime effectiveTo;

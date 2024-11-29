@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.scaler.price.core.management.domain.AuditInfo;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 import org.hibernate.annotations.Type;
 
@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @Table(name = "rule_history")
 @Setter
 @Getter
-@Builder
+@SuperBuilder
 public class RuleHistory extends AuditInfo {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

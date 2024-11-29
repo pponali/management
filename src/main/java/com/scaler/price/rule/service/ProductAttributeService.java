@@ -63,8 +63,8 @@ public class ProductAttributeService {
 
     @Transactional
     public ProductAttribute updateAttribute(
-            String productId,
-            String attributeKey,
+            Long productId,
+            Long attributeKey,
             ProductAttribute updatedAttribute) throws AttributeValidationException {
 
         log.info("Updating attribute for product: {} key: {}",
@@ -89,7 +89,7 @@ public class ProductAttributeService {
 
     @Transactional(readOnly = true)
     @Cacheable(value = "productAttributes", key = "#productId")
-    public Map<String, Object> getAttributes(String productId) {
+    public Map<Long, Object> getAttributes(String productId) {
         log.debug("Fetching attributes for product: {}", productId);
 
         List<ProductAttribute> attributes = attributeRepository
@@ -99,9 +99,9 @@ public class ProductAttributeService {
     }
 
     @Transactional(readOnly = true)
-    public Map<String, Object> getAttributesByCategory(
-            String productId,
-            String category) {
+    public Map<Long, Object> getAttributesByCategory(
+            Long productId,
+            Long category) {
 
         log.debug("Fetching {} attributes for product: {}",
                 category, productId);
@@ -114,7 +114,7 @@ public class ProductAttributeService {
 
     @Transactional
     @CacheEvict(value = "productAttributes", key = "#productId")
-    public void deleteAttribute(String productId, String attributeKey) throws AttributeValidationException {
+    public void deleteAttribute(Long productId, Long attributeKey) throws AttributeValidationException {
         log.info("Deleting attribute for product: {} key: {}",
                 productId, attributeKey);
 
@@ -126,8 +126,8 @@ public class ProductAttributeService {
 
     @Transactional
     public void bulkUpdateAttributes(
-            String productId,
-            Map<String, Object> attributes) throws AttributeValidationException {
+            Long productId,
+            Map<Long, Object> attributes) throws AttributeValidationException {
 
         log.info("Bulk updating attributes for product: {}", productId);
 
@@ -140,7 +140,7 @@ public class ProductAttributeService {
 
         List<ProductAttribute> attributesToSave = new ArrayList<>();
 
-        for (Map.Entry<String, Object> entry : attributes.entrySet()) {
+        for (Map.Entry<Long, Object> entry : attributes.entrySet()) {
             ProductAttribute attribute = createAttributeFromEntry(
                     productId,
                     entry.getKey(),
@@ -156,13 +156,13 @@ public class ProductAttributeService {
     }
 
     @Transactional(readOnly = true)
-    public List<String> getFilterableAttributes(String category) {
+    public List<String> getFilterableAttributes(Long category) {
         return attributeRepository.findFilterableAttributesByCategory(category);
     }
 
     @Transactional(readOnly = true)
-    public Map<String, Object> getSpecificAttributes(
-            String productId,
+    public Map<Long, Object> getSpecificAttributes(
+            Long productId,
             Set<String> attributeKeys) {
 
         List<ProductAttribute> attributes = attributeRepository
@@ -172,8 +172,8 @@ public class ProductAttributeService {
     }
 
     private ProductAttribute getAttributeOrThrow(
-            String productId,
-            String attributeKey) throws AttributeValidationException {
+            Long productId,
+            Long attributeKey) throws AttributeValidationException {
 
         return attributeRepository
                 .findByProductIdAndAttributeKey(productId, attributeKey)
@@ -196,8 +196,8 @@ public class ProductAttributeService {
         existing.setUpdatedAt(LocalDateTime.now());
     }
 
-    private Map<String, Object> convertToMap(List<ProductAttribute> attributes) {
-        Map<String, Object> result = new HashMap<>();
+    private Map<Long, Object> convertToMap(List<ProductAttribute> attributes) {
+        Map<Long, Object> result = new HashMap<>();
 
         for (ProductAttribute attribute : attributes) {
             Object value = convertAttributeValue(
@@ -228,8 +228,8 @@ public class ProductAttributeService {
     }
 
     private ProductAttribute createAttributeFromEntry(
-            String productId,
-            String key,
+            Long productId,
+            Long key,
             Object value) throws AttributeValidationException {
 
         return ProductAttribute.builder()
@@ -271,7 +271,7 @@ public class ProductAttributeService {
         };
     }
 
-    public String getAttributeValue(String productId, String attribute) {
+    public String getAttributeValue(Long productId, Long attribute) {
         return attributeRepository.findByProductIdAndAttributeKey(productId, attribute)
                 .map(ProductAttribute::getAttributeValue)
                 .orElse(null);

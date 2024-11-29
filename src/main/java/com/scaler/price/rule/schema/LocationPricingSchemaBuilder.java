@@ -20,7 +20,7 @@ public class LocationPricingSchemaBuilder {
                 .parameters(buildParameterDefinitions())
                 .requiredParameters(buildRequiredParameters())
                 .dependencyRules(buildDependencyRules())
-                .dependencyRules(buildValidationRules())
+                .validationRules(buildValidationRules())
                 .build();
     }
 
@@ -49,7 +49,7 @@ public class LocationPricingSchemaBuilder {
                                                 .type("BOOLEAN")
                                                 .build()
                                 ))
-                                .required(List.of("adjustment"))
+                                .requiredProperties(List.of("adjustment"))
                                 .build()
                 ))
                 .build();
@@ -137,8 +137,6 @@ public class LocationPricingSchemaBuilder {
                 ))
                 .build();
     }
-
-    
 
     private List<String> buildRequiredParameters() {
         return Arrays.asList(
@@ -478,8 +476,36 @@ public class LocationPricingSchemaBuilder {
     }
 
     private ValidationRules buildSeasonSchema() {
+        return ValidationRules.builder()
+                .type("OBJECT")
+                .properties(Map.of(
+                        "name", ValidationRules.builder()
+                                .type("STRING")
+                                .minLength(1)
+                                .maxLength(50)
+                                .build(),
+                        "startDate", ValidationRules.builder()
+                                .type("STRING")
+                                .format("date")
+                                .build(),
+                        "endDate", ValidationRules.builder()
+                                .type("STRING")
+                                .format("date")
+                                .build(),
+                        "adjustment", ValidationRules.builder()
+                                .type("NUMBER")
+                                .minimum("-50")
+                                .maximum("50")
+                                .build(),
+                        "priority", ValidationRules.builder()
+                                .type("INTEGER")
+                                .minimum("1")
+                                .maximum("10")
+                                .build()
+                ))
+                .requiredProperties(List.of("name", "startDate", "endDate", "adjustment"))
+                .build();
     }
-
 
     private ValidationRules buildCompetitionFactorsSchema() {
         return ValidationRules.builder()
@@ -515,7 +541,7 @@ public class LocationPricingSchemaBuilder {
                 .build();
     }
 
-    private ValidationRules buildDemandFactorsSchema() {
+    private ValidationRules buildDetailedDemandFactorsSchema() {
         return ValidationRules.builder()
                 .type("OBJECT")
                 .properties(Map.of(
@@ -532,12 +558,7 @@ public class LocationPricingSchemaBuilder {
                                                 .minimum("0")
                                                 .maximum("1")
                                                 .build(),
-                                        "searchVolume", ValidationRules.builder()
-                                                .type("NUMBER")
-                                                .minimum("0")
-                                                .maximum("1")
-                                                .build(),
-                                        "cartAbandonment", ValidationRules.builder()
+                                        "currentDemand", ValidationRules.builder()
                                                 .type("NUMBER")
                                                 .minimum("0")
                                                 .maximum("1")
@@ -549,22 +570,13 @@ public class LocationPricingSchemaBuilder {
                                                 .build()
                                 ))
                                 .build(),
-                        "thresholds", ValidationRules.builder()
-                                .type("ARRAY")
-                                .itemSchema(buildThresholdSchema())
-                                .build(),
-                        "aggregationType", ValidationRules.builder()
+                        "strategy", ValidationRules.builder()
                                 .type("STRING")
-                                .enumValues(List.of("DAILY", "WEEKLY", "MONTHLY"))
-                                .build(),
-                        "smoothingFactor", ValidationRules.builder()
-                                .type("NUMBER")
-                                .minimum("0")
-                                .maximum("1")
+                                .enumValues(List.of("AGGRESSIVE", "CONSERVATIVE", "BALANCED"))
                                 .build()
                 ))
                 .required(true)
-                .requiredProperties(List.of("weight", "metrics", "thresholds"))
+                .requiredProperties(List.of("weight", "metrics", "strategy"))
                 .build();
     }
 
@@ -620,82 +632,409 @@ public class LocationPricingSchemaBuilder {
                 .requiredProperties(List.of("metric", "operator", "value"))
                 .build();
     }
-}
 
-// Example Configuration:
-/*
-{
-    "baseAdjustment": 5.0,
-    "zoneMappings": {
-        "ZONE_A": {
-            "adjustment": 10.0,
-            "priority": 1,
-            "active": true
-        },
-        "ZONE_B": {
-            "adjustment": 5.0,
-            "priority": 2,
-            "active": true
-        }
-    },
-    "locationFactors": {
-        "demand": {
-            "weight": 0.4,
-            "thresholds": [
-                {
-                    "level": "HIGH",
-                    "adjustment": 5.0,
-                    "minScore": 80
-                }
-            ],
-            "aggregationType": "DAILY"
-        },
-        "competition": {
-            "weight": 0.3,
-            "competitors": [
-                {
-                    "name": "COMPETITOR_A",
-                    "weight": 0.6,
-                    "maxDifference": 10.0
-                }
-            ],
-            "strategy": "BEAT_AVERAGE"
-        }
-    },
-    "geographicRules": [
-        {
-            "type": "CITY",
-            "value": "MUMBAI",
-            "adjustment": 8.0,
-            "conditions": {
-                "tier": "TIER_1",
-                "attributes": {
-                    "isMetro": true
-                }
-            }
-        }
-    ],
-    "priceBounds": {
-        "minimumPrice": 100.0,
-        "maximumPrice": 10000.0,
-        "minimumMargin": 15.0,
-        "roundingMethod": "NEAREST_10"
-    },
-    "timeRestrictions": {
-        "effectiveFrom": "2024-01-01T00:00:00Z",
-        "effectiveTo": "2024-12-31T23:59:59Z",
-        "timeWindows": [
-            {
-                "days": ["MONDAY", "TUESDAY"],
-                "startTime": "09:00",
-                "endTime": "18:00",
-                "adjustment": 2.0
-            }
-        ]
+    private ValidationRules buildSeasonalitySchema() {
+        return ValidationRules.builder()
+                .type("OBJECT")
+                .properties(Map.of(
+                        "peakSeasons", ValidationRules.builder()
+                                .type("ARRAY")
+                                .itemSchema(buildSeasonSchema())
+                                .build(),
+                        "offPeakAdjustment", ValidationRules.builder()
+                                .type("NUMBER")
+                                .minimum("-50")
+                                .maximum("50")
+                                .build(),
+                        "shoulderAdjustment", ValidationRules.builder()
+                                .type("NUMBER")
+                                .minimum("-50")
+                                .maximum("50")
+                                .build()
+                ))
+                .build();
+    }
+
+    private ValidationRules buildServiceAreaSchema() {
+        return ValidationRules.builder()
+                .type("OBJECT")
+                .properties(Map.of(
+                        "deliveryZones", ValidationRules.builder()
+                                .type("ARRAY")
+                                .itemSchema(buildDeliveryZoneSchema())
+                                .build(),
+                        "maxRadius", ValidationRules.builder()
+                                .type("NUMBER")
+                                .minimum("0")
+                                .build(),
+                        "restrictions", ValidationRules.builder()
+                                .type("ARRAY")
+                                .itemSchema(buildServiceRestrictionSchema())
+                                .build()
+                ))
+                .build();
+    }
+
+    private ValidationRules buildDeliveryZoneSchema() {
+        return ValidationRules.builder()
+                .type("OBJECT")
+                .properties(Map.of(
+                        "zoneId", ValidationRules.builder()
+                                .type("STRING")
+                                .pattern("^[A-Z0-9_]{2,30}$")
+                                .build(),
+                        "radiusKm", ValidationRules.builder()
+                                .type("NUMBER")
+                                .minimum("0")
+                                .build(),
+                        "deliveryFee", ValidationRules.builder()
+                                .type("NUMBER")
+                                .minimum("0")
+                                .build(),
+                        "minOrderValue", ValidationRules.builder()
+                                .type("NUMBER")
+                                .minimum("0")
+                                .build()
+                ))
+                .requiredProperties(List.of("zoneId", "radiusKm", "deliveryFee"))
+                .build();
+    }
+
+    private ValidationRules buildHolidaySchema() {
+        return ValidationRules.builder()
+                .type("OBJECT")
+                .properties(Map.of(
+                        "name", ValidationRules.builder()
+                                .type("STRING")
+                                .minLength(1)
+                                .maxLength(50)
+                                .build(),
+                        "date", ValidationRules.builder()
+                                .type("STRING")
+                                .format("date")
+                                .build(),
+                        "isRecurring", ValidationRules.builder()
+                                .type("BOOLEAN")
+                                .build(),
+                        "adjustment", ValidationRules.builder()
+                                .type("NUMBER")
+                                .minimum("-50")
+                                .maximum("50")
+                                .build()
+                ))
+                .requiredProperties(List.of("name", "date"))
+                .build();
+    }
+
+    private ValidationRules buildServiceRestrictionSchema() {
+        return ValidationRules.builder()
+                .type("OBJECT")
+                .properties(Map.of(
+                        "type", ValidationRules.builder()
+                                .type("STRING")
+                                .enumValues(List.of("WEATHER", "TRAFFIC", "EVENT", "MAINTENANCE"))
+                                .build(),
+                        "condition", ValidationRules.builder()
+                                .type("STRING")
+                                .maxLength(200)
+                                .build(),
+                        "impact", ValidationRules.builder()
+                                .type("STRING")
+                                .enumValues(List.of("NO_SERVICE", "LIMITED_SERVICE", "DELAYED_SERVICE"))
+                                .build(),
+                        "adjustment", ValidationRules.builder()
+                                .type("NUMBER")
+                                .minimum("-100")
+                                .maximum("100")
+                                .build()
+                ))
+                .requiredProperties(List.of("type", "impact"))
+                .build();
+    }
+
+    private ValidationRules buildGeographicFactorsSchema() {
+        return ValidationRules.builder()
+                .type("OBJECT")
+                .properties(Map.of(
+                        "accessibility", ValidationRules.builder()
+                                .type("NUMBER")
+                                .minimum("0")
+                                .maximum("100")
+                                .build(),
+                        "footTraffic", ValidationRules.builder()
+                                .type("NUMBER")
+                                .minimum("0")
+                                .maximum("100")
+                                .build(),
+                        "parkingAvailability", ValidationRules.builder()
+                                .type("NUMBER")
+                                .minimum("0")
+                                .maximum("100")
+                                .build(),
+                        "publicTransport", ValidationRules.builder()
+                                .type("OBJECT")
+                                .properties(Map.of(
+                                        "busStops", ValidationRules.builder()
+                                                .type("INTEGER")
+                                                .minimum("0")
+                                                .build(),
+                                        "trainStations", ValidationRules.builder()
+                                                .type("INTEGER")
+                                                .minimum("0")
+                                                .build(),
+                                        "distance", ValidationRules.builder()
+                                                .type("NUMBER")
+                                                .minimum("0")
+                                                .build()
+                                ))
+                                .build()
+                ))
+                .requiredProperties(List.of("accessibility", "footTraffic"))
+                .build();
+    }
+
+    private ValidationRules buildZoneAdjustmentFactorsSchema() {
+        return ValidationRules.builder()
+                .type("OBJECT")
+                .properties(Map.of(
+                        "baseAdjustment", ValidationRules.builder()
+                                .type("NUMBER")
+                                .minimum("-50")
+                                .maximum("50")
+                                .build(),
+                        "demandMultiplier", ValidationRules.builder()
+                                .type("NUMBER")
+                                .minimum("0.1")
+                                .maximum("10")
+                                .build(),
+                        "seasonalityImpact", ValidationRules.builder()
+                                .type("BOOLEAN")
+                                .build(),
+                        "competitionResponse", ValidationRules.builder()
+                                .type("STRING")
+                                .enumValues(List.of("AGGRESSIVE", "MODERATE", "PASSIVE"))
+                                .build()
+                ))
+                .requiredProperties(List.of("baseAdjustment"))
+                .build();
+    }
+
+    private ValidationRules buildDemandFactorsSchema() {
+        return ValidationRules.builder()
+                .type("OBJECT")
+                .properties(Map.of(
+                        "historicalDemand", ValidationRules.builder()
+                                .type("NUMBER")
+                                .minimum("0")
+                                .maximum("100")
+                                .build(),
+                        "forecastDemand", ValidationRules.builder()
+                                .type("NUMBER")
+                                .minimum("0")
+                                .maximum("100")
+                                .build(),
+                        "peakHourMultiplier", ValidationRules.builder()
+                                .type("NUMBER")
+                                .minimum("1")
+                                .maximum("5")
+                                .build(),
+                        "eventImpact", ValidationRules.builder()
+                                .type("OBJECT")
+                                .properties(Map.of(
+                                        "type", ValidationRules.builder()
+                                                .type("STRING")
+                                                .enumValues(List.of("SPORTS", "CONCERT", "FESTIVAL", "CONFERENCE"))
+                                                .build(),
+                                        "multiplier", ValidationRules.builder()
+                                                .type("NUMBER")
+                                                .minimum("1")
+                                                .maximum("5")
+                                                .build()
+                                ))
+                                .build()
+                ))
+                .requiredProperties(List.of("historicalDemand", "forecastDemand"))
+                .build();
+    }
+
+    private ValidationRules buildWeatherFactorsSchema() {
+        return ValidationRules.builder()
+                .type("OBJECT")
+                .properties(Map.of(
+                        "temperature", ValidationRules.builder()
+                                .type("OBJECT")
+                                .properties(Map.of(
+                                        "min", ValidationRules.builder()
+                                                .type("NUMBER")
+                                                .minimum("-50")
+                                                .maximum("50")
+                                                .build(),
+                                        "max", ValidationRules.builder()
+                                                .type("NUMBER")
+                                                .minimum("-50")
+                                                .maximum("50")
+                                                .build(),
+                                        "optimal", ValidationRules.builder()
+                                                .type("NUMBER")
+                                                .minimum("-50")
+                                                .maximum("50")
+                                                .build()
+                                ))
+                                .build(),
+                        "conditions", ValidationRules.builder()
+                                .type("ARRAY")
+                                .itemSchema(ValidationRules.builder()
+                                        .type("STRING")
+                                        .enumValues(List.of("SUNNY", "RAINY", "CLOUDY", "SNOWY", "STORMY"))
+                                        .build())
+                                .build(),
+                        "adjustments", ValidationRules.builder()
+                                .type("OBJECT")
+                                .properties(Map.of(
+                                        "rain", ValidationRules.builder()
+                                                .type("NUMBER")
+                                                .minimum("-50")
+                                                .maximum("50")
+                                                .build(),
+                                        "snow", ValidationRules.builder()
+                                                .type("NUMBER")
+                                                .minimum("-50")
+                                                .maximum("50")
+                                                .build(),
+                                        "extreme", ValidationRules.builder()
+                                                .type("NUMBER")
+                                                .minimum("-100")
+                                                .maximum("100")
+                                                .build()
+                                ))
+                                .build()
+                ))
+                .build();
+    }
+
+    private ValidationRules buildMarketSegmentSchema() {
+        return ValidationRules.builder()
+                .type("OBJECT")
+                .properties(Map.of(
+                        "segmentType", ValidationRules.builder()
+                                .type("STRING")
+                                .enumValues(List.of("PREMIUM", "STANDARD", "BUDGET", "CUSTOM"))
+                                .build(),
+                        "priceElasticity", ValidationRules.builder()
+                                .type("NUMBER")
+                                .minimum("0")
+                                .maximum("10")
+                                .build(),
+                        "customerProfile", buildCustomerProfileSchema(),
+                        "spendingPatterns", buildSpendingPatternsSchema()
+                ))
+                .requiredProperties(List.of("segmentType", "priceElasticity"))
+                .build();
+    }
+
+    private ValidationRules buildCustomerProfileSchema() {
+        return ValidationRules.builder()
+                .type("OBJECT")
+                .properties(Map.of(
+                        "ageGroup", ValidationRules.builder()
+                                .type("STRING")
+                                .enumValues(List.of("YOUTH", "ADULT", "SENIOR", "ALL"))
+                                .build(),
+                        "incomeLevel", ValidationRules.builder()
+                                .type("STRING")
+                                .enumValues(List.of("LOW", "MEDIUM", "HIGH"))
+                                .build(),
+                        "purchaseFrequency", ValidationRules.builder()
+                                .type("STRING")
+                                .enumValues(List.of("DAILY", "WEEKLY", "MONTHLY", "OCCASIONAL"))
+                                .build(),
+                        "loyaltyScore", ValidationRules.builder()
+                                .type("NUMBER")
+                                .minimum("0")
+                                .maximum("100")
+                                .build()
+                ))
+                .requiredProperties(List.of("ageGroup", "incomeLevel"))
+                .build();
+    }
+
+    private ValidationRules buildSpendingPatternsSchema() {
+        return ValidationRules.builder()
+                .type("OBJECT")
+                .properties(Map.of(
+                        "averageOrderValue", ValidationRules.builder()
+                                .type("NUMBER")
+                                .minimum("0")
+                                .build(),
+                        "peakSpendingTime", ValidationRules.builder()
+                                .type("ARRAY")
+                                .itemSchema(buildTimeWindowSchema())
+                                .build(),
+                        "seasonalTrends", ValidationRules.builder()
+                                .type("ARRAY")
+                                .itemSchema(buildSeasonalTrendSchema())
+                                .build(),
+                        "priceThresholds", buildPriceThresholdsSchema()
+                ))
+                .requiredProperties(List.of("averageOrderValue"))
+                .build();
+    }
+
+    private ValidationRules buildSeasonalTrendSchema() {
+        return ValidationRules.builder()
+                .type("OBJECT")
+                .properties(Map.of(
+                        "season", ValidationRules.builder()
+                                .type("STRING")
+                                .enumValues(List.of("SPRING", "SUMMER", "AUTUMN", "WINTER"))
+                                .build(),
+                        "spendingMultiplier", ValidationRules.builder()
+                                .type("NUMBER")
+                                .minimum("0.1")
+                                .maximum("10")
+                                .build(),
+                        "popularCategories", ValidationRules.builder()
+                                .type("ARRAY")
+                                .itemSchema(ValidationRules.builder()
+                                        .type("STRING")
+                                        .maxLength(50)
+                                        .build())
+                                .build()
+                ))
+                .requiredProperties(List.of("season", "spendingMultiplier"))
+                .build();
+    }
+
+    private ValidationRules buildPriceThresholdsSchema() {
+        return ValidationRules.builder()
+                .type("OBJECT")
+                .properties(Map.of(
+                        "psychological", ValidationRules.builder()
+                                .type("ARRAY")
+                                .itemSchema(ValidationRules.builder()
+                                        .type("NUMBER")
+                                        .minimum("0")
+                                        .build())
+                                .build(),
+                        "resistance", ValidationRules.builder()
+                                .type("NUMBER")
+                                .minimum("0")
+                                .build(),
+                        "sensitivity", ValidationRules.builder()
+                                .type("OBJECT")
+                                .properties(Map.of(
+                                        "low", ValidationRules.builder()
+                                                .type("NUMBER")
+                                                .minimum("0")
+                                                .build(),
+                                        "high", ValidationRules.builder()
+                                                .type("NUMBER")
+                                                .minimum("0")
+                                                .build()
+                                ))
+                                .build()
+                ))
+                .requiredProperties(List.of("resistance"))
+                .build();
     }
 }
-*/
-
-
-
-

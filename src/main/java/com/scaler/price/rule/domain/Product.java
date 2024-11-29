@@ -5,31 +5,27 @@ import com.scaler.price.rule.domain.constraint.MarginConstraints;
 import com.scaler.price.rule.domain.constraint.RuleConstraints;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.*;
 
 @Entity
 @Table(name = "products")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 @Getter
 @Setter
-@Builder
-public class Product {
-    @Id
-    private String id;
+@SuperBuilder
+@NoArgsConstructor
+@AllArgsConstructor
+public class Product extends AuditInfo {
     private String displayName;
     private String imageUrl;
     private String metaTitle;
     private String metaDescription;
     private String name;
-    private String categoryId;
-    private String brandId;
-    private String sellerId;
-    private String version;
+    private Long categoryId;
+    private Long brandId;
+    private Long sellerId;
     
     @ElementCollection
     @CollectionTable(name = "product_tags")
@@ -43,15 +39,12 @@ public class Product {
 
     @ElementCollection
     @CollectionTable(name = "product_site_ids")
-    private Set<String> siteIds = new HashSet<>();
+    private Set<Long> siteIds = new HashSet<>();
     
     private BigDecimal mrp;
     private BigDecimal costPrice;
     private String currency;
     private ProductStatus status;
-    
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 
     @OneToOne(cascade = CascadeType.ALL)
     private RuleConstraints marginConstraints;
@@ -87,7 +80,7 @@ public class Product {
     }
 
     @Data
-    @Builder
+    @SuperBuilder
     @NoArgsConstructor
     @AllArgsConstructor
     @Embeddable
@@ -106,7 +99,7 @@ public class Product {
     }
 
     @Data
-    @Builder
+    @SuperBuilder
     @NoArgsConstructor
     @AllArgsConstructor
     @Embeddable

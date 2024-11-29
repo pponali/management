@@ -60,8 +60,8 @@ public class BundleService {
         bundleRepository.deleteById(id);
     }
 
-    public BundleEligibility checkEligibility(String bundleId, String productId, Map<String, Object> attributes) throws ProductFetchException {
-        if (bundleId == null || bundleId.trim().isEmpty()) {
+    public BundleEligibility checkEligibility(Long bundleId, Long productId, Map<String, Object> attributes) throws ProductFetchException {
+        if (bundleId == null) {
             return BundleEligibility.builder()
                     .eligible(false)
                     .ineligibilityReason("Bundle ID cannot be null or empty")
@@ -69,7 +69,7 @@ public class BundleService {
         }
 
         try {
-            Bundle bundle = bundleRepository.findById(Long.parseLong(bundleId))
+            Bundle bundle = bundleRepository.findById(bundleId)
                     .orElseThrow(() -> new BundleNotFoundException("Bundle not found with id: " + bundleId));
 
             // Check if product is in bundle
@@ -134,17 +134,17 @@ public class BundleService {
         return discount;
     }
 
-    public BigDecimal getBundleDiscount(String bundleId, String productId) {
+    public BigDecimal getBundleDiscount(Long bundleId, Long productId) {
         // Step 1: Validate input parameters
-        if (bundleId == null || bundleId.trim().isEmpty()) {
+        if (bundleId == null) {
             throw new IllegalArgumentException("Bundle ID cannot be null or empty");
         }
-        if (productId == null || productId.trim().isEmpty()) {
+        if (productId == null) {
             throw new IllegalArgumentException("Product ID cannot be null or empty");
         }
 
         // Step 2: Fetch bundle details
-        Bundle bundle = bundleRepository.findById(Long.parseLong(bundleId))
+        Bundle bundle = bundleRepository.findById(bundleId)
                 .orElseThrow(() -> new BundleNotFoundException("Bundle not found with id: " + bundleId));
 
         // Step 3: Check if the product is part of the bundle
@@ -177,7 +177,7 @@ public class BundleService {
     }
 
     // Retrieve bundles for a specific product
-    public List<Bundle> getBundlesForProduct(String productId) {
+    public List<Bundle> getBundlesForProduct(Long productId) {
         return bundleRepository.findByProductsContaining(productId);
     }
 }

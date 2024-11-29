@@ -1,15 +1,14 @@
 package com.scaler.price.rule.domain;
 
 import com.scaler.price.core.management.domain.AuditInfo;
+import com.scaler.price.rule.domain.constraint.MarginConstraints;
+import com.scaler.price.rule.domain.constraint.PriceConstraints;
 import com.scaler.price.rule.domain.constraint.RuleConstraints;
+import com.scaler.price.rule.domain.constraint.TimeConstraints;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import org.hibernate.annotations.Type;
 
@@ -19,11 +18,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import lombok.experimental.SuperBuilder;
+
 @Entity
 @Table(name = "seller_site_configs")
 @Setter
 @Getter
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 public class SellerSiteConfig extends AuditInfo {
@@ -108,5 +109,38 @@ public class SellerSiteConfig extends AuditInfo {
         if (rule != null && rule.getSellerSiteConfigs() != null) {
             rule.getSellerSiteConfigs().add(this);
         }
+    }
+
+    public MarginConstraints getMarginConstraints() {
+        return MarginConstraints.builder()
+                .minimumMargin(minimumMargin)
+                .maximumMargin(maximumMargin)
+                .build();
+    }
+
+    public Integer getPriority() {
+        return (Integer) metadata.getOrDefault("priority", 0);
+    }
+
+    public Boolean getIsActive() {
+        return (Boolean) metadata.getOrDefault("isActive", true);
+    }
+
+    public PriceConstraints getPriceConstraints() {
+        for (RuleConstraints constraint : getEffectiveConstraints()) {
+            if (constraint instanceof PriceConstraints) {
+                return (PriceConstraints) constraint;
+            }
+        }
+        return null;
+    }
+
+    public TimeConstraints getTimeConstraints() {
+        for (RuleConstraints constraint : getEffectiveConstraints()) {
+            if (constraint instanceof TimeConstraints) {
+                return (TimeConstraints) constraint;
+            }
+        }
+        return null;
     }
 }

@@ -196,8 +196,8 @@ public class ActionExecutorServiceImpl implements ActionExecutorService {
             RuleEvaluationContext context,
             RuleEvaluationResult result) throws ActionExecutionException {
         ActionParameters params = parseParameters(action.getParameters());
-        String competitorId = params.getCompetitorId();
-        if (competitorId == null || competitorId.trim().isEmpty()) {
+        Long competitorId = params.getCompetitorId();
+        if (competitorId == null) {
             throw new ActionExecutionException("Competitor ID cannot be null or empty");
         }
         BigDecimal competitorPrice = competitorPriceService.getCompetitorPrice(

@@ -1,23 +1,17 @@
 package com.scaler.price.validation.services.util;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scaler.price.rule.config.ConfigurationService;
-import com.scaler.price.rule.domain.ActionType;
-import com.scaler.price.rule.domain.DiscountAction;
-import com.scaler.price.rule.domain.DiscountType;
-import com.scaler.price.rule.domain.PricingRule;
-import com.scaler.price.rule.domain.RuleAction;
-import com.scaler.price.rule.domain.SellerLimits;
-import com.scaler.price.rule.domain.SiteLimits;
+import com.scaler.price.rule.domain.*;
 import com.scaler.price.rule.exceptions.RuleValidationException;
 import com.scaler.price.rule.repository.RuleRepository;
 import com.scaler.price.rule.service.SellerService;
 import com.scaler.price.rule.service.SiteService;
 import lombok.RequiredArgsConstructor;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @RequiredArgsConstructor
 public class LimitValidator {
@@ -30,11 +24,11 @@ public class LimitValidator {
     public void validate(PricingRule rule) throws RuleValidationException, JsonProcessingException, IllegalArgumentException {
         validateAgainstSystemLimits(rule);
 
-        for (String sellerId : rule.getSellerIds()) {
+        for (Long sellerId : rule.getSellerIds()) {
             validateAgainstSellerLimits(rule, sellerId);
         }
 
-        for (String siteId : rule.getSiteIds()) {
+        for (Long siteId : rule.getSiteIds()) {
             validateAgainstSiteLimits(rule, siteId);
         }
     }
@@ -43,7 +37,7 @@ public class LimitValidator {
         int maxRulesPerSeller = configService.getMaxRulesPerSeller();
         int maxRulesPerSite = configService.getMaxRulesPerSite();
 
-        for (String sellerId : rule.getSellerIds()) {
+        for (Long sellerId : rule.getSellerIds()) {
             long sellerRuleCount = ruleRepository.countBySellerIdsContaining(sellerId);
             if (sellerRuleCount >= maxRulesPerSeller) {
                 throw new RuleValidationException(
@@ -52,7 +46,7 @@ public class LimitValidator {
             }
         }
 
-        for (String siteId : rule.getSiteIds()) {
+        for (Long siteId : rule.getSiteIds()) {
             long siteRuleCount = ruleRepository.countBySiteIdsContaining(siteId);
             if (siteRuleCount >= maxRulesPerSite) {
                 throw new RuleValidationException(
@@ -62,7 +56,7 @@ public class LimitValidator {
         }
     }
 
-    private void validateAgainstSellerLimits(PricingRule rule, String sellerId) throws RuleValidationException, JsonProcessingException, IllegalArgumentException {
+    private void validateAgainstSellerLimits(PricingRule rule, Long sellerId) throws RuleValidationException, JsonProcessingException, IllegalArgumentException {
         SellerLimits limits = sellerService.getSellerLimits(sellerId);
 
         if (limits.getMaxRules() > 0) {
@@ -79,7 +73,7 @@ public class LimitValidator {
         }
     }
 
-    private void validateAgainstSiteLimits(PricingRule rule, String siteId) throws RuleValidationException, JsonProcessingException, IllegalArgumentException {
+    private void validateAgainstSiteLimits(PricingRule rule, Long siteId) throws RuleValidationException, JsonProcessingException, IllegalArgumentException {
         SiteLimits limits = siteService.getSiteLimits(siteId);
 
         if (limits.getMaxRules() > 0) {

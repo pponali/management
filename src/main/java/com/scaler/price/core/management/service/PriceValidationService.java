@@ -13,5 +13,5 @@ public interface PriceValidationService {
     void validatePrice(PriceDTO priceDTO) throws PriceValidationException;
     void validatePriceUpdate(Long id, PriceDTO priceDTO) throws PriceValidationException;
 
-    BigDecimal validatePriceBounds(BigDecimal adjustedPrice, PricingRule rule, RuleEvaluationContext context);
+    BigDecimal validatePriceBounds(BigDecimal adjustedPrice, PricingRule rule, RuleEvaluationContext context) throws PriceValidationException;
 }

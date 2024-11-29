@@ -9,9 +9,9 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 public interface BulkPriceUploadService {
-    BulkUploadResultDTO uploadPrices(MultipartFile file, String sellerId, String siteId) throws PriceValidationException;
-    BulkUploadResultDTO getUploadStatus(String uploadId);
-    Resource downloadErrorReport(String uploadId);
+    BulkUploadResultDTO uploadPrices(MultipartFile file, Long sellerId, Long siteId) throws PriceValidationException;
+    BulkUploadResultDTO getUploadStatus(Long uploadId);
+    Resource downloadErrorReport(Long uploadId);
 
     List<String> validatePrices(List<PriceDTO> prices);
 

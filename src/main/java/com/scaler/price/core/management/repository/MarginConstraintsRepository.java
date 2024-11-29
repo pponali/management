@@ -19,12 +19,12 @@ public interface MarginConstraintsRepository extends JpaRepository<MarginConstra
     /**
      * Find margin constraints by category ID
      */
-    Optional<MarginConstraints> findByCategoryId(String categoryId);
+    Optional<MarginConstraints> findByCategoryId(Long categoryId);
 
     /**
      * Find margin constraints by multiple category IDs
      */
-    List<MarginConstraints> findByCategoryIdIn(List<String> categoryIds);
+    List<MarginConstraints> findByCategoryIdIn(List<Long> categoryIds);
 
     /**
      * Find margin constraints by minimum margin percentage range

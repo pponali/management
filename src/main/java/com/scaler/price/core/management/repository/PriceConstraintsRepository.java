@@ -19,12 +19,12 @@ public interface PriceConstraintsRepository extends JpaRepository<PriceConstrain
     /**
      * Find price constraints by category ID
      */
-    Optional<PriceConstraints> findByCategoryId(String categoryId);
+    Optional<PriceConstraints> findByCategoryId(Long categoryId);
 
     /**
      * Find price constraints by multiple category IDs
      */
-    List<PriceConstraints> findByCategoryIdIn(List<String> categoryIds);
+    List<PriceConstraints> findByCategoryIdIn(List<Long> categoryIds);
 
     /**
      * Find price constraints with minimum price greater than specified value

@@ -44,7 +44,7 @@ public class BulkPriceUploadServiceImpl implements BulkPriceUploadService {
 
     @Override
     @Transactional
-    public BulkUploadResultDTO uploadPrices(MultipartFile file, String sellerId, String siteId) throws PriceValidationException {
+    public BulkUploadResultDTO uploadPrices(MultipartFile file, Long sellerId, Long siteId) throws PriceValidationException {
         // Generate unique upload ID
         String uploadId = generateUploadId();
 
@@ -70,7 +70,7 @@ public class BulkPriceUploadServiceImpl implements BulkPriceUploadService {
         }
     }
 
-    private BulkUploadTracker createTracker(String uploadId, String sellerId, String siteId) {
+    private BulkUploadTracker createTracker(String uploadId, Long sellerId, Long siteId) {
         return null;
     }
 
@@ -80,12 +80,12 @@ public class BulkPriceUploadServiceImpl implements BulkPriceUploadService {
     }
 
     @Override
-    public BulkUploadResultDTO getUploadStatus(String uploadId) {
+    public BulkUploadResultDTO getUploadStatus(Long uploadId) {
         return null;
     }
 
     @Override
-    public Resource downloadErrorReport(String uploadId) {
+    public Resource downloadErrorReport(Long uploadId) {
         return null;
     }
 

@@ -2,29 +2,28 @@ package com.scaler.price.rule.events;
 
 import com.scaler.price.rule.domain.AttributeEventType;
 import com.scaler.price.rule.domain.ProductAttribute;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-@Service
+@Component
 @Slf4j
-@RequiredArgsConstructor
-@Getter
-@Setter
 public class AttributeEventPublisher {
     private final KafkaTemplate<String, AttributeEvent> kafkaTemplate;
     private final ApplicationEventPublisher eventPublisher;
     private static final String TOPIC_NAME = "attribute-events";
     private static final int MAX_RETRIES = 3;
     private static final long RETRY_DELAY_MS = 1000;
+
+    public AttributeEventPublisher(KafkaTemplate<String, AttributeEvent> kafkaTemplate, ApplicationEventPublisher eventPublisher) {
+        this.kafkaTemplate = kafkaTemplate;
+        this.eventPublisher = eventPublisher;
+    }
 
     public void publishEvent(AttributeEvent event) {
         if (event == null) {
@@ -123,7 +122,7 @@ public class AttributeEventPublisher {
     }
 
     public void publishAttributesBulkUpdated(
-            String productId,
+            Long productId,
             List<ProductAttribute> attributes) {
 
         AttributeEvent event = AttributeEvent.builder()

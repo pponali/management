@@ -102,7 +102,7 @@ public class RuleStatusManager {
         validateStatusTransition(oldStatus, newStatus);
 
         rule.setStatus(newStatus);
-        rule.getAuditInfo().setLastModifiedAt(LocalDateTime.now());
+        rule.setLastModifiedAt(LocalDateTime.now());
 
         try {
             // Record status change in audit

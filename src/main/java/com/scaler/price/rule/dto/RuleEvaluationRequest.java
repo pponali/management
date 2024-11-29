@@ -16,16 +16,16 @@ import java.util.Map;
 @AllArgsConstructor
 public class RuleEvaluationRequest {
     @NotBlank(message = "Product ID is required")
-    private String productId;
+    private Long productId;
 
     @NotBlank(message = "Seller ID is required")
-    private String sellerId;
+    private Long sellerId;
 
     @NotBlank(message = "Site ID is required")
-    private String siteId;
+    private Long siteId;
 
-    private String categoryId;
-    private String brandId;
+    private Long categoryId;
+    private Long brandId;
 
     @NotNull(message = "Base price is required")
     private BigDecimal basePrice;

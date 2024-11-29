@@ -9,7 +9,7 @@ public interface PriceService {
     PriceDTO createPrice(PriceDTO priceDTO) throws PriceValidationException;
     PriceDTO updatePrice(Long id, PriceDTO priceDTO) throws PriceValidationException;
     PriceDTO getPrice(Long id);
-    List<PriceDTO> getPricesByProduct(String productId);
+    List<PriceDTO> getPricesByProduct(Long productId);
     void deletePrice(Long id);
 
     void validatePrice(PriceDTO price) throws PriceValidationException;

@@ -95,14 +95,8 @@ public class CategoryValidator {
     }
 
     private void validateBasicFields(CategoryConstraints category) {
-        if (StringUtils.isBlank(category.getCategoryId())) {
+        if (category.getId() == 0L) {
             throw new CategoryValidationException("Category ID is required");
-        }
-
-        if (!category.getCategoryId().matches("^[A-Z0-9_]{2,50}$")) {
-            throw new CategoryValidationException(
-                    "Category ID must be 2-50 characters long and contain only uppercase letters, numbers and underscores"
-            );
         }
 
         if (StringUtils.isBlank(category.getCategoryName())) {
@@ -124,7 +118,7 @@ public class CategoryValidator {
     private void validateHierarchy(CategoryConstraints category) {
         // Validate parent category if present
         if (category.getParentCategory() != null) {
-            String parentId = category.getParentCategory().getCategoryId();
+            Long parentId = category.getParentCategory().getCategoryId();
             CategoryConstraints parent = categoryRepository.findByCategoryId(parentId)
                     .orElseThrow(() -> new CategoryValidationException(
                             "Parent category not found: " + parentId
@@ -157,7 +151,7 @@ public class CategoryValidator {
             throw new CategoryValidationException("At least one site mapping is required");
         }
 
-        for (String siteId : category.getSiteIds()) {
+        for (Long siteId : category.getSiteIds()) {
             if (!siteService.isValidSite(siteId)) {
                 throw new CategoryValidationException("Invalid site ID: " + siteId);
             }
@@ -327,7 +321,7 @@ public class CategoryValidator {
     }
 
     private void validateCircularDependency(CategoryConstraints category) {
-        Set<String> visitedCategories = new HashSet<>();
+        Set<Long> visitedCategories = new HashSet<>();
         CategoryConstraints current = category;
 
         while (current != null) {
@@ -365,8 +359,8 @@ public class CategoryValidator {
                     // 3. Validating that the new site mappings are valid
                 
                     // Example implementation:
-                    Set<String> existingSites = existing.getSiteIds();
-                    Set<String> updatedSites = updated.getSiteIds();
+                    Set<Long> existingSites = existing.getSiteIds();
+                    Set<Long> updatedSites = updated.getSiteIds();
                 
                     // Prevent removing all sites
                     if (updatedSites.isEmpty()) {
@@ -374,7 +368,7 @@ public class CategoryValidator {
                     }
                 
                     // Optional: Check if any sites are being removed
-                    Set<String> removedSites = new HashSet<>(existingSites);
+                    Set<Long> removedSites = new HashSet<>(existingSites);
                     removedSites.removeAll(updatedSites);
                 
                     if (!removedSites.isEmpty()) {

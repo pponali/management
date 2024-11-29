@@ -127,7 +127,7 @@ public interface ConstraintService {
      * @param constraintId The ID of the constraint to remove
      * @return Updated pricing rule
      */
-    PricingRule removeConstraint(PricingRule rule, String constraintId);
+    PricingRule removeConstraint(PricingRule rule, Long constraintId);
 
     /**
      * Updates an existing constraint
@@ -146,7 +146,7 @@ public interface ConstraintService {
      * @param parameters Action parameters containing constraint values
      * @return List of constraint violations
      */
-    List<String> validateCompetitorPriceConstraints(String productId,
+    List<String> validateCompetitorPriceConstraints(Long productId,
                                                     BigDecimal price,
                                                     ActionParameters parameters);
 
@@ -164,7 +164,6 @@ public interface ConstraintService {
      * @param ruleId The ID of the rule to update
      * @param constraint The constraint to update
      * @return Updated pricing rule
-     * @throws EntityNotFoundException if rule not found
      * @throws IllegalArgumentException if validation fails
      */
     PricingRule updateRuleConstraint(Long ruleId, RuleConstraints constraint);

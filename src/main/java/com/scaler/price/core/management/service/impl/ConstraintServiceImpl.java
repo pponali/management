@@ -194,7 +194,7 @@ public class ConstraintServiceImpl implements ConstraintService {
         }
 
         // Add category-specific validations
-        Set<String> allowedCategories = rule.getAllowedCategories();
+        Set<Long> allowedCategories = rule.getAllowedCategories();
         if (allowedCategories != null && !allowedCategories.isEmpty() &&
                 !allowedCategories.contains(categoryId)) {
             violations.add("Rule is not applicable for this category");
@@ -213,7 +213,7 @@ public class ConstraintServiceImpl implements ConstraintService {
         }
 
         // Add customer segment specific validations
-        Set<String> allowedSegments = rule.getAllowedCustomerSegments();
+        Set<Long> allowedSegments = rule.getAllowedCustomerSegments();
         if (allowedSegments != null && !allowedSegments.isEmpty() &&
                 !allowedSegments.contains(getCustomerSegment(customerId))) {
             violations.add("Rule is not applicable for this customer segment");
@@ -231,7 +231,7 @@ public class ConstraintServiceImpl implements ConstraintService {
             return violations;
         }
 
-        Set<String> allowedChannels = rule.getAllowedChannels();
+        Set<Long> allowedChannels = rule.getAllowedChannels();
         if (allowedChannels != null && !allowedChannels.isEmpty() &&
                 !allowedChannels.contains(channelId)) {
             violations.add("Rule is not applicable for this channel");
@@ -270,7 +270,7 @@ public class ConstraintServiceImpl implements ConstraintService {
     }
 
     @Override
-    public PricingRule removeConstraint(PricingRule rule, String constraintId) {
+    public PricingRule removeConstraint(PricingRule rule, Long constraintId) {
         if (rule == null || constraintId == null) {
             throw new IllegalArgumentException("Rule and constraint ID cannot be null");
         }
@@ -343,7 +343,7 @@ public class ConstraintServiceImpl implements ConstraintService {
     }
 
     @Override
-    public List<String> validateCompetitorPriceConstraints(String productId,
+    public List<String> validateCompetitorPriceConstraints(Long productId,
                                                            BigDecimal price,
                                                            ActionParameters parameters) {
         List<String> violations = new ArrayList<>();
@@ -384,7 +384,7 @@ public class ConstraintServiceImpl implements ConstraintService {
         return "REGULAR";
     }
 
-    private BigDecimal getCompetitorPrice(String productId, String competitor) {
+    private BigDecimal getCompetitorPrice(Long productId, Long competitor) {
         // Implementation to fetch competitor price
         // This should be replaced with actual competitor price fetching logic
         return BigDecimal.ZERO;
@@ -413,15 +413,15 @@ public class ConstraintServiceImpl implements ConstraintService {
             existing.setMinMarginPercentage(constraints.getMinMarginPercentage());
             existing.setMaxMarginPercentage(constraints.getMaxMarginPercentage());
             existing.setTargetMarginPercentage(constraints.getTargetMarginPercentage());
-            existing.setLastModifiedBy(constraints.getLastModifiedBy());
+            existing.setLastModifiedBy(constraints.getUpdatedBy());
             existing.setUpdatedAt(constraints.getUpdatedAt());
             savedConstraints = marginConstraintsRepository.save(existing);
 
             auditEventPublisher.publishRuleModifiedEvent(
                     null,
-                    constraints.getLastModifiedBy(),
+                    constraints.getUpdatedBy(),
                     Map.of("type", "MARGIN_CONSTRAINTS_UPDATE",
-                            "categoryId", constraints.getId().toString())
+                            "categoryId", String.valueOf(constraints.getCategoryId()))
             );
         } else {
             // Create new constraints
@@ -429,7 +429,7 @@ public class ConstraintServiceImpl implements ConstraintService {
 
             auditEventPublisher.publishRuleCreatedEvent(
                     null,
-                    constraints.getLastModifiedBy()
+                    constraints.getUpdatedBy()
             );
         }
 
@@ -458,8 +458,8 @@ public class ConstraintServiceImpl implements ConstraintService {
         if (existingConstraints.isPresent()) {
             // Update existing constraints
             PriceConstraints existing = existingConstraints.get();
-            existing.setMinPrice(constraints.getMinPrice());
-            existing.setMaxPrice(constraints.getMaxPrice());
+            existing.setMinimumPrice(HUNDRED);
+            existing.setMaximumPrice(constraints.getMaximumPrice());
             existing.setMinDiscountPercentage(constraints.getMinDiscountPercentage());
             existing.setMaxDiscountPercentage(constraints.getMaxDiscountPercentage());
             existing.setLastModifiedBy(constraints.getUpdatedBy());
@@ -470,7 +470,7 @@ public class ConstraintServiceImpl implements ConstraintService {
                     null,
                     constraints.getUpdatedBy(),
                     Map.of("type", "PRICE_CONSTRAINTS_UPDATE",
-                            "categoryId", constraints.getId().toString())
+                            "categoryId", String.valueOf(constraints.getId()))
             );
         } else {
             // Create new constraints
@@ -510,14 +510,13 @@ public class ConstraintServiceImpl implements ConstraintService {
             existing.setMaxDuration(constraints.getMaxDuration());
             existing.setBlackoutPeriods(constraints.getBlackoutPeriods());
             existing.setUpdatedAt(constraints.getUpdatedAt());
-            existing.setLastModifiedDate(constraints.getLastModifiedDate());
             savedConstraints = timeConstraintsRepository.save(existing);
 
             auditEventPublisher.publishRuleModifiedEvent(
                     null,
                     constraints.getUpdatedBy(),
                     Map.of("type", "TIME_CONSTRAINTS_UPDATE",
-                            "categoryId", constraints.getCategoryId().toString())
+                            "categoryId", String.valueOf(constraints.getCategoryId()))
             );
         } else {
             // Create new constraints
@@ -536,7 +535,7 @@ public class ConstraintServiceImpl implements ConstraintService {
 
     @Override
     @Transactional(readOnly = true)
-    public CategoryAttributes getCategoryConstraints(String categoryId) {
+    public CategoryAttributes getCategoryConstraints(Long categoryId) {
         log.debug("Retrieving category constraints for categoryId: {}", categoryId);
 
         if (categoryId == null) {
@@ -595,9 +594,9 @@ public class ConstraintServiceImpl implements ConstraintService {
         if (constraints.getId() == null) {
             violations.add("Category ID cannot be null");
         }
-        if (constraints.getMinPrice() != null &&
-                constraints.getMaxPrice() != null &&
-                constraints.getMinPrice().compareTo(constraints.getMaxPrice()) > 0) {
+        if (constraints.getMinimumPrice() != null &&
+                constraints.getMaximumPrice() != null &&
+                constraints.getMinimumPrice().compareTo(constraints.getMaximumPrice()) > 0) {
             violations.add("Minimum price cannot be greater than maximum price");
         }
         if (constraints.getMinDiscountPercentage() != null &&
@@ -613,8 +612,8 @@ public class ConstraintServiceImpl implements ConstraintService {
         }
 
         // Validate start and end time
-        if (constraints.getStartTime() != null && constraints.getEndTime() != null) {
-            if (constraints.getStartTime().isAfter(constraints.getEndTime())) {
+        if (constraints.getStartDate() != null && constraints.getEndDate() != null) {
+            if (constraints.getStartDate().isAfter(constraints.getEndDate())) {
                 violations.add("Start time must be before end time");
             }
         }

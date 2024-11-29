@@ -1,12 +1,13 @@
 package com.scaler.price.rule.domain.constraint;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -19,6 +20,8 @@ import com.scaler.price.rule.domain.RuleType;
 @Entity
 @Table(name = "price_constraints")
 @Data
+@Getter
+@Setter
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper=false)
 public class PriceConstraints extends RuleConstraints{
@@ -47,7 +50,15 @@ public class PriceConstraints extends RuleConstraints{
     
     @Column(name = "allow_price_increase")
     private Boolean allowPriceIncrease = true;
-    
+
+    @ElementCollection
+    @CollectionTable(
+        name = "category_specific_limits",
+        joinColumns = @JoinColumn(name = "price_constraints_id")
+    )
+    @MapKeyColumn(name = "category_id")
+    private Map<String, CategoryLimit> categorySpecificLimits = new HashMap<>();
+
     @Column(name = "minimum_price", precision = 10, scale = 2)
     private BigDecimal minimumPrice;
 
@@ -61,13 +72,6 @@ public class PriceConstraints extends RuleConstraints{
     private Set<String> excludedCategories = new HashSet<>();
     
     @ElementCollection
-    @CollectionTable(name = "price_constraint_category_limits",
-            joinColumns = @JoinColumn(name = "price_constraint_id"))
-    @MapKeyColumn(name = "category_id")
-    @Column(name = "limit_amount", precision = 10, scale = 2)
-    private Map<String, BigDecimal> categorySpecificLimits = new HashMap<>();
-    
-    @ElementCollection
     @CollectionTable(name = "price_constraint_thresholds",
             joinColumns = @JoinColumn(name = "price_constraint_id"))
     @OrderColumn(name = "threshold_order")
@@ -78,6 +82,25 @@ public class PriceConstraints extends RuleConstraints{
             joinColumns = @JoinColumn(name = "price_constraint_id"))
     @MapKeyColumn(name = "region_id")
     private Map<String, RegionalPriceAdjustment> regionalAdjustments = new HashMap<>();
+    
+    @Embeddable
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class CategoryLimit {
+        @Column(name = "min_price", precision = 10, scale = 2)
+        private BigDecimal minPrice;
+
+        @Column(name = "max_price", precision = 10, scale = 2)
+        private BigDecimal maxPrice;
+
+        @Column(name = "min_discount_percentage", precision = 5, scale = 2)
+        private BigDecimal minDiscountPercentage;
+
+        @Column(name = "max_discount_percentage", precision = 5, scale = 2)
+        private BigDecimal maxDiscountPercentage;
+    }
     
     @Builder(builderMethodName = "priceConstraintsBuilder")
     public PriceConstraints(BigDecimal minimumPrice, BigDecimal maximumPrice,
@@ -94,7 +117,7 @@ public class PriceConstraints extends RuleConstraints{
                           Integer roundingValue,
                           Boolean allowPriceIncrease,
                           Set<String> excludedCategories,
-                          Map<String, BigDecimal> categorySpecificLimits,
+                          Map<String, CategoryLimit> categorySpecificLimits,
                           List<PriceThreshold> priceThresholds,
                           Map<String, RegionalPriceAdjustment> regionalAdjustments) {
         this.maxPriceChangePercentage = maxPriceChangePercentage;
@@ -205,7 +228,4 @@ public class PriceConstraints extends RuleConstraints{
         };
     }
 
-    public BigDecimal getMinPrice() {
-        return minimumPrice;
-    }
 }

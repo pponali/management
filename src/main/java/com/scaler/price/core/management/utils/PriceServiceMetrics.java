@@ -1,19 +1,92 @@
 package com.scaler.price.core.management.utils;
 
+import com.scaler.price.core.management.dto.RuleMetrics;
+import com.scaler.price.rule.domain.ConditionType;
 import com.scaler.price.rule.domain.RuleType;
 import com.scaler.price.rule.events.RuleEventType;
+import com.scaler.price.rule.repository.RuleRepository;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Component
 public class PriceServiceMetrics {
     private final MeterRegistry meterRegistry;
+    private final RuleRepository ruleRepository;
+    private final PriceServiceMetrics metricsService;
 
-    public PriceServiceMetrics(MeterRegistry registry) {
+    public RuleMetrics calculateRuleMetrics(Long siteId) {
+        RuleMetrics metrics = new RuleMetrics();
+
+        // Basic counts
+        metrics.setTotalRules(ruleRepository.countBySiteIdsContaining(siteId));
+        metrics.setActiveRules(ruleRepository.countActiveRulesBySite(
+                siteId,
+                LocalDateTime.now()
+        ));
+
+        // Count by rule type
+        metrics.setPriceRules(ruleRepository.countActiveRulesBySellerAndSite(
+                siteId,
+                siteId,
+                RuleType.PRICE
+        ));
+        metrics.setDiscountRules(ruleRepository.countActiveRulesBySellerAndSite(
+                siteId,
+                siteId,
+                RuleType.DISCOUNT
+        ));
+
+        // Count by condition type
+        metrics.setPriceConditions(ruleRepository.countRulesByConditionType(
+                siteId,
+                ConditionType.PRICE_RANGE
+        ));
+        metrics.setTimeConditions(ruleRepository.countRulesByConditionType(
+                siteId,
+                ConditionType.TIME_BASED
+        ));
+
+        // Get detailed statistics
+        List<RuleRepository.RuleStatistics> statistics = ruleRepository.getRuleStatistics(String.valueOf(siteId));
+        if (!statistics.isEmpty()) {
+            RuleRepository.RuleStatistics stats = statistics.get(0);
+            metrics.setExpiredRules(stats.getExpiredRules());
+            metrics.setActivePercentage(stats.getActivePercentage());
+        }
+
+        // Record metrics
+        recordMetrics(metrics, siteId);
+
+        return metrics;
+    }
+
+    private void recordMetrics(RuleMetrics metrics, Long siteId) {
+        metricsService.recordGaugeValue(
+                "rules.total",
+                metrics.getTotalRules(),
+                "siteId", siteId
+        );
+        metricsService.recordGaugeValue(
+                "rules.active",
+                metrics.getActiveRules(),
+                "siteId", siteId
+        );
+        metricsService.recordGaugeValue(
+                "rules.active.percentage",
+                metrics.getActivePercentage(),
+                "siteId", siteId
+        );
+    }
+
+    public PriceServiceMetrics(MeterRegistry registry, RuleRepository ruleRepository, PriceServiceMetrics metricsService) {
         this.meterRegistry = registry;
+        this.ruleRepository = ruleRepository;
+        this.metricsService = metricsService;
     }
 
     public void recordPriceOperation(String operation) {
@@ -115,21 +188,17 @@ public class PriceServiceMetrics {
             Tags.of("eventType", eventType.toString())).increment();
     }
 
-    public void recordGaugeValue(String metricName, Long value, String metricType, String siteId) {
+    public void recordGaugeValue(String metricName, Long value, String metricType, Long siteId) {
         meterRegistry.gauge(metricName,
-            Tags.of(
-                "type", metricType,
-                "siteId", siteId
-            ),
+            Tags.of("type", metricType)
+                .and("siteId", siteId.toString()),
             value);
     }
 
-    public void recordGaugeValue(String metricName, Double value, String metricType, String siteId) {
+    public void recordGaugeValue(String metricName, Double value, String metricType, Long siteId) {
         meterRegistry.gauge(metricName,
-            Tags.of(
-                "type", metricType,
-                "siteId", siteId
-            ),
+            Tags.of("type", metricType)
+                .and("siteId", siteId.toString()),
             value);
     }
 }

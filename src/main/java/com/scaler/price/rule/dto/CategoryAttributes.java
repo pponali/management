@@ -1,11 +1,15 @@
 package com.scaler.price.rule.dto;
 
-import com.scaler.price.rule.domain.constraint.MarginConstraints;
+import com.scaler.price.core.management.domain.AuditInfo;
 import com.scaler.price.rule.domain.constraint.RuleConstraints;
+import jakarta.persistence.Entity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -13,11 +17,13 @@ import java.util.Map;
 import java.util.Set;
 
 
-@Data
-@Builder
+@Getter
+@Setter
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CategoryAttributes {
+@Entity
+public class CategoryAttributes extends AuditInfo {
     private String displayName;
     private String imageUrl;
     private String metaTitle;

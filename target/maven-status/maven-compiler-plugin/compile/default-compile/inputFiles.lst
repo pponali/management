@@ -42,6 +42,7 @@
 /Users/pponali/Documents/practice/management/src/main/java/com/scaler/price/rule/service/CompetitorPriceService.java
 /Users/pponali/Documents/practice/management/src/main/java/com/scaler/price/core/management/service/impl/FileStorageService.java
 /Users/pponali/Documents/practice/management/src/main/java/com/scaler/price/rule/actions/handler/SeasonalPricingHandler.java
+/Users/pponali/Documents/practice/management/src/main/java/com/scaler/price/rule/validator/LimitValidator.java
 /Users/pponali/Documents/practice/management/src/main/java/com/scaler/price/rule/domain/AttributeEventType.java
 /Users/pponali/Documents/practice/management/src/main/java/com/scaler/price/core/management/dto/PriceEvent.java
 /Users/pponali/Documents/practice/management/src/main/java/com/scaler/price/core/management/controller/BulkPriceUploadController.java
@@ -60,6 +61,7 @@
 /Users/pponali/Documents/practice/management/src/main/java/com/scaler/price/rule/repository/BrandRepository.java
 /Users/pponali/Documents/practice/management/src/main/java/com/scaler/price/rule/dto/RuleDTO.java
 /Users/pponali/Documents/practice/management/src/main/java/com/scaler/price/rule/service/PriceRuleService.java
+/Users/pponali/Documents/practice/management/src/main/java/com/scaler/price/core/management/config/OpenApiConfig.java
 /Users/pponali/Documents/practice/management/src/main/java/com/scaler/price/rule/validation/JsonSchemaValidator.java
 /Users/pponali/Documents/practice/management/src/main/java/com/scaler/price/core/management/controller/PriceController.java
 /Users/pponali/Documents/practice/management/src/main/java/com/scaler/price/rule/domain/FailedEventEntity.java
@@ -237,6 +239,7 @@
 /Users/pponali/Documents/practice/management/src/main/java/com/scaler/price/rule/domain/Bundle.java
 /Users/pponali/Documents/practice/management/src/main/java/com/scaler/price/rule/dto/action/PriceActionParameters.java
 /Users/pponali/Documents/practice/management/src/main/java/com/scaler/price/rule/domain/SellerLimits.java
+/Users/pponali/Documents/practice/management/src/main/java/com/scaler/price/core/management/config/CacheConfig.java
 /Users/pponali/Documents/practice/management/src/main/java/com/scaler/price/rule/domain/ConditionEvaluator.java
 /Users/pponali/Documents/practice/management/src/main/java/com/scaler/price/rule/schema/SeasonalPricingSchemaBuilder.java
 /Users/pponali/Documents/practice/management/src/main/java/com/scaler/price/core/management/repository/BulkUploadTrackerRepository.java

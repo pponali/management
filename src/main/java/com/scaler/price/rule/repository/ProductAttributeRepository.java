@@ -16,13 +16,13 @@ public interface ProductAttributeRepository extends JpaRepository<ProductAttribu
     List<ProductAttribute> findByProductId(String productId);
 
     Optional<ProductAttribute> findByProductIdAndAttributeKey(
-            String productId,
-            String attributeKey
+            Long productId,
+            Long attributeKey
     );
 
     List<ProductAttribute> findByProductIdAndCategory(
-            String productId,
-            String category
+            Long productId,
+            Long category
     );
 
     @Query("""
@@ -31,7 +31,7 @@ public interface ProductAttributeRepository extends JpaRepository<ProductAttribu
         WHERE pa.category = :category 
         AND pa.isFilterable = true
         """)
-    List<String> findFilterableAttributesByCategory(String category);
+    List<String> findFilterableAttributesByCategory(Long category);
 
     @Query("""
         SELECT pa FROM ProductAttribute pa 
@@ -39,9 +39,9 @@ public interface ProductAttributeRepository extends JpaRepository<ProductAttribu
         AND pa.attributeKey IN :attributeKeys
         """)
     List<ProductAttribute> findByProductIdAndAttributeKeys(
-            String productId,
+            Long productId,
             Set<String> attributeKeys
     );
 
-    void deleteByProductIdAndAttributeKey(String productId, String attributeKey);
+    void deleteByProductIdAndAttributeKey(Long productId, String attributeKey);
 }

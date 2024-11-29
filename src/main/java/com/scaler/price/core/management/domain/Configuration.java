@@ -3,9 +3,10 @@ package com.scaler.price.core.management.domain;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.Type;
 
 @Entity
@@ -14,14 +15,12 @@ import org.hibernate.annotations.Type;
                 @UniqueConstraint(columnNames = {"key", "site_id"})
         }
 )
-@Data
-@Builder
+@Setter
+@Getter
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Configuration {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class Configuration extends AuditInfo{
 
     @Column(nullable = false)
     private String key;

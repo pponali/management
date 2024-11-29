@@ -12,11 +12,11 @@ public class AttributeValidationService {
             throw new AttributeValidationException("Attribute cannot be null");
         }
         
-        if (attribute.getProductId() == null || attribute.getProductId().trim().isEmpty()) {
+        if (attribute.getProductId() == null) {
             throw new AttributeValidationException("Product ID is required");
         }
         
-        if (attribute.getAttributeKey() == null || attribute.getAttributeKey().trim().isEmpty()) {
+        if (attribute.getAttributeKey() == null) {
             throw new AttributeValidationException("Attribute key is required");
         }
         

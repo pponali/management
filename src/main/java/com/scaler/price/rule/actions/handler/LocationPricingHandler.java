@@ -11,7 +11,14 @@ public class LocationPricingHandler implements CustomActionHandler {
 
     @Override
     public RuleEvaluationResult execute(RuleAction action, RuleEvaluationContext context, RuleEvaluationResult currentResult) throws ActionExecutionException {
-
+        // If no changes are needed, return the current result
+        if (currentResult == null) {
+            currentResult = new RuleEvaluationResult();
+        }
+        
+        // Implement location-based pricing logic here
+        // For now, we'll just return the current result without modifications
+        return currentResult;
     }
 
     @Override

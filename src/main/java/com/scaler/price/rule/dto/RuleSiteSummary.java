@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 public class RuleSiteSummary {
-    private String siteId;
+    private Long siteId;
     private Long totalRules;
     private Long activeRules;
     private LocalDateTime earliestRule;

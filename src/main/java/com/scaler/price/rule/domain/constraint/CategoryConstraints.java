@@ -10,6 +10,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import org.hibernate.annotations.Type;
 
@@ -22,14 +23,13 @@ import java.util.Set;
 @Entity
 @Table(name = "categories")
 @Data
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper=false)
-
 public class CategoryConstraints extends RuleConstraints{
     @Id
-    private String categoryId;
+    private Long categoryId;
 
     @Column(nullable = false)
     private String categoryName;
@@ -62,7 +62,7 @@ public class CategoryConstraints extends RuleConstraints{
             joinColumns = @JoinColumn(name = "category_id")
     )
     @Column(name = "site_id")
-    private Set<String> siteIds;
+    private Set<Long> siteIds;
 
     @Column(nullable = false)
     private Integer displayOrder;
@@ -73,7 +73,7 @@ public class CategoryConstraints extends RuleConstraints{
     @Version
     private Long version;
 
-    public CategoryConstraints(String categoryId, String categoryName, String description,
+    public CategoryConstraints(Long categoryId, String categoryName, String description,
                              BigDecimal minimumPrice, BigDecimal maximumPrice,
                              BigDecimal minimumMargin, BigDecimal maximumMargin,
                              LocalDateTime effectiveFrom, LocalDateTime effectiveTo,

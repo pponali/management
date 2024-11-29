@@ -5,9 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
-public interface SellerRepository extends JpaRepository<SellerLimits, String> {
+public interface SellerRepository extends JpaRepository<SellerLimits, Long> {
 
-    Optional<SellerLimits> findLimitsById(String sellerId);
+    Optional<SellerLimits> findLimitsById(Long sellerId);
 
-    boolean findActiveStatusById(String sellerId);
+    boolean findActiveStatusById(Long sellerId);
 }

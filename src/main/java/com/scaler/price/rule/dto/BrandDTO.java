@@ -19,7 +19,7 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 public class BrandDTO {
-    private String  id;
+    private Long id;
 
     @NotBlank(message = "Brand name is required")
     @Size(min = 2, max = 100, message = "Brand name must be between 2 and 100 characters")
@@ -43,7 +43,7 @@ public class BrandDTO {
     @URL(message = "Invalid website URL")
     private String websiteUrl;
 
-    private Set<String> categoryIds;
+    private Set<Long> categoryIds;
 
     private LocalDateTime createdAt;
 

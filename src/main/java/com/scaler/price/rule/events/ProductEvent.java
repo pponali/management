@@ -22,7 +22,7 @@ public class ProductEvent{
     private String ruleName;
     private RuleType ruleType;
     private Set<String> sellerIds;
-    private String productId;
+    private Long productId;
     private Set<String> siteIds;
     private Long version;
     private LocalDateTime effectiveFrom;

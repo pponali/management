@@ -57,7 +57,7 @@ public class PriceServiceImpl implements PriceService {
     }
 
     @Override
-    public List<PriceDTO> getPricesByProduct(String productId) {
+    public List<PriceDTO> getPricesByProduct(Long productId) {
         List<Price> prices = priceRepository.findByProductId(productId);
         return prices.stream()
                 .map(priceMapper::toDTO)
@@ -80,4 +80,5 @@ public class PriceServiceImpl implements PriceService {
         }
 
     }
+
 }

@@ -14,7 +14,7 @@ public interface PriceRepository extends JpaRepository<Price, Long> {
     Optional<Price> findByProductIdAndEffectiveFromLessThanEqualAndEffectiveToGreaterThan(
             String productId, LocalDateTime effectiveFrom, LocalDateTime effectiveTo);
 
-    List<Price> findByProductId(String productId);
+    List<Price> findByProductId(Long productId);
 
     @Query("""
         SELECT p FROM Price p 
@@ -27,9 +27,9 @@ public interface PriceRepository extends JpaRepository<Price, Long> {
         ORDER BY p.effectiveFrom DESC
         """)
     Optional<Price> findActivePrice(
-            String productId,
-            String sellerId,
-            String siteId,
+            Long productId,
+            Long sellerId,
+            Long siteId,
             LocalDateTime date
     );
 
@@ -43,8 +43,8 @@ public interface PriceRepository extends JpaRepository<Price, Long> {
         AND p.effectiveFrom <= :endDate
         """)
     List<Price> findUpcomingPriceChanges(
-            String sellerId,
-            String siteId,
+            Long sellerId,
+            Long siteId,
             LocalDateTime startDate,
             LocalDateTime endDate
     );

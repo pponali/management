@@ -4,13 +4,22 @@ import com.scaler.price.rule.domain.ChangeDiff;
 import com.scaler.price.rule.domain.SellerSiteConfig;
 import com.scaler.price.rule.domain.constraint.MarginConstraints;
 import com.scaler.price.rule.domain.constraint.PriceConstraints;
+import com.scaler.price.rule.domain.constraint.PriceConstraints.CategoryLimit;
 import com.scaler.price.rule.domain.constraint.TimeConstraints;
+
+import jakarta.persistence.criteria.CriteriaBuilder.In;
+
+import com.google.common.collect.Sets;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -88,7 +97,9 @@ public class ConfigChangeDetector {
         detectMarginChanges(changes, configKey, oldConfig, newConfig);
 
         // Time Constraint Changes
-        detectTimeConstraintChanges(changes, configKey, oldConfig, newConfig);
+        detectTimeConstraintChanges(changes, configKey, 
+            oldConfig.getTimeConstraints(), 
+            newConfig.getTimeConstraints());
 
         // Priority Changes
         if (!Objects.equals(oldConfig.getPriority(), newConfig.getPriority())) {
@@ -178,11 +189,8 @@ public class ConfigChangeDetector {
     private void detectTimeConstraintChanges(
             Map<String, ChangeDiff> changes,
             String configKey,
-            SellerSiteConfig oldConfig,
-            SellerSiteConfig newConfig) {
-
-        TimeConstraints oldTimeConstraints = oldConfig.getTimeConstraints();
-        TimeConstraints newTimeConstraints = newConfig.getTimeConstraints();
+            TimeConstraints oldTimeConstraints,
+            TimeConstraints newTimeConstraints) {
 
         if (oldTimeConstraints != null || newTimeConstraints != null) {
             detectTimeWindowChanges(
@@ -191,7 +199,7 @@ public class ConfigChangeDetector {
                     oldTimeConstraints,
                     newTimeConstraints
             );
-            detectBlackoutPeriodChanges(
+            detectBlackoutPeriodChange(
                     changes,
                     configKey,
                     oldTimeConstraints,
@@ -265,12 +273,14 @@ public class ConfigChangeDetector {
 
         // Compare category specific limits
         detectCategoryLimitChanges(changes, configKey,
-                oldConstraints.getCategorySpecificLimits(),
-                newConstraints.getCategorySpecificLimits()
-        );
-    }
+                        oldConstraints.getCategorySpecificLimits(),
+                        newConstraints.getCategorySpecificLimits()
+                );
+            }
+        
 
-    private void detectPriceThresholdChanges(
+        
+            private void detectPriceThresholdChanges(
             Map<String, ChangeDiff> changes,
             String configKey,
             List<PriceConstraints.PriceThreshold> oldThresholds,
@@ -305,27 +315,114 @@ public class ConfigChangeDetector {
         }
     }
 
-    private void detectCategoryMarginChanges(
-            Map<String, ChangeDiff> changes,
-            String configKey,
-            Map<String, MarginConstraints.CategoryMargin> oldMargins,
-            Map<String, MarginConstraints.CategoryMargin> newMargins) {
+    private void detectCategoryLimitChanges(
+        Map<String, ChangeDiff> changes,
+        String configKey,
+        Map<String, PriceConstraints.CategoryLimit> oldLimits,
+        Map<String, PriceConstraints.CategoryLimit> newLimits
+    ) {
+        // Handle null cases
+        if (oldLimits == null && newLimits == null) {
+            return;
+        }
 
+        // Get all unique categories
         Set<String> allCategories = new HashSet<>();
-        if (oldMargins != null) allCategories.addAll(oldMargins.keySet());
-        if (newMargins != null) allCategories.addAll(newMargins.keySet());
+        if (oldLimits != null) allCategories.addAll(oldLimits.keySet());
+        if (newLimits != null) allCategories.addAll(newLimits.keySet());
 
+        // Iterate through categories and detect changes
         for (String category : allCategories) {
-            MarginConstraints.CategoryMargin oldMargin =
-                    oldMargins != null ? oldMargins.get(category) : null;
-            MarginConstraints.CategoryMargin newMargin =
-                    newMargins != null ? newMargins.get(category) : null;
+            PriceConstraints.CategoryLimit oldLimit = 
+                oldLimits != null ? oldLimits.get(category) : null;
+            PriceConstraints.CategoryLimit newLimit = 
+                newLimits != null ? newLimits.get(category) : null;
 
-            detectCategoryMarginChange(changes,
-                    configKey + "_category_" + category,
-                    oldMargin,
-                    newMargin
-            );
+            // Compare specific attributes of CategoryLimit
+            if (oldLimit == null && newLimit == null) continue;
+
+            // Example: Compare max price limit
+            if (!Objects.equals(
+                oldLimit != null ? oldLimit.getMaxPrice() : null, 
+                newLimit != null ? newLimit.getMaxPrice() : null
+            )) {
+                changes.put(configKey + "_" + category + "_max_price_limit", 
+                    new ChangeDiff(
+                        oldLimit != null ? oldLimit.getMaxPrice().toString() : "null",
+                        newLimit != null ? newLimit.getMaxPrice().toString() : "null"
+                    )
+                );
+            }
+
+            // Add more comparisons as needed for other attributes
+        }
+    }
+    
+
+    private void detectCategoryMarginChange(
+        Map<String, ChangeDiff> changes, 
+        String configKey, 
+        MarginConstraints.CategoryMargin oldMargin, 
+        MarginConstraints.CategoryMargin newMargin
+    ) {
+        if (oldMargin == null && newMargin == null) {
+            return;
+        }
+
+        if (oldMargin == null || newMargin == null) {
+            changes.put(configKey + "_category_margin", new ChangeDiff(
+                oldMargin != null ? "Present" : "Null",
+                newMargin != null ? "Present" : "Null"
+            ));
+            return;
+        }
+
+        // Compare min margin
+        if (!Objects.equals(oldMargin.getMinMargin(), newMargin.getMinMargin())) {
+            changes.put(configKey + "_min_margin", new ChangeDiff(
+                formatPercentage(oldMargin.getMinMargin()),
+                formatPercentage(newMargin.getMinMargin())
+            ));
+        }
+
+        // Compare max margin
+        if (!Objects.equals(oldMargin.getMaxMargin(), newMargin.getMaxMargin())) {
+            changes.put(configKey + "_max_margin", new ChangeDiff(
+                formatPercentage(oldMargin.getMaxMargin()),
+                formatPercentage(newMargin.getMaxMargin())
+            ));
+        }
+
+        // Compare target margin
+        if (!Objects.equals(oldMargin.getTargetMargin(), newMargin.getTargetMargin())) {
+            changes.put(configKey + "_target_margin", new ChangeDiff(
+                formatPercentage(oldMargin.getTargetMargin()),
+                formatPercentage(newMargin.getTargetMargin())
+            ));
+        }
+
+        // Compare enforce strict flag
+        if (!Objects.equals(oldMargin.getEnforceStrict(), newMargin.getEnforceStrict())) {
+            changes.put(configKey + "_enforce_strict", new ChangeDiff(
+                oldMargin.getEnforceStrict() != null ? oldMargin.getEnforceStrict().toString() : "null",
+                newMargin.getEnforceStrict() != null ? newMargin.getEnforceStrict().toString() : "null"
+            ));
+        }
+
+        // Compare excluded products
+        if (!Objects.equals(oldMargin.getExcludedProducts(), newMargin.getExcludedProducts())) {
+            changes.put(configKey + "_excluded_products", new ChangeDiff(
+                oldMargin.getExcludedProducts() != null ? oldMargin.getExcludedProducts().toString() : "null",
+                newMargin.getExcludedProducts() != null ? newMargin.getExcludedProducts().toString() : "null"
+            ));
+        }
+
+        // Compare additional rules
+        if (!Objects.equals(oldMargin.getAdditionalRules(), newMargin.getAdditionalRules())) {
+            changes.put(configKey + "_additional_rules", new ChangeDiff(
+                oldMargin.getAdditionalRules() != null ? oldMargin.getAdditionalRules().toString() : "null",
+                newMargin.getAdditionalRules() != null ? newMargin.getAdditionalRules().toString() : "null"
+            ));
         }
     }
 
@@ -357,15 +454,19 @@ public class ConfigChangeDetector {
         }
 
         // Check time window
-        if (!Objects.equals(oldConstraints.getStartTime(),
-                newConstraints.getStartTime()) ||
-                !Objects.equals(oldConstraints.getEndTime(),
-                        newConstraints.getEndTime())) {
+        if (!Objects.equals(oldConstraints.getMainStartTime(),
+                newConstraints.getMainStartTime()) ||
+                !Objects.equals(oldConstraints.getMainEndTime(),
+                        newConstraints.getMainEndTime())) {
             changes.put(configKey + "_time_window", new ChangeDiff(
-                    formatTimeWindow(oldConstraints.getStartTime(),
-                            oldConstraints.getEndTime()),
-                    formatTimeWindow(newConstraints.getStartTime(),
-                            newConstraints.getEndTime())
+                formatTimeWindow(
+                    oldConstraints.getMainStartTime().atDate(LocalDate.now()).toInstant(ZoneOffset.UTC),
+                    oldConstraints.getMainEndTime().atDate(LocalDate.now()).toInstant(ZoneOffset.UTC)
+                ),
+                formatTimeWindow(
+                    newConstraints.getMainStartTime().atDate(LocalDate.now()).toInstant(ZoneOffset.UTC),
+                    newConstraints.getMainEndTime().atDate(LocalDate.now()).toInstant(ZoneOffset.UTC)
+                )
             ));
         }
 
@@ -376,53 +477,34 @@ public class ConfigChangeDetector {
         );
     }
 
-    private void detectBlackoutPeriodChanges(
-            Map<String, ChangeDiff> changes,
-            String configKey,
-            TimeConstraints oldConstraints,
-            TimeConstraints newConstraints) {
-
-        if (oldConstraints == null || newConstraints == null) {
-            return;
-        }
-
-        List<TimeConstraints.BlackoutPeriod> oldPeriods =
-                oldConstraints.getBlackoutPeriods();
-        List<TimeConstraints.BlackoutPeriod> newPeriods =
-                newConstraints.getBlackoutPeriods();
-
-        if (oldPeriods == null && newPeriods == null) {
-            return;
-        }
-
-        List<TimeConstraints.BlackoutPeriod> oldList =
-                oldPeriods != null ? oldPeriods : Collections.emptyList();
-        List<TimeConstraints.BlackoutPeriod> newList =
-                newPeriods != null ? newPeriods : Collections.emptyList();
-
-        if (oldList.size() != newList.size()) {
-            changes.put(configKey + "_blackout_periods_count", new ChangeDiff(
-                    String.valueOf(oldList.size()),
-                    String.valueOf(newList.size())
-            ));
-        }
-
-        // Compare individual blackout periods
-        Map<String, TimeConstraints.BlackoutPeriod> oldMap = mapBlackoutPeriods(oldList);
-        Map<String, TimeConstraints.BlackoutPeriod> newMap = mapBlackoutPeriods(newList);
-
-        Set<String> allPeriodKeys = new HashSet<>();
-        allPeriodKeys.addAll(oldMap.keySet());
-        allPeriodKeys.addAll(newMap.keySet());
-
-        for (String periodKey : allPeriodKeys) {
-            detectBlackoutPeriodChange(changes,
-                    configKey + "_blackout_" + periodKey,
-                    oldMap.get(periodKey),
-                    newMap.get(periodKey)
-            );
-        }
+    private void detectBlackoutPeriodChange(
+        Map<String, ChangeDiff> changes,
+        String configKey,
+        TimeConstraints oldTimeConstraints,
+        TimeConstraints newTimeConstraints
+) {
+    // If both periods are null, no change
+    if (oldTimeConstraints == null && newTimeConstraints == null) {
+        return;
     }
+
+    // If one period is null and the other is not, mark as a complete change
+    if (oldTimeConstraints == null || newTimeConstraints == null) {
+        changes.put(configKey, new ChangeDiff(
+                oldTimeConstraints != null ? oldTimeConstraints.toString() : "null",
+                newTimeConstraints != null ? newTimeConstraints.toString() : "null"
+        ));
+        return;
+    }
+
+    // Compare individual attributes of the blackout period
+    if (!Objects.equals(oldTimeConstraints.getBlackoutPeriods(), newTimeConstraints.getBlackoutPeriods())) {
+        changes.put(configKey + "_blackout_periods", new ChangeDiff(
+                oldTimeConstraints.getBlackoutPeriods().toString(),
+                newTimeConstraints.getBlackoutPeriods().toString()
+        ));
+    }
+}
 
     private Map<String, TimeConstraints.BlackoutPeriod> mapBlackoutPeriods(
             List<TimeConstraints.BlackoutPeriod> periods) {
@@ -444,7 +526,7 @@ public class ConfigChangeDetector {
                 .collect(Collectors.joining(","));
     }
 
-    private String formatTimeWindow(LocalTime start, LocalTime end) {
+    private String formatTimeWindow(Instant start, Instant end) {
         if (start == null || end == null) {
             return null;
         }
@@ -488,5 +570,97 @@ public class ConfigChangeDetector {
 
     private String formatPriceRange(BigDecimal from, BigDecimal to) {
         return from + "-" + to;
+    }
+
+    private void detectMarginConstraintChanges(
+            Map<String, ChangeDiff> changes,
+            String configKey,
+            MarginConstraints oldMarginConstraints,
+            MarginConstraints newMarginConstraints) {
+        
+        // Check if both old and new margin constraints are not null
+        if (oldMarginConstraints != null && newMarginConstraints != null) {
+            // Detect changes in category margins
+            if (oldMarginConstraints.getCategoryMargins() != null || newMarginConstraints.getCategoryMargins() != null) {
+                detectCategoryMarginChanges(
+                        changes,
+                        configKey,
+                        oldMarginConstraints.getCategoryMargins(),
+                        newMarginConstraints.getCategoryMargins()
+                );
+            }
+        }
+    }
+
+    private void detectCategoryMarginChanges(
+            Map<String, ChangeDiff> changes,
+            String configKey,
+            Map<String, MarginConstraints.CategoryMargin> oldMargins,
+            Map<String, MarginConstraints.CategoryMargin> newMargins
+    ) {
+        // Iterate through old margins and compare with new margins
+        for (Map.Entry<String, MarginConstraints.CategoryMargin> entry : oldMargins.entrySet()) {
+            String categoryKey = entry.getKey();
+            MarginConstraints.CategoryMargin oldMargin = entry.getValue();
+            MarginConstraints.CategoryMargin newMargin = newMargins.get(categoryKey);
+            
+            // If margin for this category exists in new margins, detect changes
+            if (newMargin != null) {
+                detectCategoryMarginChange(changes, configKey + ".category." + categoryKey, oldMargin, newMargin);
+            }
+        }
+        
+        // Check for any new categories added in the new margins
+        for (Map.Entry<String, MarginConstraints.CategoryMargin> entry : newMargins.entrySet()) {
+            String categoryKey = entry.getKey();
+            if (!oldMargins.containsKey(categoryKey)) {
+                detectCategoryMarginChange(changes, configKey + ".category." + categoryKey, null, entry.getValue());
+            }
+        }
+    }
+
+    private void detectSpecialWindowChanges(
+            Map<String, ChangeDiff> changes,
+            String configKey,
+            Map<String, TimeConstraints.SpecialTimeWindow> oldSpecialWindows,
+            Map<String, TimeConstraints.SpecialTimeWindow> newSpecialWindows
+    ) {
+        // Handle null cases
+        if (oldSpecialWindows == null && newSpecialWindows == null) {
+            return;
+        }
+
+        // If one of the maps is null, treat it as an empty map
+        Map<String, TimeConstraints.SpecialTimeWindow> oldWindows = 
+            oldSpecialWindows != null ? oldSpecialWindows : Collections.emptyMap();
+        Map<String, TimeConstraints.SpecialTimeWindow> newWindows = 
+            newSpecialWindows != null ? newSpecialWindows : Collections.emptyMap();
+
+        // Check for added or removed special windows
+        Set<String> oldKeys = oldWindows.keySet();
+        Set<String> newKeys = newWindows.keySet();
+
+        // Detect removed special windows
+        Sets.difference(oldKeys, newKeys).forEach(removedKey -> {
+            changes.put(configKey + "_special_window_removed_" + removedKey, 
+                new ChangeDiff(oldWindows.get(removedKey).toString(), null));
+        });
+
+        // Detect added special windows
+        Sets.difference(newKeys, oldKeys).forEach(addedKey -> {
+            changes.put(configKey + "_special_window_added_" + addedKey, 
+                new ChangeDiff(null, newWindows.get(addedKey).toString()));
+        });
+
+        // Compare existing special windows
+        Sets.intersection(oldKeys, newKeys).forEach(commonKey -> {
+            TimeConstraints.SpecialTimeWindow oldWindow = oldWindows.get(commonKey);
+            TimeConstraints.SpecialTimeWindow newWindow = newWindows.get(commonKey);
+
+            if (!Objects.equals(oldWindow, newWindow)) {
+                changes.put(configKey + "_special_window_" + commonKey, 
+                    new ChangeDiff(oldWindow.toString(), newWindow.toString()));
+            }
+        });
     }
 }

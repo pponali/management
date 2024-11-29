@@ -1,13 +1,16 @@
 package com.scaler.price.rule.domain;
 
 import com.scaler.price.core.management.domain.AuditInfo;
+import com.scaler.price.rule.domain.constraint.PriceConstraints;
 import com.scaler.price.rule.domain.constraint.PricingRuleConstraints;
 import com.scaler.price.rule.domain.constraint.RuleConstraints;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -17,14 +20,12 @@ import java.util.*;
 
 @Entity
 @Table(name = "pricing_rules")
-@Data
-@Builder
+@Getter
+@Setter
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PricingRule {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class PricingRule extends AuditInfo { 
 
     @Column
     private Set<RuleConstraints> constraints;
@@ -43,7 +44,7 @@ public class PricingRule {
     private RuleStatus status = RuleStatus.DRAFT;
 
     @Builder.Default
-    private Set<String> sellerIds = new HashSet<>();
+    private Set<Long> sellerIds = new HashSet<>();
 
     @ElementCollection
     @CollectionTable(
@@ -52,7 +53,7 @@ public class PricingRule {
     )
     @Column(name = "site_id")
     @Builder.Default
-    private Set<String> siteIds = new HashSet<>();
+    private Set<Long> siteIds = new HashSet<>();
 
     @ElementCollection
     @CollectionTable(
@@ -61,7 +62,7 @@ public class PricingRule {
     )
     @Column(name = "category_id")
     @Builder.Default
-    private Set<String> categoryIds = new HashSet<>();
+    private Set<Long> categoryIds = new HashSet<>();
 
     @ElementCollection
     @CollectionTable(
@@ -119,8 +120,6 @@ public class PricingRule {
     @Column(name = "version")
     private Long version;
 
-    @Embedded
-    private AuditInfo auditInfo;
 
     @Column(name = "start_date")
     private Instant startDate;
@@ -153,30 +152,15 @@ public class PricingRule {
         return Collections.unmodifiableSet(sellerSiteConfigs);
     }
 
-    public void setLastModifiedBy(String userId) {
-        if (auditInfo == null) {
-            auditInfo = new AuditInfo();
-        }
-        auditInfo.setLastModifiedBy(userId);
-        auditInfo.setLastModifiedAt(LocalDateTime.now());
-    }
-
-    public void setLastModifiedDate(LocalDateTime now) {
-        if (auditInfo == null) {
-            auditInfo = new AuditInfo();
-        }
-        auditInfo.setLastModifiedAt(now);
-    }
-
-    public Set<String> getAllowedCategories() {
+    public Set<Long> getAllowedCategories() {
         return Collections.unmodifiableSet(categoryIds);
     }
 
-    public Set<String> getAllowedCustomerSegments() {
+    public Set<Long> getAllowedCustomerSegments() {
         return Collections.unmodifiableSet(sellerIds);
     }
 
-    public Set<String> getAllowedChannels() {
+    public Set<Long> getAllowedChannels() {
         return Collections.unmodifiableSet(siteIds);
     }
 
@@ -192,17 +176,17 @@ public class PricingRule {
     public List<RuleConstraints> getConstraints() {
         List<RuleConstraints> constraints = new ArrayList<>();
         constraints.add(new PricingRuleConstraints(
-                minimumPrice,
-                maximumPrice,
-                minimumMargin,
-                maximumMargin,
-                effectiveFrom,
-                effectiveTo,
-                ruleType,
-                isActive,
-                priority,
-                startDate,
-                endDate
+            minimumPrice,
+            maximumPrice,
+            minimumMargin,
+            maximumMargin,
+            effectiveFrom,
+            effectiveTo,
+            ruleType,
+            isActive,
+            priority,
+            startDate,
+            endDate
         ));
         return constraints;
     }

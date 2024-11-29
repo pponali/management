@@ -9,12 +9,12 @@ import com.scaler.price.audit.repository.AuditEventRepository;
 import com.scaler.price.rule.domain.PricingRule;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.actuate.audit.AuditEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -205,8 +205,8 @@ public class AuditEventPublisherImpl implements AuditEventPublisher {
                     .eventData(objectMapper.writeValueAsString(eventData))
                     .source((String) eventData.get("source"))
                     .comment("Auto-generated audit event")  // Add a default comment
-                    .createdAt(Instant.now())
-                    .updatedAt(Instant.now())
+                    .createdAt(LocalDateTime.now())
+                    .updatedAt(LocalDateTime.now())
                     .build();
             
             auditEventRepository.save(auditEvent);

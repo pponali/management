@@ -7,9 +7,9 @@ import java.time.LocalDateTime;
 @Data
 public class PriceDTO {
     private Long id;
-    private String productId;
-    private String sellerId;
-    private String siteId;
+    private Long productId;
+    private Long sellerId;
+    private Long siteId;
     private BigDecimal basePrice;
     private BigDecimal sellingPrice;
     private BigDecimal mrp;
@@ -28,9 +28,9 @@ public class PriceDTO {
 
     public static class PriceDTOBuilder {
         private Long id;
-        private String productId;
-        private String sellerId;
-        private String siteId;
+        private Long productId;
+        private Long sellerId;
+        private Long siteId;
         private BigDecimal basePrice;
         private BigDecimal sellingPrice;
         private BigDecimal mrp;
@@ -55,17 +55,17 @@ public class PriceDTO {
             return this;
         }
 
-        public PriceDTOBuilder productId(String productId) {
+        public PriceDTOBuilder productId(Long productId) {
             this.productId = productId;
             return this;
         }
 
-        public PriceDTOBuilder sellerId(String sellerId) {
+        public PriceDTOBuilder sellerId(Long sellerId) {
             this.sellerId = sellerId;
             return this;
         }
 
-        public PriceDTOBuilder siteId(String siteId) {
+        public PriceDTOBuilder siteId(Long siteId) {
             this.siteId = siteId;
             return this;
         }
@@ -186,13 +186,13 @@ public class PriceDTO {
         private void validatePrice() {
             StringBuilder errors = new StringBuilder();
 
-            if (productId == null || productId.trim().isEmpty()) {
+            if (productId == null) {
                 errors.append("Product ID is required. ");
             }
-            if (sellerId == null || sellerId.trim().isEmpty()) {
+            if (sellerId == null) {
                 errors.append("Seller ID is required. ");
             }
-            if (siteId == null || siteId.trim().isEmpty()) {
+            if (siteId == null) {
                 errors.append("Site ID is required. ");
             }
             if (basePrice == null) {

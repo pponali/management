@@ -1,6 +1,5 @@
 package com.scaler.price.rule.dto;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,22 +16,21 @@ import java.util.Set;
 
 import com.scaler.price.rule.domain.Product.ProductStatus;
 
-@Data
 @Getter
 @Setter
-@SuperBuilder
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProductDTO {
-    private String id;
+    private Long id;
     private String name;
-    private String categoryId;
-    private String brandId;
-    private String sellerId;
+    private Long categoryId;
+    private Long brandId;
+    private Long sellerId;
     private boolean active;
     
     @Builder.Default
-    private Set<String> siteIds = new HashSet<>();
+    private Set<Long> siteIds = new HashSet<>();
     private BigDecimal mrp;
     private BigDecimal costPrice;
     private String currency;

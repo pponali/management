@@ -13,15 +13,15 @@ import com.scaler.price.rule.repository.SellerRepository;
 public class SellerService {
     private final SellerRepository sellerRepository;
 
-    public boolean isValidSeller(String sellerId) {
+    public boolean isValidSeller(Long sellerId) {
         return sellerRepository.existsById(sellerId);
     }
 
-    public boolean isSellerActive(String sellerId) {
+    public boolean isSellerActive(Long sellerId) {
         return sellerRepository.findActiveStatusById(sellerId);
     }
 
-    public SellerLimits getSellerLimits(String sellerId) {
+    public SellerLimits getSellerLimits(Long sellerId) {
         return sellerRepository.findLimitsById(sellerId)
                 .orElse(SellerLimits.getDefaultLimits());
     }

@@ -7,7 +7,7 @@ public class InventoryService {
 
     }
 
-    public Integer getInventoryLevel(String productId, String sellerId, String siteId) {
+    public Integer getInventoryLevel(Long productId, Long sellerId, Long siteId) {
         return null;
     }
 }

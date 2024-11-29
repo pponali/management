@@ -45,16 +45,16 @@ public class ActionParameters {
     private Boolean includeDiscounts;       // Include discounts in margin calculation
 
     // Competitor Price Parameters
-    private String competitor;             // Competitor identifier
-    private Set<String> competitors;       // Multiple competitors for comparison
+    private Long competitor;             // Competitor identifier
+    private Set<Long> competitors;       // Multiple competitors for comparison
     private String competitorPriceType;    // LOWEST, HIGHEST, AVERAGE
     private BigDecimal beatPercentage;     // Percentage to beat competitor
     private Boolean matchExactPrice;       // Match exact competitor price
     private Integer priceValidityHours;    // Competitor price validity
 
     // Bundle Parameters
-    private String bundleId;               // Bundle identifier
-    private Set<String> bundleIds;         // Multiple bundle identifiers
+    private Long bundleId;               // Bundle identifier
+    private Set<Long> bundleIds;         // Multiple bundle identifiers
     private Integer minBundleQuantity;     // Minimum quantity for bundle
     private String bundleDiscountType;     // PERCENTAGE, FIXED_AMOUNT
     private BigDecimal bundleDiscountPercentage;     // Percentage discount for bundle
@@ -202,7 +202,7 @@ public class ActionParameters {
     }
 
     public static ActionParameters createCompetitorParams(
-            String competitor,
+            Long competitor,
             BigDecimal beatBy) {
         return ActionParameters.builder()
                 .competitor(competitor)
@@ -214,7 +214,7 @@ public class ActionParameters {
     }
 
     public static ActionParameters createBundleParams(
-            String bundleId,
+            Long bundleId,
             BigDecimal discount) {
         return ActionParameters.builder()
                 .bundleId(bundleId)
@@ -276,7 +276,7 @@ public class ActionParameters {
         }
     }
 
-    public String getCompetitorId() {
+    public Long getCompetitorId() {
         return this.competitor != null ? this.competitor : 
                (this.competitors != null && !this.competitors.isEmpty() ? this.competitors.iterator().next() : null);
     }

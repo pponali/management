@@ -13,9 +13,9 @@ import java.util.List;
 @Repository
 public interface BulkUploadTrackerRepository extends JpaRepository<BulkUploadTracker, String> {
 
-    List<BulkUploadTracker> findBySellerId(String sellerId);
+    List<BulkUploadTracker> findBySellerId(Long sellerId);
 
-    List<BulkUploadTracker> findBySellerIdAndSiteId(String sellerId, String siteId);
+    List<BulkUploadTracker> findBySellerIdAndSiteId(Long sellerId, Long siteId);
 
     List<BulkUploadTracker> findByStatus(UploadStatus status);
 

@@ -69,7 +69,7 @@ public class BrandMapper {
         return brand;
     }
 
-    private Set<CategoryConstraints> mapToCategories(Set<String> categoryIds) {
+    private Set<CategoryConstraints> mapToCategories(Set<Long> categoryIds) {
             if (categoryIds == null || categoryIds.isEmpty()) {
                 return Collections.emptySet();
             }
@@ -82,7 +82,7 @@ public class BrandMapper {
 
 
     // Add this overloaded method to handle Set<String>
-    private Set<String> mapToStringIds(Set<String> ids) {
+    private Set<Long> mapToStringIds(Set<Long> ids) {
         if (ids == null || ids.isEmpty()) {
             return Collections.emptySet();
         }
@@ -90,8 +90,8 @@ public class BrandMapper {
     }
 
     private CategoryConstraints convertToCategoryConstraint(Object input) {
-        if (input instanceof String) {
-            String categoryId = (String) input;
+        if (input instanceof Long) {
+            Long categoryId = (Long) input;
             return categoryRepository.findById(categoryId)
                     .orElseThrow(() -> new EntityNotFoundException("Category not found with ID: " + categoryId));
         } else if (input instanceof CategoryConstraints) {
@@ -116,7 +116,7 @@ public class BrandMapper {
 
         if (dto.getCategoryIds() != null) {
             Set<CategoryConstraints> categories = dto.getCategoryIds().stream()
-                    .map((String categoryId) -> convertToCategoryConstraint(categoryId))
+                    .map((Long categoryId) -> convertToCategoryConstraint(Long.valueOf(categoryId)))
                     .collect(Collectors.toSet());
             brand.setCategories(categories);
         } else {

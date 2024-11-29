@@ -50,10 +50,10 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
         ORDER BY r.priority DESC
         """)
     List<PricingRule> findApplicableRules(
-            @Param("sellerId") String sellerId,
-            @Param("siteId") String siteId,
-            @Param("categoryId") String categoryId,
-            @Param("brandId") String brandId,
+            @Param("sellerId") Long sellerId,
+            @Param("siteId") Long siteId,
+            @Param("categoryId") Long categoryId,
+            @Param("brandId") Long brandId,
             @Param("currentDate") LocalDateTime currentDate
     );
 
@@ -254,8 +254,8 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
         AND pr.priority IS NOT NULL
         """)
     List<PricingRule> findConflictingRules(
-            @Param("sellerIds") Set<String> sellerIds,
-            @Param("siteIds") Set<String> siteIds,
+            @Param("sellerIds") Set<Long> sellerIds,
+            @Param("siteIds") Set<Long> siteIds,
             @Param("effectiveFrom") LocalDateTime effectiveFrom,
             @Param("effectiveTo") LocalDateTime effectiveTo
     );
@@ -416,7 +416,7 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
         AND r.isActive = true
         ORDER BY r.priority DESC
         """)
-    List<PricingRule> findBySellerIdsContaining(@Param("sellerId") String sellerId);
+    List<PricingRule> findBySellerIdsContaining(@Param("sellerId") Long sellerId);
 
     List<PricingRule> findAll(Specification<PricingRule> spec, Sort priority);
 
@@ -489,8 +489,8 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
 
 
     // Count methods using derived query names
-    long countBySiteIdsContaining(String siteId);
-    long countBySellerIdsContaining(String sellerId);
+    long countBySiteIdsContaining(Long siteId);
+    long countBySellerIdsContaining(Long sellerId);
 
     // More specific count queries with @Query
     @Query("""
@@ -502,7 +502,7 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
         AND (pr.effectiveTo IS NULL OR pr.effectiveTo >= :currentTime)
         """)
     long countActiveRulesBySite(
-            @Param("siteId") String siteId,
+            @Param("siteId") Long siteId,
             @Param("currentTime") LocalDateTime currentTime
     );
 
@@ -516,8 +516,8 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
         AND pr.ruleType = :ruleType
         """)
     long countActiveRulesBySellerAndSite(
-            @Param("sellerId") String sellerId,
-            @Param("siteId") String siteId,
+            @Param("sellerId") Long sellerId,
+            @Param("siteId") Long siteId,
             @Param("ruleType") RuleType ruleType
     );
 
@@ -544,7 +544,7 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
         )
         """)
     long countRulesByConditionType(
-            @Param("siteId") String siteId,
+            @Param("siteId") Long siteId,
             @Param("conditionType") ConditionType conditionType
     );
 
@@ -847,5 +847,5 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
         return new ArrayList<>(rulesWithConfigs.values());
     }
 
-    List<PricingRule> findRulesBySite(String siteIdStr);
+    List<PricingRule> findRulesBySite(Long siteIdStr);
 }

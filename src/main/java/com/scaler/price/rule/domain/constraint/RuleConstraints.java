@@ -1,20 +1,27 @@
 package com.scaler.price.rule.domain.constraint;
 
-
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
+import com.scaler.price.core.management.domain.AuditInfo;
+import com.scaler.price.rule.domain.RuleType;
+import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.MappedSuperclass;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 
-import com.scaler.price.core.management.domain.AuditInfo;
-import com.scaler.price.rule.domain.RuleType;
-
 @MappedSuperclass
 @NoArgsConstructor
-public abstract class RuleConstraints extends AuditInfo{
+@SuperBuilder
+@Getter
+@Setter
+public class RuleConstraints extends AuditInfo{
     
     @Column(name = "minimum_price")
     private BigDecimal minimumPrice;
@@ -53,11 +60,14 @@ public abstract class RuleConstraints extends AuditInfo{
     @Column(name = "description")
     private String description;
 
+    @Column(name = "category_id")
+    private Long categoryId;
+
     public RuleConstraints(BigDecimal minimumPrice, BigDecimal maximumPrice,
                          BigDecimal minimumMargin, BigDecimal maximumMargin,
                          LocalDateTime effectiveFrom, LocalDateTime effectiveTo,
                          RuleType ruleType, Boolean isActive, Integer priority,
-                         Instant startDate, Instant endDate) {
+                         Instant startDate, Instant endDate, Long categoryId) {
         this.minimumPrice = minimumPrice;
         this.maximumPrice = maximumPrice;
         this.minimumMargin = minimumMargin;
@@ -69,6 +79,7 @@ public abstract class RuleConstraints extends AuditInfo{
         this.priority = priority;
         this.startDate = startDate;
         this.endDate = endDate;
+        this.categoryId = categoryId;
     }
     
 }

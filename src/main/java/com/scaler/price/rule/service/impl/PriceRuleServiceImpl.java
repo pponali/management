@@ -1,9 +1,7 @@
 package com.scaler.price.rule.service.impl;
 
-import com.scaler.price.core.management.domain.AuditInfo;
 import com.scaler.price.audit.exception.AuditSearchException;
 import com.scaler.price.audit.service.AuditService;
-import com.scaler.price.rule.actions.CustomActionRegistry;
 import com.scaler.price.rule.domain.PricingRule;
 import com.scaler.price.rule.domain.RuleStatus;
 import com.scaler.price.rule.dto.RuleEvaluationRequest;
@@ -132,7 +130,7 @@ public class PriceRuleServiceImpl implements PriceRuleService {
     }
 
     @Transactional(readOnly = true)
-    public List<PricingRule> getRulesBySeller(String sellerId) {
+    public List<PricingRule> getRulesBySeller(Long sellerId) {
         return ruleRepository.findBySellerIdsContaining(sellerId);
     }
 
@@ -153,11 +151,9 @@ public class PriceRuleServiceImpl implements PriceRuleService {
 
     @Override
     public RuleSiteSummary getSiteRulesSummary(Long siteId, RuleStatus status) {
-        // Convert Long siteId to String for repository method
-        String siteIdStr = siteId.toString();
         
         // Find all rules for the site
-        List<PricingRule> siteRules = ruleRepository.findRulesBySite(siteIdStr);
+        List<PricingRule> siteRules = ruleRepository.findRulesBySite(siteId);
         
         // Filter rules by status if provided
         if (status != null) {
@@ -183,7 +179,7 @@ public class PriceRuleServiceImpl implements PriceRuleService {
             .orElse(null);
         
         return new RuleSiteSummary(
-            siteIdStr, 
+            siteId, 
             totalRules, 
             activeRules, 
             earliestRule, 
@@ -194,7 +190,7 @@ public class PriceRuleServiceImpl implements PriceRuleService {
     public RuleStatus activateRule(Long id) {
         PricingRule rule = getRule(id);
         rule.setIsActive(true);
-        rule.getAuditInfo().setModifiedAt(LocalDateTime.now());
+        rule.setModifiedAt(LocalDateTime.now());
     
         PricingRule savedRule = ruleRepository.save(rule);
         eventPublisher.publishRuleActivated(savedRule);
@@ -204,7 +200,7 @@ public class PriceRuleServiceImpl implements PriceRuleService {
     public PricingRule deactivateRule(Long id) {
         PricingRule rule = getRule(id);
         rule.setIsActive(false);
-        rule.getAuditInfo().setModifiedAt(LocalDateTime.now());
+        rule.setModifiedAt(LocalDateTime.now());
 
         PricingRule savedRule = ruleRepository.save(rule);
         eventPublisher.publishRuleDeactivated(savedRule);
@@ -216,10 +212,6 @@ public class PriceRuleServiceImpl implements PriceRuleService {
         rule.setIsActive(true);
         rule.setVersion(1L);
 
-        AuditInfo auditInfo = new AuditInfo();
-        auditInfo.setCreatedBy(SecurityContextHolder.getContext().getAuthentication().getName());
-        auditInfo.setCreatedAt(LocalDateTime.now());
-        rule.setAuditInfo(auditInfo);
 
         if (rule.getEffectiveFrom() == null) {
             rule.setEffectiveFrom(LocalDateTime.now());
@@ -257,15 +249,15 @@ public class PriceRuleServiceImpl implements PriceRuleService {
         });
 
         // Update audit info
-        existingRule.getAuditInfo().setLastModifiedBy(
+        existingRule.setLastModifiedBy(
                 SecurityContextHolder.getContext().getAuthentication().getName());
-        existingRule.getAuditInfo().setModifiedAt(LocalDateTime.now());
+        existingRule.setModifiedAt(LocalDateTime.now());
     }
 
 
 
     @Override
-    public BigDecimal getCurrentPrice(String productId) {
+    public BigDecimal getCurrentPrice(Long productId) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'getCurrentPrice'");
     }

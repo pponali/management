@@ -46,7 +46,7 @@ public class RuleCondition {
     private ConditionType type;
 
     @Column(nullable = false)
-    private String attribute;
+    private Long attribute;
 
     @Enumerated(EnumType.STRING)
     private Operator operator;

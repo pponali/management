@@ -13,5 +13,6 @@ public class ParameterSchema {
     private List<String> requiredParameters;
     private List<String> optionalParameters;
     private Map<String, List<String>> dependencyRules;
+    private Map<String, String> validationRules;
 
 }

@@ -89,7 +89,7 @@ public class ConditionValidator {
             throw new RuleValidationException("Condition type is required");
         }
 
-        if (StringUtils.isBlank(condition.getAttribute())) {
+        if (condition.getAttribute() != null) {
             throw new RuleValidationException("Condition attribute is required");
         }
 

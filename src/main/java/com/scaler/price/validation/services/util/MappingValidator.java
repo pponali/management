@@ -1,14 +1,14 @@
 package com.scaler.price.validation.services.util;
 
-import java.util.Set;
-
 import com.scaler.price.rule.domain.PricingRule;
 import com.scaler.price.rule.exceptions.RuleValidationException;
+import com.scaler.price.rule.service.BrandService;
+import com.scaler.price.rule.service.CategoryService;
 import com.scaler.price.rule.service.SellerService;
 import com.scaler.price.rule.service.SiteService;
-import com.scaler.price.rule.service.CategoryService;
-import com.scaler.price.rule.service.BrandService;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Set;
 
 @RequiredArgsConstructor
 public class MappingValidator {
@@ -24,12 +24,12 @@ public class MappingValidator {
         validateBrandMappings(rule.getBrandIds());
     }
 
-    private void validateSellerMappings(Set<String> sellerIds) throws RuleValidationException {
+    private void validateSellerMappings(Set<Long> sellerIds) throws RuleValidationException {
         if (sellerIds == null || sellerIds.isEmpty()) {
             throw new RuleValidationException("At least one seller mapping is required");
         }
 
-        for (String sellerId : sellerIds) {
+        for (Long sellerId : sellerIds) {
             if (!sellerService.isValidSeller(sellerId)) {
                 throw new RuleValidationException("Invalid seller ID: " + sellerId);
             }
@@ -40,12 +40,12 @@ public class MappingValidator {
         }
     }
 
-    private void validateSiteMappings(Set<String> siteIds) throws RuleValidationException { 
+    private void validateSiteMappings(Set<Long> siteIds) throws RuleValidationException {
         if (siteIds == null || siteIds.isEmpty()) {
             throw new RuleValidationException("At least one site mapping is required");
         }
 
-        for (String siteId : siteIds) {
+        for (Long siteId : siteIds) {
             if (!siteService.isValidSite(siteId)) {
                 throw new RuleValidationException("Invalid site ID: " + siteId);
             }
@@ -56,9 +56,9 @@ public class MappingValidator {
         }
     }
 
-    private void validateCategoryMappings(Set<String> categoryIds)throws RuleValidationException {
+    private void validateCategoryMappings(Set<Long> categoryIds)throws RuleValidationException {
         if (categoryIds != null && !categoryIds.isEmpty()) {
-            for (String categoryId : categoryIds) {
+            for (Long categoryId : categoryIds) {
                 if (!categoryService.isValidCategory(categoryId)) {
                     throw new RuleValidationException("Invalid category ID: " + categoryId);
                 }

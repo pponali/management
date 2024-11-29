@@ -11,11 +11,11 @@ import java.util.concurrent.ConcurrentHashMap;
 @Data
 @Builder
 public class RuleEvaluationContext {
-    private String productId;
-    private String sellerId;
-    private String siteId;
-    private String categoryId;
-    private String brandId;
+    private Long productId;
+    private Long sellerId;
+    private Long siteId;
+    private Long categoryId;
+    private Long brandId;
     private Integer quantity;
     private BigDecimal basePrice;
     private BigDecimal costPrice;

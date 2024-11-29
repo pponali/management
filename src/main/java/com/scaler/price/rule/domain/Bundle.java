@@ -4,19 +4,20 @@ import com.scaler.price.core.management.domain.AuditInfo;
 import com.scaler.price.rule.exceptions.ProductFetchException;
 import com.scaler.price.rule.repository.ProductRepository;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-@Data
+@Setter
+@Getter
 @Entity
 @Slf4j
 @NoArgsConstructor
@@ -66,8 +67,8 @@ public class Bundle extends AuditInfo{
         this.products = products;
     }
 
-    public Set<String> getProductIds() throws ProductFetchException {
-        Set<String> productIds = new HashSet<>();
+    public Set<Long> getProductIds() throws ProductFetchException {
+        Set<Long> productIds = new HashSet<>();
         try {
             List<Product> products = productRepository.findAll();
             for (Product product : products) {

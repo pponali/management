@@ -7,16 +7,57 @@ spring:
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
-  
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+
   jpa:
     hibernate:
       ddl-auto: update
+    show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
-    show-sql: true
-  
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+
+  cache:
+    type: caffeine
+    cache-names:
+      - priceRules
+      - priceConstraints
+      - priceTemplates
+      - categoryConstraints
+      - competitorPrices
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=3600s
+    cache-configurations:
+      priceRules:
+        expireAfterWrite: 1h
+        maximumSize: 1000
+        recordStats: true
+      priceConstraints:
+        expireAfterWrite: 2h
+        maximumSize: 500
+        recordStats: true
+      priceTemplates:
+        expireAfterWrite: 4h
+        maximumSize: 200
+        recordStats: true
+      categoryConstraints:
+        expireAfterWrite: 12h
+        maximumSize: 300
+        recordStats: true
+      competitorPrices:
+        expireAfterWrite: 30m
+        maximumSize: 2000
+        recordStats: true
+
   kafka:
     bootstrap-servers: ${KAFKA_SERVERS:localhost:9092}
     producer:
@@ -26,26 +67,38 @@ spring:
       group-id: price-management-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-
-file:
-  upload-dir: ${FILE_UPLOAD_DIR:/data/uploads}
-  error-dir: ${FILE_ERROR_DIR:/data/errors}
-  retention-days: 30
+      value-deserializer: org.springframework.kafka.common.serialization.StringDeserializer
 
 server:
-  port: ${SERVER_PORT:8080}
+  tomcat:
+    mbeanregistry:
+      enabled: true
+    threads:
+      max: 200
+    connection-timeout: 5000
+    max-connections: 8192
+    accept-count: 100
+  address: 0.0.0.0
+  port: 8081
   servlet:
-    context-path: /api
+    container-type: TOMCAT
+    context-path: /api/v1
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/plain
+    min-response-size: 1024
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,metrics,info,prometheus
   endpoint:
     health:
       show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
 
 logging:
   level:
@@ -53,25 +106,142 @@ logging:
     com.scaler.price: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
-# Swagger OpenAPI Properties
+app:
+  pricing:
+    default-currency: INR
+    max-price-history-days: 30
+    cache:
+      price-ttl: 3600
+      rules-ttl: 7200
+    constraints:
+      min-margin-percentage: 5
+      max-margin-percentage: 50
+    async:
+      core-pool-size: 5
+      max-pool-size: 10
+      queue-capacity: 25
+    template:
+      defaults:
+        margin-percentage: 20
+        min-price-threshold: 10.00
+        max-price-threshold: 1000000.00
+        rounding-strategy: NEAREST
+        rounding-value: 0.99
+      validation:
+        max-templates-per-category: 5
+        max-templates-per-seller: 10
+        min-valid-duration-days: 1
+        max-valid-duration-days: 365
+      processing:
+        batch-size: 100
+        retry-attempts: 3
+        timeout-seconds: 300
+      notifications:
+        enabled: true
+        email-alerts: true
+        slack-alerts: false
+      calculation:
+        include-tax: true
+        tax-rate: 0.20
+        allow-negative-margins: false
+        price-precision: 2
+      competitor:
+        max-price-age-hours: 24
+        min-competitors: 1
+        max-competitors: 10
+        price-deviation-threshold: 0.15
+  security:
+    jwt:
+      secret: ${JWT_SECRET:your-secret-key}
+      expiration: 86400000 # 24 hours
+  cors:
+    allowed-origins: "*"
+    allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+    allowed-headers: "*"
+    max-age: 3600
+
+file:
+  upload-dir: ${FILE_UPLOAD_DIR:/data/uploads}
+  error-dir: ${FILE_ERROR_DIR:/data/errors}
+  retention-days: 30
+
 springdoc:
-  api-docs:
-    path: /api-docs
+  cache:
+    disabled: false
+  writer-with-default-pretty-printer: true
+  writer-with-order-by-keys: true
+  model-and-view-allowed: true
   swagger-ui:
-    path: /swagger-ui.html
-    tags-sorter: alpha
-    operations-sorter: method
-    enabled: true
+    syntax-highlight:
+      activated: true
+      theme: monokai
+    try-it-out-enabled: true
+    request-snippets-enabled: true
+    response-codes-to-remove:
+      - 500
+      - 404
+    supported-submit-methods:
+      - get
+      - post
+      - put
+      - delete
+      - patch
+    persist-authorization: true
+    default-models-expand-depth: 3
+    default-model-expand-depth: 3
+    display-operation-id: true
+    display-request-duration: true
+    show-common-extensions: true
+    show-extensions: true
+    deep-linking: true
+  api-docs:
+    groups:
+      enabled: true
+    resolve-schema-properties: true
+    version: openapi_3_0
+    path: /api-docs
+  group-configs:
+    - group: pricing
+      paths-to-match: /api/v1/pricing/**
+      packages-to-scan: com.scaler.price.rule
+    - group: constraints
+      paths-to-match: /api/v1/constraints/**
+      packages-to-scan: com.scaler.price.core.management
+    - group: templates
+      paths-to-match: /api/v1/templates/**
+      packages-to-scan: com.scaler.price.template
   packages-to-scan: com.scaler.price
-  paths-to-match: /api/**
+  paths-to-match: 
+    - /api/v1/**
+  default-produces-media-type: application/json
+  default-consumes-media-type: application/json
+  openapi:
+    info:
+      title: Price Management API
+      description: REST API for managing pricing rules, constraints, and templates
+      version: 1.0.0
+      terms-of-service: https://scaler.com/terms
+      contact:
+        name: Scaler Support
+        email: support@scaler.com
+        url: https://scaler.com/support
+      license:
+        name: Apache 2.0
+        url: https://www.apache.org/licenses/LICENSE-2.0
+    servers:
+      - url: http://localhost:8080
+        description: Local Development Server
+      - url: https://api.scaler.com
+        description: Production Server
+    security-schemes:
+      bearerAuth:
+        type: http
+        scheme: bearer
+        bearerFormat: JWT
 
-# Server URLs
-openapi:
-  dev-url: http://localhost:8080
-  prod-url: https://api.scaler.com
-
-# Default Configuration Values
 price:
   margin:
     default: 0.15
@@ -92,13 +262,3 @@ price:
     max-per-category: 50
     max-actions: 10
     max-conditions: 5
-
-app:
-  config:
-    default-site-id: DEFAULT
-    cache:
-      ttl: 3600
-    retry:
-      max-attempts: 3
-      initial-interval: 1000
-      multiplier: 2.0

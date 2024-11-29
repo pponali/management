@@ -1,6 +1,5 @@
 package com.scaler.price.rule.service;
 
-import com.scaler.price.rule.domain.Bundle;
 import com.scaler.price.rule.domain.PricingRule;
 import com.scaler.price.rule.dto.*;
 import com.scaler.price.rule.exceptions.ActionExecutionException;
@@ -10,7 +9,6 @@ import com.scaler.price.rule.exceptions.RuleEvaluationException;
 import com.scaler.price.rule.repository.RuleRepository;
 import com.scaler.price.core.management.exceptions.PriceValidationException;
 import com.scaler.price.core.management.service.PriceValidationService;
-import com.scaler.price.core.management.utils.PriceServiceMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,7 +17,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -29,7 +26,6 @@ public class RuleEvaluationService {
     private final ConditionEvaluatorService conditionEvaluator;
     private final ActionExecutorService actionExecutor;
     private final PriceValidationService priceValidator;
-    private final PriceServiceMetrics metricsService;
     private final BundleService bundleService;
 
     public List<RuleEvaluationResult> evaluateRules(RuleEvaluationRequest request) throws RuleEvaluationException, ActionExecutionException, ActionRegistrationException, ProductFetchException, PriceValidationException {
@@ -64,10 +60,10 @@ public class RuleEvaluationService {
 
     private List<PricingRule> findApplicableRules(RuleEvaluationRequest request) {
         return ruleRepository.findApplicableRules(
-                Set.of(request.getSellerId()).toString(),
-                Set.of(request.getSiteId()).toString(),
-                Set.of(request.getCategoryId()).toString(),
-                Set.of(request.getBrandId()).toString(),
+                request.getSellerId(),
+                request.getSiteId(),
+                request.getCategoryId(),
+                request.getBrandId(),
                 LocalDateTime.now()
         );
     }
@@ -90,16 +86,16 @@ public class RuleEvaluationService {
     public RuleEvaluationResult evaluateBundlePrice(Long bundleId) throws ProductFetchException {
         try {
             BundleEligibility eligibility = bundleService.checkEligibility(
-                    bundleId.toString(),
+                    bundleId,
                     null,
                     null
             );
     
             // Add null checks and handle potential empty bundle scenarios
-            String productId = Optional.ofNullable(eligibility.getBundleId())
+            Long productId = Optional.ofNullable(eligibility.getBundleId())
                 .flatMap(id -> bundleService.getBundleById(bundleId))
                 .map(bundle -> {
-                    Set<String> productIds = null;
+                    Set<Long> productIds = null;
                     try {
                         productIds = bundle.getProductIds();
                     } catch (ProductFetchException e) {
@@ -112,7 +108,7 @@ public class RuleEvaluationService {
                 })
                 .orElseThrow(() -> new ProductFetchException("No products found in bundle " + bundleId));
     
-            BigDecimal bundlePrice = bundleService.getBundleDiscount(bundleId.toString(), productId);
+            BigDecimal bundlePrice = bundleService.getBundleDiscount(bundleId, productId);
     
             RuleEvaluationResult result = new RuleEvaluationResult();
             result.setAdjustedPrice(bundlePrice);

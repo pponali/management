@@ -69,7 +69,7 @@ public class BulkPriceUploadController {
      * @return BulkUploadResult containing current status and any errors
      */
     @GetMapping("/status/{batchId}")
-    public ResponseEntity<BulkUploadResultDTO> getUploadStatus(@PathVariable String batchId) {
+    public ResponseEntity<BulkUploadResultDTO> getUploadStatus(@PathVariable Long batchId) {
         BulkUploadResultDTO status = bulkUploadService.getUploadStatus(batchId);
         return ResponseEntity.ok(status);
     }

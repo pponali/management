@@ -13,7 +13,7 @@ public interface BundleRepository extends JpaRepository<Bundle, Long> {
     List<Bundle> findByName(String name);
 
     // Find bundles containing a specific product
-    List<Bundle> findByProductsContaining(String productId);
+    List<Bundle> findByProductsContaining(Long productId);
 
     // Find bundles with a name containing a specific keyword
     List<Bundle> findByNameContaining(String keyword);

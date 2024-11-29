@@ -2,6 +2,7 @@ package com.scaler.price.rule.mapper;
 
 import com.scaler.price.core.management.dto.PriceDTO;
 import com.scaler.price.rule.domain.Product;
+import com.scaler.price.rule.domain.Product.ProductStatus;
 import com.scaler.price.rule.dto.ProductDTO;
 import org.springframework.stereotype.Component;
 
@@ -28,7 +29,7 @@ public class ProductMapper {
                 .mrp(product.getMrp())
                 .costPrice(product.getCostPrice())
                 .currency(product.getCurrency())
-                .status(Product.ProductStatus.valueOf(product.getStatus().name()))
+                .status(ProductStatus.valueOf(product.getStatus().name()))
                 .build();
     }
 
@@ -50,7 +51,7 @@ public class ProductMapper {
                 .mrp(dto.getMrp())
                 .costPrice(dto.getCostPrice())
                 .currency(dto.getCurrency())
-                .status(dto.getStatus() != null ? Product.ProductStatus.valueOf(dto.getStatus().name()) : null)
+                .status(dto.getStatus() != null ? ProductStatus.valueOf(dto.getStatus().name()) : null)
                 .build();
     }
 
@@ -70,7 +71,7 @@ public class ProductMapper {
         if (dto.getMrp() != null) product.setMrp(dto.getMrp());
         if (dto.getCostPrice() != null) product.setCostPrice(dto.getCostPrice());
         if (dto.getCurrency() != null) product.setCurrency(dto.getCurrency());
-        if (dto.getStatus() != null) product.setStatus(Product.ProductStatus.valueOf(dto.getStatus().name()));
+        if (dto.getStatus() != null) product.setStatus(ProductStatus.valueOf(dto.getStatus().name()));
     }
 
     /**
@@ -110,7 +111,7 @@ public class ProductMapper {
         }
 
         return PriceDTO.builder()
-                .productId(product.getId())
+                .id(product.getId())
                 .sellerId(product.getSellerId())
                 .mrp(product.getMrp())
                 .currency(product.getCurrency())
@@ -139,7 +140,7 @@ public class ProductMapper {
         if (source.getMrp() != null) target.setMrp(source.getMrp());
         if (source.getCostPrice() != null) target.setCostPrice(source.getCostPrice());
         if (source.getCurrency() != null) target.setCurrency(source.getCurrency());
-        if (source.getStatus() != null) target.setStatus(Product.ProductStatus.valueOf(source.getStatus().name()));
+        if (source.getStatus() != null) target.setStatus(ProductStatus.valueOf(source.getStatus().name()));
 
         return target;
     }
@@ -162,7 +163,7 @@ public class ProductMapper {
                 .mrp(source.getMrp())
                 .costPrice(source.getCostPrice())
                 .currency(source.getCurrency())
-                .status(Product.ProductStatus.valueOf(source.getStatus().name()))
+                .status(ProductStatus.valueOf(source.getStatus().name()))
                 .build();
     }
 }
