@@ -2,7 +2,8 @@ package com.scaler.price.rule.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.scaler.price.rule.config.ConfigurationService;
+import com.scaler.price.core.management.service.ConfigurationService;
+
 import com.scaler.price.rule.domain.PricingRule;
 import com.scaler.price.rule.domain.RuleAction;
 import com.scaler.price.rule.domain.RuleCondition;

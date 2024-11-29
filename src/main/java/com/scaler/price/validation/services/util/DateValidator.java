@@ -1,7 +1,8 @@
 package com.scaler.price.validation.services.util;
 
 import com.scaler.price.core.management.utils.PriceServiceMetrics;
-import com.scaler.price.rule.config.ConfigurationService;
+import com.scaler.price.core.management.service.ConfigurationService;
+
 import com.scaler.price.rule.domain.PricingRule;
 import com.scaler.price.rule.exceptions.RuleValidationException;
 import java.time.LocalDateTime;

@@ -1,7 +1,8 @@
 package com.scaler.price.validation.services;
 
 import com.scaler.price.core.management.exceptions.CategoryValidationException;
-import com.scaler.price.rule.config.ConfigurationService;
+import com.scaler.price.core.management.service.ConfigurationService;
+
 import com.scaler.price.rule.domain.constraint.CategoryConstraints;
 import com.scaler.price.rule.dto.CategoryAttributes;
 import com.scaler.price.rule.repository.CategoryRepository;

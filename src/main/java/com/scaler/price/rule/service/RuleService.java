@@ -1,6 +1,7 @@
 package com.scaler.price.rule.service;
 
-import com.scaler.price.rule.config.ConfigurationService;
+import com.scaler.price.core.management.service.ConfigurationService;
+
 import com.scaler.price.rule.domain.PricingRule;
 import com.scaler.price.rule.domain.RuleStatus;
 import com.scaler.price.rule.domain.RuleType;

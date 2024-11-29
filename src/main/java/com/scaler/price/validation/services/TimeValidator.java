@@ -1,7 +1,8 @@
 package com.scaler.price.validation.services;
 
 import com.scaler.price.core.management.utils.PriceServiceMetrics;
-import com.scaler.price.rule.config.ConfigurationService;
+import com.scaler.price.core.management.service.ConfigurationService;
+
 import com.scaler.price.rule.domain.DiscountAction;
 import com.scaler.price.rule.domain.DiscountType;
 import com.scaler.price.rule.domain.RuleCondition;

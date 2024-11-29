@@ -4,7 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scaler.price.core.management.utils.PriceServiceMetrics;
-import com.scaler.price.rule.config.ConfigurationService;
+import com.scaler.price.core.management.service.ConfigurationService;
+
 import com.scaler.price.rule.domain.ActionType;
 import com.scaler.price.rule.domain.DiscountAction;
 import com.scaler.price.rule.domain.RuleAction;
