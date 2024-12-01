@@ -23,6 +23,8 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -44,7 +46,7 @@ public class AuditService {
                     .ruleName(rule.getRuleName())
                     .ruleType(rule.getRuleType())
                     .action(AuditAction.CREATED)
-                    .timestamp(Instant.now())
+                    .eventTime(LocalDateTime.now())
                     .userId(securityService.getCurrentUserId())
                     .build();
 
@@ -68,7 +70,7 @@ public class AuditService {
                     .action(AuditAction.UPDATED)
                     .changes(changes)
                     .snapshot(serializeRule(newRule))
-                    .timestamp(Instant.now())
+                    .eventTime(LocalDateTime.now())
                     .userId(securityService.getCurrentUserId())
                     .build();
 
@@ -90,7 +92,7 @@ public class AuditService {
                     .action(AuditAction.ACTIVATED)
                     .changes(Map.of("reason", new ChangeDiff(null, reason)))
                     .snapshot(serializeRule(rule))
-                    .timestamp(Instant.now())
+                    .eventTime(LocalDateTime.now())
                     .userId(securityService.getCurrentUserId())
                     .build();
 
@@ -112,7 +114,7 @@ public class AuditService {
                     .action(AuditAction.DEACTIVATED)
                     .changes(Map.of("reason", new ChangeDiff(null, reason)))
                     .snapshot(serializeRule(rule))
-                    .timestamp(Instant.now())
+                    .eventTime(LocalDateTime.now())
                     .userId(securityService.getCurrentUserId())
                     .build();
 
@@ -146,7 +148,7 @@ public class AuditService {
                     .action(AuditAction.PRICE_OVERRIDE)
                     .changes(changes)
                     .snapshot(serializeRule(rule))
-                    .timestamp(Instant.now())
+                    .eventTime(LocalDateTime.now())
                     .userId(securityService.getCurrentUserId())
                     .build();
 
@@ -189,7 +191,7 @@ public class AuditService {
                     .action(AuditAction.SELLER_SITE_UPDATE)
                     .changes(changes)
                     .snapshot(serializeRule(rule))
-                    .timestamp(Instant.now())
+                    .eventTime(LocalDateTime.now())
                     .userId(securityService.getCurrentUserId())
                     .build();
 
@@ -205,14 +207,15 @@ public class AuditService {
         log.debug("Auditing price creation event: {}", priceEvent);
         try {
             AuditEntry audit = AuditEntry.builder()
-                    .ruleId(Long.parseLong(priceEvent.getRuleId()))
-                    .ruleName(priceEvent.getRuleName())
-                    .ruleType(priceEvent.getRuleType())
-                    .action(AuditAction.PRICE_CREATED)
-                    .timestamp(Instant.now())
-                    .userId(securityService.getCurrentUserId())
-                    .eventData(objectMapper.writeValueAsString(priceEvent))
-                    .build();
+                .ruleId(priceEvent.getRuleId())
+                .ruleName(priceEvent.getRuleName())
+                .ruleType(priceEvent.getRuleType())
+                .action(AuditAction.PRICE_CREATED)
+                .type(AuditEventType.PRICE_CREATED)  // Add this line to set the required type
+                .eventTime(LocalDateTime.now())
+                .userId(securityService.getCurrentUserId())
+                .data(objectMapper.writeValueAsString(priceEvent))
+                .build();
 
             saveAndPublish(audit);
         } catch (Exception e) {
@@ -235,7 +238,7 @@ public class AuditService {
                     .ruleId(ruleId)
                     .action(AuditAction.STATUS_CHANGE)
                     .changes(changes)
-                    .timestamp(Instant.now())
+                    .eventTime(LocalDateTime.now())
                     .userId(securityService.getCurrentUserId())
                     .comment(reason)
                     .build();
@@ -389,16 +392,36 @@ public class AuditService {
 
     }
 
-    public List<AuditEntry> findByEventType(AuditEventType eventType) {
-        return auditRepository.findByEventType(eventType);
+    public List<AuditEntry> findByType(AuditEventType type) {
+        return auditRepository.findByType(type);
+    }
+
+    public Page<AuditEntry> findByType(AuditEventType type, Pageable pageable) {
+        return auditRepository.findByType(type, pageable);
+    }
+
+    public List<AuditEntry> findByTypeAndEventTimeBetween(AuditEventType type, LocalDateTime startTime, LocalDateTime endTime) {
+        return auditRepository.findByTypeAndEventTimeBetween(type, startTime, endTime);
+    }
+
+    public long countByTypeAndEventTimeBetween(AuditEventType type, LocalDateTime startTime, LocalDateTime endTime) {
+        return auditRepository.countByTypeAndEventTimeBetween(type, startTime, endTime);
+    }
+
+    public List<AuditEntry> findByTypeIn(List<AuditEventType> types) {
+        return auditRepository.findByTypeIn(types);
+    }
+
+    public List<AuditEntry> findByUserIdAndTypeIn(String userId, List<AuditEventType> types) {
+        return auditRepository.findByUserIdAndTypeIn(userId, types);
     }
 
     public List<AuditEntry> findByUserId(String userId) {
-        return auditRepository.findByUserId(userId);
+        return auditRepository.findByUserIdAndType(userId, null);
     }
 
-    public Map<String, Object> getEventStatistics(Instant startTime, Instant endTime) {
-        List<AuditEntry> events = auditRepository.findByTimestampBetween(startTime, endTime);
+    public Map<String, Object> getEventStatistics(LocalDateTime startTime, LocalDateTime endTime) {
+        List<AuditEntry> events = auditRepository.findByEventTimeBetween(startTime, endTime);
         Map<String, Object> stats = new HashMap<>();
 
         // Initialize counters
@@ -409,7 +432,7 @@ public class AuditService {
 
         // Count events by type
         for (AuditEntry event : events) {
-            AuditEventType eventType = event.getEventType();
+            AuditEventType eventType = event.getType();
             eventTypeCounts.put(eventType, eventTypeCounts.get(eventType) + 1);
         }
 
@@ -455,9 +478,18 @@ public class AuditService {
                 endTime = Instant.now();
             }
 
+            // Convert Instant to LocalDateTime
+            LocalDateTime localStartTime = startTime != null ? LocalDateTime.ofInstant(startTime, ZoneOffset.UTC) : null;
+            LocalDateTime localEndTime = endTime != null ? LocalDateTime.ofInstant(endTime, ZoneOffset.UTC) : null;
+
+            // If no end time is provided but start time is, set end time to now
+            if (localStartTime != null && localEndTime == null) {
+                localEndTime = LocalDateTime.now(ZoneOffset.UTC);
+            }
+
             // Use the repository method to fetch the data
             Page<AuditEntry> results = auditRepository.findByComplexCriteria(
-                    userId, eventType, startTime, endTime, pageable);
+                    userId, eventType, localStartTime, localEndTime, pageable);
 
             log.debug("Found {} audit entries matching criteria", results.getTotalElements());
 
@@ -469,5 +501,9 @@ public class AuditService {
             log.error("Error searching audit entries: {}", e.getMessage(), e);
             throw new AuditSearchException("Failed to search audit entries", e);
         }
+    }
+
+    public List<AuditEntry> findByEventType(AuditEventType eventType) {
+        return auditRepository.findByType(eventType);
     }
 }

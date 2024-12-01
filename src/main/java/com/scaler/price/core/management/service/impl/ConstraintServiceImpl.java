@@ -250,7 +250,7 @@ public class ConstraintServiceImpl implements ConstraintService {
         }
 
         // Add geographical constraint validations
-        Set<String> allowedRegions = rule.getAllowedRegions();
+        Set<Long> allowedRegions = rule.getAllowedRegions();
         if (allowedRegions != null && !allowedRegions.isEmpty() &&
                 !allowedRegions.contains(location.get("region"))) {
             violations.add("Rule is not applicable for this region");
@@ -413,7 +413,7 @@ public class ConstraintServiceImpl implements ConstraintService {
             existing.setMinMarginPercentage(constraints.getMinMarginPercentage());
             existing.setMaxMarginPercentage(constraints.getMaxMarginPercentage());
             existing.setTargetMarginPercentage(constraints.getTargetMarginPercentage());
-            existing.setLastModifiedBy(constraints.getUpdatedBy());
+            existing.setLastModifiedInfo(getCurrentUserId(), LocalDateTime.now());
             existing.setUpdatedAt(constraints.getUpdatedAt());
             savedConstraints = marginConstraintsRepository.save(existing);
 
@@ -462,8 +462,7 @@ public class ConstraintServiceImpl implements ConstraintService {
             existing.setMaximumPrice(constraints.getMaximumPrice());
             existing.setMinDiscountPercentage(constraints.getMinDiscountPercentage());
             existing.setMaxDiscountPercentage(constraints.getMaxDiscountPercentage());
-            existing.setLastModifiedBy(constraints.getUpdatedBy());
-            existing.setUpdatedAt(constraints.getUpdatedAt());
+            existing.setLastModifiedInfo(constraints.getUpdatedBy(), constraints.getUpdatedAt());
             savedConstraints = priceConstraintsRepository.save(existing);
 
             auditEventPublisher.publishRuleModifiedEvent(
@@ -574,9 +573,6 @@ public class ConstraintServiceImpl implements ConstraintService {
         if (constraints == null) {
             violations.add("Margin constraints cannot be null");
             return;
-        }
-        if (constraints.getCategoryId() == null) {
-            violations.add("Category ID cannot be null");
         }
         if (constraints.getMinMarginPercentage() != null &&
                 constraints.getMaxMarginPercentage() != null &&

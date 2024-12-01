@@ -36,9 +36,6 @@ public class RuleHistory extends AuditInfo {
     @Column(columnDefinition = "jsonb")
     private JsonNode changeSummary;
 
-    @Embedded
-    private AuditInfo auditInfo;
-
     @Column(nullable = false)
     public byte[] ruleSnapshot;
 

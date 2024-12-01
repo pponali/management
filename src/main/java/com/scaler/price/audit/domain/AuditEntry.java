@@ -4,28 +4,26 @@ import com.scaler.price.core.management.domain.AuditInfo;
 import com.scaler.price.rule.domain.AuditAction;
 import com.scaler.price.rule.domain.ChangeDiff;
 import com.scaler.price.rule.domain.RuleType;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.scaler.price.rule.mapper.ChangeDiffMapConverter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.Type;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 
 @Entity
-@Table(name = "rule_audit_log")
+@Table(name = "audit_log")
 @Setter
 @Getter
 @SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "Audit Event Model")
-public class AuditEntry extends AuditInfo{
-
+public class AuditEntry extends AuditInfo {
     
     @Schema(description = "Rule ID", example = "1")
     @Column(nullable = false)
@@ -41,55 +39,60 @@ public class AuditEntry extends AuditInfo{
     @Column(nullable = false)
     private AuditAction action;
 
-    @Type(JsonBinaryType.class)
-    @Column(columnDefinition = "jsonb")
-    private Map<String, ChangeDiff> changes;
-
-    @Type(JsonBinaryType.class)
-    @Column(columnDefinition = "jsonb")
-    private String snapshot;
-
-    @Column(nullable = false)
-    private String performedBy;
-
-    @Column(nullable = false)
-    private LocalDateTime performedAt;
-
-    @ElementCollection
-    private List<String> sellerIds;
-
-    @ElementCollection
-    private List<String> siteIds;
-
-    private Long version;
-
-    private String ipAddress;
-
-    private String userAgent;
-
-    private String sessionId;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private AuditEventType eventType;
+    private AuditEventType type;
 
-    @Column(nullable = false)
-    private Instant timestamp;
+    @Column(columnDefinition = "jsonb")
+    private String data;
 
-    @Column(nullable = false)
+    @Column(name = "event_time")
+    private LocalDateTime eventTime;
+
+    @Column(columnDefinition = "jsonb")
+    @Convert(converter = ChangeDiffMapConverter.class)
+    private Map<String, ChangeDiff> changes;
+
+    @Column(name = "user_id")
     private String userId;
 
-    @Column(columnDefinition = "TEXT")
-    private String eventData;
-
-    @Column(nullable = false)
+    private String source;
     private String comment;
 
-    @Column(nullable = false)
-    private String source;
+    private String snapshot;
 
-    private String correlationId;
+    @Column(columnDefinition = "text")
+    public String getSnapshot() {
+        return snapshot;
+    }
 
+    public void setSnapshot(String snapshot) {
+        this.snapshot = snapshot;
+    }
 
+    @PrePersist
+    @PreUpdate
+    protected void onSave() {
+        if (changes != null) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                data = mapper.writeValueAsString(changes);
+            } catch (JsonProcessingException e) {
+                throw new IllegalStateException("Failed to serialize changes to JSON", e);
+            }
+        }
+    }
 
+    @PostLoad
+    protected void onLoad() {
+        if (data != null) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                changes = mapper.readValue(data, 
+                    new com.fasterxml.jackson.core.type.TypeReference<Map<String, ChangeDiff>>() {});
+            } catch (JsonProcessingException e) {
+                throw new IllegalStateException("Failed to deserialize changes from JSON", e);
+            }
+        }
+    }
 }

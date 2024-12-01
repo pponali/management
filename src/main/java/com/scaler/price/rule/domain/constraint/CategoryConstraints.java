@@ -1,17 +1,14 @@
 package com.scaler.price.rule.domain.constraint;
 
-import com.scaler.price.core.management.domain.AuditInfo;
-import com.scaler.price.rule.dto.CategoryAttributes;
 import com.scaler.price.rule.domain.RuleType;
+import com.scaler.price.rule.dto.CategoryAttributes;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
-
 import org.hibernate.annotations.Type;
 
 import java.math.BigDecimal;
@@ -21,15 +18,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "categories")
-@Data
-@SuperBuilder
+@DiscriminatorValue("category_constraints")
+@Getter
+@Setter
+@SuperBuilder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper=false)
 public class CategoryConstraints extends RuleConstraints{
-    @Id
-    private Long categoryId;
 
     @Column(nullable = false)
     private String categoryName;
@@ -45,9 +40,6 @@ public class CategoryConstraints extends RuleConstraints{
 
     @Column(nullable = false)
     private Integer level;
-
-    @Column(nullable = false)
-    private Boolean isActive;
 
     @Column(nullable = false)
     private String categoryPath;
@@ -67,23 +59,7 @@ public class CategoryConstraints extends RuleConstraints{
     @Column(nullable = false)
     private Integer displayOrder;
 
-    @Embedded
-    private AuditInfo auditInfo;
 
-    @Version
-    private Long version;
-
-    public CategoryConstraints(Long categoryId, String categoryName, String description,
-                             BigDecimal minimumPrice, BigDecimal maximumPrice,
-                             BigDecimal minimumMargin, BigDecimal maximumMargin,
-                             LocalDateTime effectiveFrom, LocalDateTime effectiveTo,
-                             Boolean isActive, Integer priority, RuleType ruleType,
-                             Instant startDate, Instant endDate) {
-
-        this.categoryId = categoryId;
-        this.categoryName = categoryName;
-        this.description = description;
-    }
 
     public void addSubCategory(CategoryConstraints subCategory) {
         if (subCategories == null) {
@@ -100,14 +76,7 @@ public class CategoryConstraints extends RuleConstraints{
         subCategory.setParentCategory(null);
     }
 
-    @PrePersist
-    @PreUpdate
-    protected void onUpdate() {
-        auditInfo.setUpdatedAt(LocalDateTime.now());
-        if (auditInfo.getCreatedAt() == null) {
-            auditInfo.setCreatedAt(auditInfo.getUpdatedAt());
-        }
+    public void setParentCategory(CategoryConstraints parentCategory) {
+        this.parentCategory = parentCategory;
     }
-
-  
 }

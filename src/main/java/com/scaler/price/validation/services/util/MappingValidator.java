@@ -66,9 +66,9 @@ public class MappingValidator {
         }
     }
 
-    private void validateBrandMappings(Set<String> brandIds) throws RuleValidationException {
+    private void validateBrandMappings(Set<Long> brandIds) throws RuleValidationException {
         if (brandIds != null && !brandIds.isEmpty()) {
-            for (String brandId : brandIds) {
+            for (Long brandId : brandIds) {
                 if (!brandService.isValidBrand(brandId)) {
                     throw new RuleValidationException("Invalid brand ID: " + brandId);
                 }

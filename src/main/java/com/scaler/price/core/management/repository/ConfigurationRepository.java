@@ -10,10 +10,10 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-@Repository
+@Repository("managementConfigurationRepository")
 public interface ConfigurationRepository extends JpaRepository<Configuration, Long> {
 
-    Optional<Configuration> findByKeyAndSiteId(String key, Long siteId);
+    Optional<Configuration> findByKeyAndSiteId(String key, String siteId);
 
     Optional<Configuration> findByKeyAndSiteIdAndIsActive(
             String key,
@@ -21,7 +21,7 @@ public interface ConfigurationRepository extends JpaRepository<Configuration, Lo
             Boolean isActive
     );
 
-    List<Configuration> findBySiteId(Long siteId);
+    List<Configuration> findBySiteId(String siteId);
 
     List<Configuration> findByType(Configuration.ConfigType type);
 
@@ -69,7 +69,7 @@ public interface ConfigurationRepository extends JpaRepository<Configuration, Lo
     int updateConfigurationValue(
             @Param("key") String key,
             @Param("value") String value,
-            @Param("siteId") Long siteId
+            @Param("siteId") String siteId
     );
 
     @Query(value = """
@@ -80,6 +80,49 @@ public interface ConfigurationRepository extends JpaRepository<Configuration, Lo
         """, nativeQuery = true)
     List<Configuration> findByMetadata(
             @Param("metadata") String metadata,
-            @Param("siteId") String siteId
+            @Param("siteId") Long siteId
+    );
+
+    Optional<Configuration> findByKey(String key);
+
+
+    @Query("""
+        SELECT c FROM Configuration c
+        WHERE c.isActive = true
+        AND (c.siteId = :siteId OR c.siteId IS NULL)
+        AND c.key = :key
+        ORDER BY c.siteId DESC
+        LIMIT 1
+    """)
+    Optional<Configuration> findActiveConfigurationByKeyAndSite(
+            @Param("key") String key,
+            @Param("siteId") Long siteId
+    );
+
+    @Query("""
+        SELECT c FROM Configuration c
+        WHERE c.isActive = true
+        AND c.type = :type
+        AND (c.siteId = :siteId OR c.siteId IS NULL)
+        ORDER BY c.siteId DESC
+    """)
+    List<Configuration> findActiveConfigurationsByTypeAndSite(
+            @Param("type") Configuration.ConfigType type,
+            @Param("siteId") Long siteId
+    );
+
+    @Modifying
+    @Query("UPDATE Configuration c SET c.isActive = false WHERE c.id = :id")
+    void deactivateConfiguration(@Param("id") Long id);
+
+    @Query("""
+        SELECT COUNT(c) FROM Configuration c
+        WHERE c.isActive = true
+        AND c.type = :type
+        AND (c.siteId = :siteId OR c.siteId IS NULL)
+    """)
+    long countActiveConfigurationsByTypeAndSite(
+            @Param("type") Configuration.ConfigType type,
+            @Param("siteId") Long siteId
     );
 }

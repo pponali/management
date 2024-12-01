@@ -2,14 +2,10 @@ package com.scaler.price.rule.domain;
 
 import com.scaler.price.core.management.domain.AuditInfo;
 import com.scaler.price.rule.domain.constraint.PriceConstraints;
-import com.scaler.price.rule.domain.constraint.PricingRuleConstraints;
+import com.scaler.price.rule.domain.constraint.PriceConstraints.RoundingStrategy;
 import com.scaler.price.rule.domain.constraint.RuleConstraints;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
@@ -27,7 +23,8 @@ import java.util.*;
 @AllArgsConstructor
 public class PricingRule extends AuditInfo { 
 
-    @Column
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "pricing_rule_id")
     private Set<RuleConstraints> constraints;
 
     @Column(nullable = false)
@@ -43,6 +40,9 @@ public class PricingRule extends AuditInfo {
     @Column(name = "rule_status")
     private RuleStatus status = RuleStatus.DRAFT;
 
+    @ElementCollection
+    @CollectionTable(name = "rule_seller_mappings", joinColumns = @JoinColumn(name = "rule_id"))
+    @Column(name = "seller_id")
     @Builder.Default
     private Set<Long> sellerIds = new HashSet<>();
 
@@ -71,7 +71,7 @@ public class PricingRule extends AuditInfo {
     )
     @Column(name = "brand_id")
     @Builder.Default
-    private Set<String> brandIds = new HashSet<>();
+    private Set<Long> brandIds = new HashSet<>();
 
     @Column(name = "minimum_price")
     private BigDecimal minimumPrice;
@@ -115,10 +115,6 @@ public class PricingRule extends AuditInfo {
 
     @Column(name = "is_active")
     private Boolean isActive;
-
-    @Version
-    @Column(name = "version")
-    private Long version;
 
 
     @Column(name = "start_date")
@@ -164,7 +160,7 @@ public class PricingRule extends AuditInfo {
         return Collections.unmodifiableSet(siteIds);
     }
 
-    public Set<String> getAllowedRegions() {
+    public Set<Long> getAllowedRegions() {
         return Collections.unmodifiableSet(brandIds);
     }
 
@@ -175,19 +171,28 @@ public class PricingRule extends AuditInfo {
 
     public List<RuleConstraints> getConstraints() {
         List<RuleConstraints> constraints = new ArrayList<>();
-        constraints.add(new PricingRuleConstraints(
-            minimumPrice,
-            maximumPrice,
-            minimumMargin,
-            maximumMargin,
-            effectiveFrom,
-            effectiveTo,
-            ruleType,
-            isActive,
-            priority,
-            startDate,
-            endDate
-        ));
+        constraints.add(PriceConstraints.priceConstraintsBuilder()
+            .minimumPrice(minimumPrice)
+            .maximumPrice(maximumPrice)
+            .minimumMargin(minimumMargin)
+            .maximumMargin(maximumMargin)
+            .effectiveFrom(effectiveFrom)
+            .effectiveTo(effectiveTo)
+            .isActive(isActive)
+            .priority(priority)
+            .ruleType(ruleType)
+            .startDate(startDate)
+            .endDate(endDate)
+            .marginPercentage(this.getMarginPercentage())
+            .maxPriceChangePercentage(PriceConstraints.calculatePercentage(maximumPrice, marginPercentage))
+            .maxPriceIncreaseAmount(maximumPrice)
+            .maxPriceDecreaseAmount(maximumMargin)
+            .minDiscountPercentage(PriceConstraints.calculatePercentage(minimumPrice, marginPercentage))
+            .maxDiscountPercentage(PriceConstraints.calculatePercentage(maximumPrice, marginPercentage))
+            .roundingStrategy(RoundingStrategy.NONE)
+            .roundingValue(priority)
+            .allowPriceIncrease(isActive)
+            .build());
         return constraints;
     }
 

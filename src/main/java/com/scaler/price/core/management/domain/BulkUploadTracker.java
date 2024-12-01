@@ -1,22 +1,24 @@
 package com.scaler.price.core.management.domain;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "bulk_upload_tracker")
-@Data
-public class BulkUploadTracker {
-    @Id
-    private String uploadId;
+@Setter
+@Getter
+@SuperBuilder
+public class BulkUploadTracker extends AuditInfo {
 
     @Column(nullable = false)
-    private String sellerId;
+    private Long sellerId;
 
     @Column(nullable = false)
-    private String siteId;
+    private Long siteId;
 
     @Column(nullable = false)
     private String uploadedBy;
@@ -35,15 +37,4 @@ public class BulkUploadTracker {
     private String errorFilePath;
     private String originalFileName;
 
-    @Version
-    private Long version;
-
-    @PrePersist
-    public void prePersist() {
-        uploadedAt = LocalDateTime.now();
-        processedRecords = 0;
-        successCount = 0;
-        failureCount = 0;
-        status = UploadStatus.PENDING;
-    }
 }

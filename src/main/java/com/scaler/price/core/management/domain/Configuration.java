@@ -50,12 +50,6 @@ public class Configuration extends AuditInfo{
     @Column(columnDefinition = "jsonb")
     private String metadata;
 
-    @Embedded
-    private AuditInfo auditInfo;
-
-    @Version
-    private Long version;
-
     public enum ConfigType {
         STRING,
         NUMBER,

@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scaler.price.core.management.utils.PriceServiceMetrics;
 import com.scaler.price.core.management.service.ConfigurationService;
-
 import com.scaler.price.rule.domain.ConditionType;
 import com.scaler.price.rule.domain.Operator;
 import com.scaler.price.rule.domain.RuleCondition;
@@ -12,7 +11,6 @@ import com.scaler.price.rule.dto.condition.CompetitorPriceValue;
 import com.scaler.price.rule.dto.condition.PriceRangeValue;
 import com.scaler.price.rule.exceptions.RuleValidationException;
 import com.scaler.price.rule.service.CompetitorService;
-import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;

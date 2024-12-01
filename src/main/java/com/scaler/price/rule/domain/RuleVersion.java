@@ -10,7 +10,7 @@ import org.hibernate.annotations.Type;
 @Entity
 @Table(name = "rule_versions")
 @Data
-public class RuleVersion {
+public class RuleVersion extends AuditInfo{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -24,7 +24,4 @@ public class RuleVersion {
     @Column(columnDefinition = "jsonb")
     @Type(JsonBinaryType.class)
     private JsonNode ruleSnapshot;
-
-    @Embedded
-    private AuditInfo auditInfo;
 }

@@ -8,15 +8,16 @@ import org.springframework.stereotype.Service;
 @Service
 public class PricingUpdateSaga {
 
-    private final PriceValidationService validationService;
-    private final NotificationService notificationService;
-    private final InventoryService inventoryService;;
-    private PricingUpdateSaga priceService;
+    private PriceValidationService validationService;
+    private NotificationService notificationService;
+    private InventoryService inventoryService;
+    private PriceService priceService;
 
-    public PricingUpdateSaga(PriceValidationService validationService, NotificationService notificationService, InventoryService inventoryService) {
+    public PricingUpdateSaga(PriceValidationService validationService, NotificationService notificationService, InventoryService inventoryService, PriceService priceService) {
         this.validationService = validationService;
         this.notificationService = notificationService;
         this.inventoryService = inventoryService;
+        this.priceService = priceService;
     }
 
     @Transactional

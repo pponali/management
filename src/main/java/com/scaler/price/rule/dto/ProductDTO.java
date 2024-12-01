@@ -28,6 +28,8 @@ public class ProductDTO {
     private Long brandId;
     private Long sellerId;
     private boolean active;
+
+    private BrandDTO brand;
     
     @Builder.Default
     private Set<Long> siteIds = new HashSet<>();

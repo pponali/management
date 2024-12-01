@@ -9,6 +9,8 @@ import com.scaler.price.rule.dto.StatusChangeNotification;
 import com.scaler.price.rule.exceptions.InvalidStatusTransitionException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -102,7 +104,9 @@ public class RuleStatusManager {
         validateStatusTransition(oldStatus, newStatus);
 
         rule.setStatus(newStatus);
-        rule.setLastModifiedAt(LocalDateTime.now());
+        rule.setLastModifiedInfo(
+                SecurityContextHolder.getContext().getAuthentication().getName(),
+                LocalDateTime.now());
 
         try {
             // Record status change in audit

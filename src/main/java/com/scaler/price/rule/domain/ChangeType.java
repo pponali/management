@@ -1,19 +1,8 @@
 package com.scaler.price.rule.domain;
 
-import lombok.Data;
+public enum ChangeType {
 
-@Data
-public class ChangeType {
-    private String typeName;
+    ABSOLUTE, PERCENTAGE
 
-    public ChangeType(String typeName) {
-        this.typeName = typeName;
-    }
 
-    @Override
-    public String toString() {
-        return "ChangeType{" +
-                "typeName='" + typeName + '\'' +
-                '}';
-    }
 }

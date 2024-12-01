@@ -2,11 +2,8 @@ package com.scaler.price.rule.domain.constraint;
 
 import com.scaler.price.core.management.domain.AuditInfo;
 import com.scaler.price.rule.domain.RuleType;
-import jakarta.persistence.Column;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.MappedSuperclass;
-import lombok.Builder;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -16,13 +13,16 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 
-@MappedSuperclass
+@Entity
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "constraint_type", discriminatorType = DiscriminatorType.STRING)
+@Table(name = "rule_constraints") // Table only defined here in parent class
+@Getter @Setter
+@SuperBuilder(toBuilder = true)
 @NoArgsConstructor
-@SuperBuilder
-@Getter
-@Setter
+@AllArgsConstructor
 public class RuleConstraints extends AuditInfo{
-    
+
     @Column(name = "minimum_price")
     private BigDecimal minimumPrice;
 
@@ -46,7 +46,7 @@ public class RuleConstraints extends AuditInfo{
     private RuleType ruleType;
 
     @Column(name = "is_active")
-    private Boolean active = true;
+    private Boolean isActive = true;
 
     @Column(name = "priority")
     private Integer priority;
@@ -63,23 +63,4 @@ public class RuleConstraints extends AuditInfo{
     @Column(name = "category_id")
     private Long categoryId;
 
-    public RuleConstraints(BigDecimal minimumPrice, BigDecimal maximumPrice,
-                         BigDecimal minimumMargin, BigDecimal maximumMargin,
-                         LocalDateTime effectiveFrom, LocalDateTime effectiveTo,
-                         RuleType ruleType, Boolean isActive, Integer priority,
-                         Instant startDate, Instant endDate, Long categoryId) {
-        this.minimumPrice = minimumPrice;
-        this.maximumPrice = maximumPrice;
-        this.minimumMargin = minimumMargin;
-        this.maximumMargin = maximumMargin;
-        this.effectiveFrom = effectiveFrom;
-        this.effectiveTo = effectiveTo;
-        this.ruleType = ruleType;
-        this.active = isActive;
-        this.priority = priority;
-        this.startDate = startDate;
-        this.endDate = endDate;
-        this.categoryId = categoryId;
-    }
-    
 }

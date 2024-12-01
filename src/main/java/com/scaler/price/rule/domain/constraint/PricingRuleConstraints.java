@@ -1,56 +1,54 @@
 package com.scaler.price.rule.domain.constraint;
 
 import com.scaler.price.rule.domain.RuleType;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 
+@Entity
+@DiscriminatorValue("pricing_rule_constraints") 
+@Getter
+@Setter
+@SuperBuilder(toBuilder = true)
+@NoArgsConstructor
+@AllArgsConstructor
 public class PricingRuleConstraints extends RuleConstraints {
-    private final BigDecimal minimumPrice;
-    private final BigDecimal maximumPrice;
-    private final BigDecimal minimumMargin;
-    private final BigDecimal maximumMargin;
-    private final LocalDateTime effectiveFrom;
-    private final LocalDateTime effectiveTo;
-    private final RuleType ruleType;
-    private final Boolean isActive;
-    private final Integer priority;
-    private final Instant startDate;
-    private final Instant endDate;
+    @Column(name = "minimum_price", insertable = false, updatable = false)
+    private BigDecimal minimumPrice;
 
-    public PricingRuleConstraints(
-            BigDecimal minimumPrice,
-            BigDecimal maximumPrice,
-            BigDecimal minimumMargin,
-            BigDecimal maximumMargin,
-            LocalDateTime effectiveFrom,
-            LocalDateTime effectiveTo,
-            RuleType ruleType,
-            Boolean isActive,
-            Integer priority,
-            Instant startDate,
-            Instant endDate
-    ) {
-        super(minimumPrice, maximumPrice, minimumMargin, maximumMargin, 
-              effectiveFrom, effectiveTo, ruleType, isActive, priority, 
-              startDate, endDate, null); // Added null for categoryId
-        this.minimumPrice = minimumPrice;
-        this.maximumPrice = maximumPrice;
-        this.minimumMargin = minimumMargin;
-        this.maximumMargin = maximumMargin;
-        this.effectiveFrom = effectiveFrom;
-        this.effectiveTo = effectiveTo;
-        this.ruleType = ruleType;
-        this.isActive = isActive;
-        this.priority = priority;
-        this.startDate = startDate;
-        this.endDate = endDate;
-    }
+    @Column(name = "maximum_price", insertable = false, updatable = false)
+    private BigDecimal maximumPrice;
 
+    @Column(name = "minimum_margin", insertable = false, updatable = false)
+    private BigDecimal minimumMargin;
 
-    public boolean isValid() {
-        // Add validation logic if needed
-        return getActive() != null && getActive();
-    }
+    @Column(name = "maximum_margin", insertable = false, updatable = false)
+    private BigDecimal maximumMargin;
+
+    @Column(name = "effective_from", insertable = false, updatable = false)
+    private LocalDateTime effectiveFrom;
+
+    @Column(name = "effective_to", insertable = false, updatable = false)
+    private LocalDateTime effectiveTo;
+
+    @Column(name = "rule_type", insertable = false, updatable = false)
+    @Enumerated(EnumType.STRING)
+    private RuleType ruleType;
+
+    @Column(name = "priority", insertable = false, updatable = false)
+    private Integer priority;
+
+    @Column(name = "start_date")
+    private Instant startDate;
+
+    @Column(name = "end_date")
+    private Instant endDate;
+
 }

@@ -17,7 +17,11 @@ import java.util.concurrent.TimeUnit;
 public class PriceServiceMetrics {
     private final MeterRegistry meterRegistry;
     private final RuleRepository ruleRepository;
-    private final PriceServiceMetrics metricsService;
+
+    public PriceServiceMetrics(MeterRegistry meterRegistry, RuleRepository ruleRepository) {
+        this.meterRegistry = meterRegistry;
+        this.ruleRepository = ruleRepository;
+    }
 
     public RuleMetrics calculateRuleMetrics(Long siteId) {
         RuleMetrics metrics = new RuleMetrics();
@@ -52,7 +56,7 @@ public class PriceServiceMetrics {
         ));
 
         // Get detailed statistics
-        List<RuleRepository.RuleStatistics> statistics = ruleRepository.getRuleStatistics(String.valueOf(siteId));
+        List<RuleRepository.RuleStatistics> statistics = ruleRepository.getRuleStatistics(siteId);
         if (!statistics.isEmpty()) {
             RuleRepository.RuleStatistics stats = statistics.get(0);
             metrics.setExpiredRules(stats.getExpiredRules());
@@ -66,27 +70,21 @@ public class PriceServiceMetrics {
     }
 
     private void recordMetrics(RuleMetrics metrics, Long siteId) {
-        metricsService.recordGaugeValue(
+        recordGaugeValue(
                 "rules.total",
                 metrics.getTotalRules(),
                 "siteId", siteId
         );
-        metricsService.recordGaugeValue(
+        recordGaugeValue(
                 "rules.active",
                 metrics.getActiveRules(),
                 "siteId", siteId
         );
-        metricsService.recordGaugeValue(
+        recordGaugeValue(
                 "rules.active.percentage",
                 metrics.getActivePercentage(),
                 "siteId", siteId
         );
-    }
-
-    public PriceServiceMetrics(MeterRegistry registry, RuleRepository ruleRepository, PriceServiceMetrics metricsService) {
-        this.meterRegistry = registry;
-        this.ruleRepository = ruleRepository;
-        this.metricsService = metricsService;
     }
 
     public void recordPriceOperation(String operation) {

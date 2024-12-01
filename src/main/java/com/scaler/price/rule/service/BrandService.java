@@ -19,5 +19,5 @@ public interface BrandService {
     List<BrandDTO> findPopularBrands(int limit);
     void deactivateBrand(Long id);
     void activateBrand(Long id);
-    boolean isValidBrand(String brandId);
+    boolean isValidBrand(Long brandId);
 }

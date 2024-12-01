@@ -1,6 +1,8 @@
 package com.scaler.price.core.management.domain;
 
-import lombok.Data;
+
+import lombok.Getter;
+import lombok.Setter;
 import jakarta.persistence.*;
 import lombok.experimental.SuperBuilder;
 
@@ -15,18 +17,19 @@ import java.time.LocalDateTime;
                 )
         }
 )
-@Data
+@Getter
+@Setter
 @SuperBuilder
 public class Price extends AuditInfo{
 
     @Column(name = "product_id", nullable = false)
-    private String productId;
+    private Long productId;
 
     @Column(name = "seller_id", nullable = false)
-    private String sellerId;
+    private Long sellerId;
 
     @Column(name = "site_id", nullable = false)
-    private String siteId;
+    private Long siteId;
 
     @Column(nullable = false)
     private BigDecimal basePrice;
@@ -57,10 +60,5 @@ public class Price extends AuditInfo{
 
     @Embedded
     private SiteAttributes siteAttributes;
-
-    @Embedded
-    private AuditInfo auditInfo;
-
-    @Version
-    private Long version;
+    
 }

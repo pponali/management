@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -199,14 +200,14 @@ public class AuditEventPublisherImpl implements AuditEventPublisher {
         try {
             // Create and persist audit event
             AuditEntry auditEvent = AuditEntry.builder()
-                    .eventType(AuditEventType.valueOf((String) eventData.get("eventType")))
-                    .timestamp(Instant.now())
+                    .type(AuditEventType.valueOf((String) eventData.get("eventType")))
                     .userId((String) eventData.get("userId"))
-                    .eventData(objectMapper.writeValueAsString(eventData))
+                    .data(objectMapper.writeValueAsString(eventData))
                     .source((String) eventData.get("source"))
-                    .comment("Auto-generated audit event")  // Add a default comment
+                    .comment("Auto-generated audit event")
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
+                    .eventTime(LocalDateTime.now())
                     .build();
             
             auditEventRepository.save(auditEvent);

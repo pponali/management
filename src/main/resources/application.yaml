@@ -1,11 +1,16 @@
 spring:
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
   application:
     name: price-management-service
 
   datasource:
     url: jdbc:postgresql://localhost:5432/price_management
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres}
+    username: myuser
+    password: mypassword
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -15,7 +20,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
     show-sql: true
     properties:
       hibernate:
@@ -70,14 +75,6 @@ spring:
       value-deserializer: org.springframework.kafka.common.serialization.StringDeserializer
 
 server:
-  tomcat:
-    mbeanregistry:
-      enabled: true
-    threads:
-      max: 200
-    connection-timeout: 5000
-    max-connections: 8192
-    accept-count: 100
   address: 0.0.0.0
   port: 8081
   servlet:
@@ -164,8 +161,8 @@ app:
     max-age: 3600
 
 file:
-  upload-dir: ${FILE_UPLOAD_DIR:/data/uploads}
-  error-dir: ${FILE_ERROR_DIR:/data/errors}
+  upload-dir: ${FILE_UPLOAD_DIR:~/price-management/uploads}
+  error-dir: ${FILE_ERROR_DIR:~/price-management/errors}
   retention-days: 30
 
 springdoc:

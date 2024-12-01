@@ -100,7 +100,7 @@ public class ConfigurationService {
 
     @CacheEvict(key = "#key + '_' + #siteId")
     @Transactional
-    public void setValue(String key, String value, Long siteId) {
+    public void setValue(String key, String value, String siteId) {
         try {
             Configuration config = configRepository
                     .findByKeyAndSiteId(key, siteId)

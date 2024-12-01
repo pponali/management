@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,36 +21,36 @@ public interface AuditEventRepository extends JpaRepository<AuditEntry, Long> {
      * @param userId The ID of the user whose audit events are to be retrieved
      * @return List of audit events associated with the specified user
      */
-    @Query("SELECT ae FROM AuditEvent ae WHERE ae.userId = :userId ORDER BY ae.timestamp DESC")
+    @Query("SELECT ae FROM AuditEntry ae WHERE ae.userId = :userId ORDER BY ae.eventTime DESC")
     List<AuditEntry> findByUserId(@Param("userId") String userId);
 
     /**
-     * Find audit events by event type
-     * @param eventType The type of audit events to retrieve
+     * Find audit events by type
+     * @param type The type of audit events to retrieve
      * @return List of audit events of the specified type
      */
-    @Query("SELECT ae FROM AuditEvent ae WHERE ae.eventType = :eventType ORDER BY ae.timestamp DESC")
-    List<AuditEntry> findByEventType(@Param("eventType") AuditEventType eventType);
+    @Query("SELECT ae FROM AuditEntry ae WHERE ae.type = :type ORDER BY ae.eventTime DESC")
+    List<AuditEntry> findByType(@Param("type") AuditEventType type);
 
     /**
      * Find audit events within a time range
      */
-    List<AuditEntry> findByTimestampBetween(Instant startTime, Instant endTime);
+    List<AuditEntry> findByEventTimeBetween(LocalDateTime startTime, LocalDateTime endTime);
 
     /**
-     * Find audit events by user ID and event type
+     * Find audit events by user ID and type
      */
-    List<AuditEntry> findByUserIdAndEventType(String userId, AuditEventType eventType);
+    List<AuditEntry> findByUserIdAndType(String userId, AuditEventType type);
 
     /**
      * Find audit events by user ID within a time range
      */
-    List<AuditEntry> findByUserIdAndTimestampBetween(String userId, Instant startTime, Instant endTime);
+    List<AuditEntry> findByUserIdAndEventTimeBetween(String userId, LocalDateTime startTime, LocalDateTime endTime);
 
     /**
-     * Find audit events by event type within a time range
+     * Find audit events by type within a time range
      */
-    List<AuditEntry> findByEventTypeAndTimestampBetween(AuditEventType eventType, Instant startTime, Instant endTime);
+    List<AuditEntry> findByTypeAndEventTimeBetween(AuditEventType type, LocalDateTime startTime, LocalDateTime endTime);
 
     /**
      * Find paginated audit events
@@ -63,97 +63,97 @@ public interface AuditEventRepository extends JpaRepository<AuditEntry, Long> {
     Page<AuditEntry> findByUserId(String userId, Pageable pageable);
 
     /**
-     * Find paginated audit events by event type
+     * Find paginated audit events by type
      */
-    Page<AuditEntry> findByEventType(AuditEventType eventType, Pageable pageable);
+    Page<AuditEntry> findByType(AuditEventType type, Pageable pageable);
 
     /**
      * Search audit events by event data content
      */
-    @Query("SELECT ae FROM AuditEntry ae WHERE ae.eventData LIKE %:searchTerm%")
+    @Query("SELECT ae FROM AuditEntry ae WHERE ae.data LIKE %:searchTerm%")
     List<AuditEntry> searchByEventData(@Param("searchTerm") String searchTerm);
 
     /**
      * Find latest audit event by rule ID
      */
-    @Query("SELECT ae FROM AuditEntry ae WHERE ae.eventData LIKE %:ruleId% ORDER BY ae.timestamp DESC LIMIT 1")
+    @Query("SELECT ae FROM AuditEntry ae WHERE ae.data LIKE %:ruleId% ORDER BY ae.eventTime DESC LIMIT 1")
     Optional<AuditEntry> findLatestByRuleId(@Param("ruleId") String ruleId);
 
     /**
      * Find all audit events for a specific rule
      */
-    @Query("SELECT ae FROM AuditEntry ae WHERE ae.eventData LIKE %:ruleId% ORDER BY ae.timestamp DESC")
+    @Query("SELECT ae FROM AuditEntry ae WHERE ae.data LIKE %:ruleId% ORDER BY ae.eventTime DESC")
     List<AuditEntry> findAllByRuleId(@Param("ruleId") String ruleId);
 
     /**
      * Count events by type within a time range
      */
-    long countByEventTypeAndTimestampBetween(AuditEventType eventType, Instant startTime, Instant endTime);
+    long countByTypeAndEventTimeBetween(AuditEventType type, LocalDateTime startTime, LocalDateTime endTime);
 
     /**
-     * Find events by multiple event types
+     * Find events by multiple types
      */
-    List<AuditEntry> findByEventTypeIn(List<AuditEventType> eventTypes);
+    List<AuditEntry> findByTypeIn(List<AuditEventType> types);
 
     /**
-     * Find events by user ID and multiple event types
+     * Find events by user ID and multiple types
      */
-    List<AuditEntry> findByUserIdAndEventTypeIn(String userId, List<AuditEventType> eventTypes);
+    List<AuditEntry> findByUserIdAndTypeIn(String userId, List<AuditEventType> types);
 
     /**
      * Find events newer than a specific timestamp
      */
-    List<AuditEntry> findByTimestampAfter(Instant timestamp);
+    List<AuditEntry> findByEventTimeAfter(LocalDateTime timestamp);
 
     /**
      * Find events older than a specific timestamp
      */
-    List<AuditEntry> findByTimestampBefore(Instant timestamp);
+    List<AuditEntry> findByEventTimeBefore(LocalDateTime timestamp);
 
     /**
      * Custom query to find events with specific rule modifications
      */
-    @Query("SELECT ae FROM AuditEvent ae WHERE ae.eventType = 'RULE_MODIFIED' " +
-           "AND ae.eventData LIKE %:fieldName% AND ae.eventData LIKE %:fieldValue%")
+    @Query("SELECT ae FROM AuditEntry ae WHERE ae.type = 'RULE_MODIFIED' " +
+            "AND ae.data LIKE %:fieldName% AND ae.data LIKE %:fieldValue%")
     List<AuditEntry> findRuleModificationsByField(@Param("fieldName") String fieldName,
-                                                 @Param("fieldValue") String fieldValue);
+                                                  @Param("fieldValue") String fieldValue);
 
     /**
-     * Find events by user ID and event type with pagination
+     * Find events by user ID and type with pagination
      */
-    Page<AuditEntry> findByUserIdAndEventType(String userId, AuditEventType eventType, Pageable pageable);
+    Page<AuditEntry> findByUserIdAndType(String userId, AuditEventType type, Pageable pageable);
 
     /**
      * Custom query to get event statistics
      */
-    @Query("SELECT ae.eventType, COUNT(ae) FROM AuditEntry ae " +
-           "WHERE ae.timestamp BETWEEN :startTime AND :endTime " +
-           "GROUP BY ae.eventType")
-    List<Object[]> getEventStatistics(@Param("startTime") Instant startTime, 
-                                     @Param("endTime") Instant endTime);
+    @Query("SELECT ae.type, COUNT(ae) FROM AuditEntry ae " +
+            "WHERE ae.eventTime BETWEEN :startTime AND :endTime " +
+            "GROUP BY ae.type")
+    List<Object[]> getEventStatistics(@Param("startTime") LocalDateTime startTime,
+                                     @Param("endTime") LocalDateTime endTime);
 
     /**
      * Find distinct users who performed specific event type
      */
-    @Query("SELECT DISTINCT ae.userId FROM AuditEntry ae WHERE ae.eventType = :eventType")
-    List<String> findDistinctUsersByEventType(@Param("eventType") AuditEventType eventType);
+    @Query("SELECT DISTINCT ae.userId FROM AuditEntry ae WHERE ae.type = :type")
+    List<String> findDistinctUsersByType(@Param("type") AuditEventType type);
 
     /**
      * Delete old audit events
      */
-    void deleteByTimestampBefore(Instant timestamp);
+    void deleteByEventTimeBefore(LocalDateTime timestamp);
 
     /**
      * Find events by complex criteria
      */
     @Query("SELECT ae FROM AuditEntry ae WHERE " +
-           "(:userId IS NULL OR ae.userId = :userId) AND " +
-           "(:eventType IS NULL OR ae.eventType = :eventType) AND " +
-           "(:startTime IS NULL OR ae.timestamp >= :startTime) AND " +
-           "(:endTime IS NULL OR ae.timestamp <= :endTime)")
+            "(:userId IS NULL OR ae.userId = :userId) AND " +
+            "(:type IS NULL OR ae.type = :type) AND " +
+            "(:startTime IS NULL OR ae.eventTime >= :startTime) AND " +
+            "(:endTime IS NULL OR ae.eventTime <= :endTime)")
     Page<AuditEntry> findByComplexCriteria(@Param("userId") String userId,
-                                          @Param("eventType") AuditEventType eventType,
-                                          @Param("startTime") Instant startTime,
-                                          @Param("endTime") Instant endTime,
-                                          Pageable pageable);
+                                           @Param("type") AuditEventType type,
+                                           @Param("startTime") LocalDateTime startTime,
+                                           @Param("endTime") LocalDateTime endTime,
+                                           Pageable pageable);
 }

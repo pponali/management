@@ -12,115 +12,111 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 
+/**
+ * MarginConstraints class represents the margin constraints for a pricing rule.
+ * It extends the RuleConstraints class and adds additional fields and methods specific to margin constraints.
+ */
 @Entity
-@Table(name = "margin_constraints")
-@Getter
-@Setter
-@SuperBuilder
+@DiscriminatorValue("margin_constraints")
 @NoArgsConstructor
 @AllArgsConstructor
-@EqualsAndHashCode(callSuper=false)
+@SuperBuilder(toBuilder = true, builderMethodName = "marginConstraintsBuilder")
+@Getter
+@Setter
 public class MarginConstraints extends RuleConstraints {
 
-
-    @Column(name = "maximum_price")
-    private BigDecimal maximumPrice;
-
-    @Column(name = "minimum_margin")
-    private BigDecimal minimumMargin;
-
-
-    @Column(name = "maximum_margin")
-    private BigDecimal maximumMargin;
-
-
+    /**
+     * The calculation type for the margin.
+     */
     @Column(name = "calculation_type", nullable = false)
     @Enumerated(EnumType.STRING)
     private MarginCalculationType calculationType = MarginCalculationType.PERCENTAGE;
 
+    /**
+     * The default margin.
+     */
     @Column(name = "default_margin", precision = 10, scale = 2)
     private BigDecimal defaultMargin;
 
+    /**
+     * The minimum margin override.
+     */
     @Column(name = "min_margin_override", precision = 10, scale = 2)
     private BigDecimal minMarginOverride;
 
+    /**
+     * The maximum margin override.
+     */
     @Column(name = "max_margin_override", precision = 10, scale = 2)
     private BigDecimal maxMarginOverride;
 
+    /**
+     * Whether to enforce the minimum margin.
+     */
     @Column(name = "enforce_min_margin")
     private Boolean enforceMinMargin = false;
 
+    /**
+     * Whether to enforce the maximum margin.
+     */
     @Column(name = "enforce_max_margin")
     private Boolean enforceMaxMargin = false;
 
+    /**
+     * The minimum margin percentage.
+     */
     @Column(name = "min_margin_percentage", precision = 10, scale = 2)
     private BigDecimal minMarginPercentage;
 
+    /**
+     * The maximum margin percentage.
+     */
     @Column(name = "max_margin_percentage", precision = 10, scale = 2)
     private BigDecimal maxMarginPercentage;
 
+    /**
+     * The site ID.
+     */
     @Column(name = "site_id")
     private String siteId;
 
+    /**
+     * The rule type.
+     */
     @Column(name = "rule_type")
     @Enumerated(EnumType.STRING)
     private RuleType ruleType;
 
+    /**
+     * The minimum margin.
+     */
     @Column(name = "min_margin")
     @DecimalMin(value = "0.0")
     private BigDecimal minMargin;
 
+    /**
+     * The maximum margin.
+     */
     @Column(name = "max_margin")
     @DecimalMin(value = "0.0")
     private BigDecimal maxMargin;
 
+    /**
+     * The target margin.
+     */
     @Column(name = "target_margin")
     @DecimalMin(value = "0.0")
     private BigDecimal targetMargin;
 
-    @Column(name = "is_active")
-    private boolean active;
 
-    public MarginConstraints(Long id, MarginCalculationType calculationType,
-                           BigDecimal defaultMargin, BigDecimal minMarginOverride,
-                           BigDecimal maxMarginOverride, Boolean enforceMinMargin,
-                           Boolean enforceMaxMargin, BigDecimal minMarginPercentage,
-                           BigDecimal maxMarginPercentage, String lastModifiedBy,
-                           BigDecimal minimumPrice,
-                           BigDecimal maximumPrice, BigDecimal minimumMargin,
-                           BigDecimal maximumMargin, LocalDateTime effectiveFrom,
-                           LocalDateTime effectiveTo, Boolean isActive,
-                           Integer priority, RuleType ruleType,
-                           Instant startDate, Instant endDate, String siteId, BigDecimal minMargin, BigDecimal maxMargin, BigDecimal targetMargin, boolean active) {
-                        
-        this.setId(id);
-        this.calculationType = calculationType;
-        this.defaultMargin = defaultMargin;
-        this.minMarginOverride = minMarginOverride;
-        this.maxMarginOverride = maxMarginOverride;
-        this.enforceMinMargin = enforceMinMargin;
-        this.enforceMaxMargin = enforceMaxMargin;
-        this.minMarginPercentage = minMarginPercentage;
-        this.maxMarginPercentage = maxMarginPercentage;
-        this.setLastModifiedBy(lastModifiedBy);
-        this.setMinimumPrice(minimumPrice);
-        this.setMaximumPrice(maximumPrice);
-        this.setMinimumMargin(minimumMargin);
-        this.setMaximumMargin(maximumMargin);
-        this.setEffectiveFrom(effectiveFrom);
-        this.setEffectiveTo(effectiveTo);
-        this.setActive(isActive);
-        this.setPriority(priority);
-        this.ruleType = ruleType;
-        this.setStartDate(startDate);
-        this.setEndDate(endDate);
-        this.siteId = siteId;
-        this.minMargin = minMargin;
-        this.maxMargin = maxMargin;
-        this.targetMargin = targetMargin;
-        this.active = active;
-    }
 
+    /**
+     * Calculates the margin based on the base price and cost price.
+     *
+     * @param basePrice  the base price
+     * @param costPrice  the cost price
+     * @return the calculated margin
+     */
     public BigDecimal calculateMargin(BigDecimal basePrice, BigDecimal costPrice) {
         if (basePrice == null || costPrice == null || costPrice.compareTo(BigDecimal.ZERO) == 0) {
             return defaultMargin != null ? defaultMargin : BigDecimal.ZERO;
@@ -138,6 +134,12 @@ public class MarginConstraints extends RuleConstraints {
         return validateMargin(margin);
     }
 
+    /**
+     * Validates the margin.
+     *
+     * @param margin the margin to validate
+     * @return the validated margin
+     */
     private BigDecimal validateMargin(BigDecimal margin) {
         if (margin == null) {
             return defaultMargin != null ? defaultMargin : BigDecimal.ZERO;
@@ -154,105 +156,257 @@ public class MarginConstraints extends RuleConstraints {
         return margin;
     }
 
+    /**
+     * Enum for margin calculation types.
+     */
     public enum MarginCalculationType {
         PERCENTAGE,
         FIXED_AMOUNT
     }
 
-    
-    @ElementCollection
-    @CollectionTable(name = "category_margins", joinColumns = @JoinColumn(name = "margin_constraint_id"))
+    /**
+     * The category margins.
+     */
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "margin_constraint_id")
     private Map<String, CategoryMargin> categoryMargins = new HashMap<>();
 
-  
-    @ElementCollection
-    @CollectionTable(name = "margin_tiers", joinColumns = @JoinColumn(name = "margin_constraint_id"))
+    /**
+     * Gets the category margins.
+     *
+     * @return the category margins
+     */
+    public Map<String, CategoryMargin> getCategoryMargins() {
+        return this.categoryMargins;
+    }
+
+    /**
+     * Sets the category margins.
+     *
+     * @param categoryMargins the category margins to set
+     */
+    public void setCategoryMargins(Map<String, CategoryMargin> categoryMargins) {
+        this.categoryMargins = categoryMargins;
+    }
+
+    /**
+     * The margin tiers.
+     */
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "margin_constraint_id")
     private List<MarginTier> marginTiers = new ArrayList<>();
 
-
-    @ElementCollection
-    @CollectionTable(name = "seller_margins", joinColumns = @JoinColumn(name = "margin_constraint_id"))
+    /**
+     * The seller margins.
+     */
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "margin_constraint_id")
     private Map<String, SellerMargin> sellerMargins = new HashMap<>();
 
-    @Embeddable
-    @NoArgsConstructor
-    @AllArgsConstructor
+    /**
+     * Entity for category margins.
+     */
+    @Entity
     @Getter
     @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class CategoryMargin {
+        /**
+         * The ID.
+         */
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        private Long id;
+
+        /**
+         * The category ID.
+         */
         @Column(name = "category_id")
         private String categoryId;
+
+        /**
+         * The minimum margin.
+         */
         @Column(name = "min_margin")
         private BigDecimal minMargin;
+
+        /**
+         * The maximum margin.
+         */
         @Column(name = "max_margin")
         private BigDecimal maxMargin;
+
+        /**
+         * The target margin.
+         */
         @Column(name = "target_margin")
         private BigDecimal targetMargin;
+
+        /**
+         * Whether to enforce strict margin.
+         */
         @Column(name = "enforce_strict")
         private Boolean enforceStrict;
+
+        /**
+         * The excluded products.
+         */
         @ElementCollection
-        @CollectionTable(name = "excluded_products", joinColumns = @JoinColumn(name = "category_margin_id"))
-        private Set<String> excludedProducts;
-        @Column(name = "additional_rules")
-        private Map<String, Object> additionalRules;
+        @CollectionTable(name = "excluded_products",
+                joinColumns = @JoinColumn(name = "category_margin_id"))
+        private Set<String> excludedProducts = new HashSet<>();
+
+        /**
+         * The additional rules.
+         */
+        @ElementCollection
+        @CollectionTable(name = "additional_rules",
+                joinColumns = @JoinColumn(name = "category_margin_id"))
+        @MapKeyColumn(name = "rule_key")
+        @Column(name = "rule_value")
+        private Map<String, String> additionalRules = new HashMap<>();
     }
 
-    @Embeddable
-    @NoArgsConstructor
-    @AllArgsConstructor
+    /**
+     * Entity for margin tiers.
+     */
+    @Entity
     @Getter
     @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class MarginTier {
+        /**
+         * The ID.
+         */
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        private Long id;
+
+        /**
+         * The from price.
+         */
         @Column(name = "from_price")
         private BigDecimal fromPrice;
+
+        /**
+         * The to price.
+         */
         @Column(name = "to_price")
         private BigDecimal toPrice;
+
+        /**
+         * The margin percentage.
+         */
         @Column(name = "margin_percentage")
         private BigDecimal marginPercentage;
+
+        /**
+         * The applicability rule.
+         */
         @Column(name = "applicability_rule")
         private String applicabilityRule;
+
+        /**
+         * The tier type.
+         */
         @Column(name = "tier_type")
+        @Enumerated(EnumType.STRING)
         private TierType tierType;
-        @Column(name = "conditions")
-        private Map<String, Object> conditions;
+
+        /**
+         * The conditions.
+         */
+        @ElementCollection
+        @CollectionTable(name = "tier_conditions",
+                joinColumns = @JoinColumn(name = "margin_tier_id"))
+        @MapKeyColumn(name = "condition_key")
+        @Column(name = "condition_value")
+        private Map<String, String> conditions = new HashMap<>();
     }
 
-    @Embeddable
-    @NoArgsConstructor
-    @AllArgsConstructor
+    /**
+     * Entity for seller margins.
+     */
+    @Entity
     @Getter
     @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class SellerMargin {
+        /**
+         * The ID.
+         */
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        private Long id;
+
+        /**
+         * The seller ID.
+         */
         @Column(name = "seller_id")
         private String sellerId;
+
+        /**
+         * The default margin.
+         */
         @Column(name = "default_margin")
         private BigDecimal defaultMargin;
-        @ElementCollection
-        @CollectionTable(name = "category_margins", joinColumns = @JoinColumn(name = "seller_margin_id"))
-        private Map<String, BigDecimal> categoryMargins;
+
+        /**
+         * The category margins.
+         */
+        @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+        @JoinColumn(name = "seller_margin_id")
+        private Map<String, CategoryMargin> categoryMargins = new HashMap<>();
+
+        /**
+         * Whether to override global margin.
+         */
         @Column(name = "override_global")
         private Boolean overrideGlobal;
+
+        /**
+         * The validation behavior.
+         */
         @Column(name = "validation_behavior")
+        @Enumerated(EnumType.STRING)
         private ValidationBehavior validationBehavior;
     }
 
+    /**
+     * Enum for validation behaviors.
+     */
+    public enum ValidationBehavior {
+        STRICT,
+        LENIENT,
+        IGNORE
+    }
+
+    /**
+     * Enum for tier types.
+     */
     public enum TierType {
         PRICE_BASED,
         QUANTITY_BASED,
-        DATE_BASED
+        CUSTOM
     }
 
-    public enum ValidationBehavior {
-        STRICT,
-        WARN_ONLY,
-        FLEXIBLE
-    }
-
+    /**
+     * Gets the target margin percentage.
+     *
+     * @return the target margin percentage
+     */
     public BigDecimal getTargetMarginPercentage() {
         return targetMargin;
     }
 
-
+    /**
+     * Sets the target margin percentage.
+     *
+     * @param targetMarginPercentage the target margin percentage to set
+     */
     public void setTargetMarginPercentage(BigDecimal targetMarginPercentage) {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'setTargetMarginPercentage'");

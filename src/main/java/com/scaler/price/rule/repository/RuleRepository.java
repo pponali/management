@@ -26,24 +26,25 @@ import java.util.stream.Collectors;
 public interface RuleRepository extends JpaRepository<PricingRule, Long> {
 
     @Query("""
-        SELECT r FROM Rule r
-        WHERE r.sellerId = :sellerId
+        SELECT DISTINCT r FROM PricingRule r
+        WHERE :sellerId MEMBER OF r.sellerIds
         AND r.isActive = true
         AND r.effectiveFrom <= :currentDate
         AND (r.effectiveTo IS NULL OR r.effectiveTo >= :currentDate)
         ORDER BY r.priority DESC
         """)
     List<PricingRule> findActiveRules(
-            @Param("sellerId") String sellerId,
+            @Param("sellerId") Long sellerId,
             @Param("currentDate") LocalDateTime currentDate
     );
 
     @Query("""
-        SELECT r FROM Rule r
-        WHERE r.sellerId = :sellerId
-        AND r.siteId = :siteId
-        AND (:categoryId IS NULL OR r.categoryId = :categoryId)
-        AND (:brandId IS NULL OR r.brandId = :brandId)
+        SELECT r FROM PricingRule r
+        JOIN r.sellerSiteConfigs config
+        WHERE :sellerId MEMBER OF r.sellerIds
+        AND config.siteId = :siteId
+        AND (:categoryId IS NULL OR :categoryId MEMBER OF config.categoryIds)
+        AND (:brandId IS NULL OR :brandId MEMBER OF config.brandIds)
         AND r.isActive = true
         AND r.effectiveFrom <= :currentDate
         AND (r.effectiveTo IS NULL OR r.effectiveTo >= :currentDate)
@@ -69,8 +70,8 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
         ORDER BY pr.priority DESC
         """)
     List<PricingRule> findActiveRulesForSeller(
-            @Param("sellerId") String sellerId,
-            @Param("siteIds") Set<String> siteIds,
+            @Param("sellerId") Long sellerId,
+            @Param("siteIds") Set<Long> siteIds,
             @Param("currentTime") LocalDateTime currentTime
     );
 
@@ -87,7 +88,7 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
         ORDER BY pr.priority DESC
         """)
     List<PricingRule> findActiveRulesForSellerAndSite(
-            @Param("sellerId") String sellerId,
+            @Param("sellerId") Long sellerId,
             @Param("siteId") String siteId,
             @Param("ruleType") RuleType ruleType,
             @Param("currentTime") LocalDateTime currentTime
@@ -96,8 +97,7 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
     @Query("""
         SELECT DISTINCT pr FROM PricingRule pr
         JOIN pr.sellerSiteConfigs config
-        WHERE pr.isActive = true
-        AND config.sellerId = :sellerId
+        WHERE :sellerId MEMBER OF pr.sellerIds
         AND config.siteId = :siteId
         AND pr.effectiveFrom <= :currentTime
         AND (pr.effectiveTo IS NULL OR pr.effectiveTo >= :currentTime)
@@ -105,11 +105,10 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
             config.minimumPrice <= :price
             AND (config.maximumPrice IS NULL OR config.maximumPrice >= :price)
         )
-        ORDER BY pr.priority DESC, config.priority DESC
         """)
     List<PricingRule> findApplicableRulesForPrice(
-            @Param("sellerId") String sellerId,
-            @Param("siteId") String siteId,
+            @Param("sellerId") Long sellerId,
+            @Param("siteId") Long siteId,
             @Param("price") BigDecimal price,
             @Param("currentTime") LocalDateTime currentTime
     );
@@ -122,7 +121,7 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
         AND pr.effectiveFrom <= :endDate
         """)
     List<PricingRule> findUpcomingRulesForSeller(
-            @Param("sellerId") String sellerId,
+            @Param("sellerId") Long sellerId,
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate
     );
@@ -130,20 +129,20 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
     @Query("""
         SELECT pr FROM PricingRule pr
         JOIN pr.sellerSiteConfigs config
-        WHERE config.sellerId = :sellerId
+        WHERE :sellerId MEMBER OF pr.sellerIds
         AND config.siteId = :siteId
         AND pr.isActive = true
         AND pr.ruleType IN :ruleTypes
         AND EXISTS (
             SELECT 1 FROM pr.conditions c
-            WHERE c.attributeKey = :attributeKey
+            WHERE c.attribute = :attributeKey
         )
         """)
     List<PricingRule> findRulesBySellerAndAttribute(
-            @Param("sellerId") String sellerId,
-            @Param("siteId") String siteId,
+            @Param("sellerId") Long sellerId,
+            @Param("siteId") Long siteId,
             @Param("ruleTypes") Set<RuleType> ruleTypes,
-            @Param("attributeKey") String attributeKey
+            @Param("attributeKey") Long attributeKey
     );
 
     /*@Query("""
@@ -178,17 +177,18 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
         ORDER BY pr.priority DESC
         """)
     List<PricingRule> findMarginRulesForSeller(
-            @Param("sellerId") String sellerId,
-            @Param("siteId") String siteId,
+            @Param("sellerId") Long sellerId,
+            @Param("siteId") Long siteId,
             @Param("currentTime") LocalDateTime currentTime
     );
 
     @Modifying
+    @Transactional
     @Query("""
         UPDATE PricingRule pr
         SET pr.isActive = false,
-           pr.modifiedAt = :modifiedAt,
-           pr.modifiedBy = :modifiedBy
+           pr.updatedAt = :modifiedAt,
+           pr.updatedBy = :modifiedBy
         WHERE pr.id IN (
             SELECT r.id FROM PricingRule r
             JOIN r.sellerIds s
@@ -196,7 +196,7 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
         )
         """)
     int deactivateSellerRules(
-            @Param("sellerId") String sellerId,
+            @Param("sellerId") Long sellerId,
             @Param("modifiedAt") LocalDateTime modifiedAt,
             @Param("modifiedBy") String modifiedBy
     );
@@ -210,34 +210,30 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
         AND pr.is_active = true
         """, nativeQuery = true)
     List<String> findActiveCategoriesForSeller(
-            @Param("sellerId") String sellerId
+            @Param("sellerId") Long sellerId
     );
 
     @Query("""
-        SELECT new com.scaler.price.rule.dto.RuleConflict(
-            pr1.id,
-            pr2.id,
-            pr1.ruleName,
-            pr2.ruleName,
-            'PRIORITY_CONFLICT'
-        )
-        FROM PricingRule pr1, PricingRule pr2
-        WHERE pr1.id < pr2.id
-        AND pr1.isActive = true AND pr2.isActive = true
-        AND EXISTS (
-            SELECT 1 FROM pr1.sellerIds s1, pr2.sellerIds s2
-            WHERE s1 = s2 AND s1 = :sellerId
-        )
-        AND EXISTS (
-            SELECT 1 FROM pr1.siteIds site1, pr2.siteIds site2
-            WHERE site1 = site2
-        )
-        AND pr1.priority = pr2.priority
-        AND pr1.ruleType = pr2.ruleType
-        """)
-    List<RuleConflict> findSellerRuleConflicts(
-            @Param("sellerId") String sellerId
-    );
+    SELECT new com.scaler.price.rule.domain.RuleConflict(
+        pr1.id, 
+        pr2.id, 
+        'PRIORITY_CONFLICT',
+        CONCAT('Priority conflict between rules ', pr1.id, ' and ', pr2.id)
+    )
+    FROM PricingRule pr1, PricingRule pr2
+    WHERE :sellerId MEMBER OF pr1.sellerIds
+    AND :sellerId MEMBER OF pr2.sellerIds
+    AND pr1.id < pr2.id
+    AND pr1.isActive = true
+    AND pr2.isActive = true
+    AND EXISTS (
+        SELECT 1 FROM pr1.siteIds site1, pr2.siteIds site2
+        WHERE site1 = site2
+    )
+    AND pr1.priority = pr2.priority
+    AND pr1.ruleType = pr2.ruleType
+    """)
+    List<RuleConflict> findSellerRuleConflicts(@Param("sellerId") Long sellerId);
 
     @Query("""
         SELECT DISTINCT pr FROM PricingRule pr
@@ -276,8 +272,8 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
         )
         """)
     List<PricingRule> findPriorityConflicts(
-            @Param("sellerIds") Set<String> sellerIds,
-            @Param("siteIds") Set<String> siteIds,
+            @Param("sellerIds") Set<Long> sellerIds,
+            @Param("siteIds") Set<Long> siteIds,
             @Param("ruleType") RuleType ruleType,
             @Param("priority") Integer priority,
             @Param("effectiveFrom") LocalDateTime effectiveFrom,
@@ -300,8 +296,8 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
         ORDER BY pr.priority DESC
         """)
     List<PricingRule> findTypeBasedConflicts(
-            @Param("sellerIds") Set<String> sellerIds,
-            @Param("siteIds") Set<String> siteIds,
+            @Param("sellerIds") Set<Long> sellerIds,
+            @Param("siteIds") Set<Long> siteIds,
             @Param("ruleTypes") Set<RuleType> ruleTypes,
             @Param("effectiveFrom") LocalDateTime effectiveFrom,
             @Param("effectiveTo") LocalDateTime effectiveTo
@@ -354,8 +350,8 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
         """,
             nativeQuery = true)
     List<PricingRule> findDetailedConflicts(
-            @Param("sellerIds") Set<String> sellerIds,
-            @Param("siteIds") Set<String> siteIds,
+            @Param("sellerIds") Set<Long> sellerIds,
+            @Param("siteIds") Set<Long> siteIds,
             @Param("effectiveFrom") LocalDateTime effectiveFrom,
             @Param("effectiveTo") LocalDateTime effectiveTo
     );
@@ -370,36 +366,41 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
     long countActiveRulesForSeller(@Param("sellerId") String sellerId);
 
     @Query("""
-        SELECT new com.scaler.price.rule.dto.ConflictSummary(
-            pr1.id,
-            pr2.id,
-            pr1.ruleName,
-            pr2.ruleName,
+        SELECT new com.scaler.price.core.management.dto.ConflictSummary(
+            pr1.id, pr2.id, pr1.ruleName, pr2.ruleName,
             CASE 
                 WHEN pr1.priority = pr2.priority THEN 'PRIORITY_CONFLICT'
-                WHEN pr1.ruleType = pr2.ruleType THEN 'TYPE_CONFLICT'
-                ELSE 'DATE_OVERLAP'
+                ELSE 'TIME_OVERLAP'
             END
         )
         FROM PricingRule pr1, PricingRule pr2
         WHERE pr1.id < pr2.id
-        AND pr1.isActive = true AND pr2.isActive = true
         AND EXISTS (
-            SELECT 1 FROM pr1.sellerIds s1, pr2.sellerIds s2
-            WHERE s1 = s2 AND s1 IN :sellerIds
+            SELECT 1 FROM pr1.sellerIds s1
+            WHERE s1 IN :sellerIds
         )
         AND EXISTS (
-            SELECT 1 FROM pr1.siteIds site1, pr2.siteIds site2
-            WHERE site1 = site2 AND site1 IN :siteIds
+            SELECT 1 FROM pr2.sellerIds s2
+            WHERE s2 IN :sellerIds
         )
+        AND EXISTS (
+            SELECT 1 FROM pr1.siteIds site1
+            WHERE site1 IN :siteIds
+        )
+        AND EXISTS (
+            SELECT 1 FROM pr2.siteIds site2
+            WHERE site2 IN :siteIds
+        )
+        AND pr1.isActive = true
+        AND pr2.isActive = true
         AND (
-            pr1.effectiveFrom BETWEEN pr2.effectiveFrom AND pr2.effectiveTo
-            OR pr1.effectiveTo BETWEEN pr2.effectiveFrom AND pr2.effectiveTo
+            pr1.effectiveFrom <= pr2.effectiveTo
+            AND pr1.effectiveTo >= pr2.effectiveFrom
         )
         """)
     List<ConflictSummary> findConflictSummaries(
-            @Param("sellerIds") Set<String> sellerIds,
-            @Param("siteIds") Set<String> siteIds
+            @Param("sellerIds") Set<Long> sellerIds,
+            @Param("siteIds") Set<Long> siteIds
     );
 
     /**
@@ -423,7 +424,7 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
     @Data
     @AllArgsConstructor
     public static class SellerRuleSummary {
-        private String sellerId;
+        private Long sellerId;
         private Long totalRules;
         private Long activeRules;
         private LocalDateTime earliestRule;
@@ -442,8 +443,8 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
 
     // Specification-based queries for complex filtering
     default Specification<PricingRule> createSellerSpecification(
-            String sellerId,
-            Set<String> siteIds,
+            Long sellerId,
+            Set<Long> siteIds,
             Set<RuleType> ruleTypes,
             boolean activeOnly) {
 
@@ -451,12 +452,12 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
             List<Predicate> predicates = new ArrayList<>();
 
             // Seller check
-            Join<PricingRule, String> sellerJoin = root.join("sellerIds");
+            Join<PricingRule, Long> sellerJoin = root.join("sellerIds");
             predicates.add(cb.equal(sellerJoin, sellerId));
 
             // Site check
             if (siteIds != null && !siteIds.isEmpty()) {
-                Join<PricingRule, String> siteJoin = root.join("siteIds");
+                Join<PricingRule, Long> siteJoin = root.join("siteIds");
                 predicates.add(siteJoin.in(siteIds));
             }
 
@@ -572,7 +573,7 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
         FROM rule_stats
         """,
             nativeQuery = true)
-    List<RuleStatistics> getRuleStatistics(@Param("siteId") String siteId);
+    List<RuleStatistics> getRuleStatistics(@Param("siteId") Long siteId);
 
     // DTOs for count results
     @Data
@@ -584,7 +585,7 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
     }
 
     public interface RuleStatistics {
-        String getSiteId();
+        Long getSiteId();
         Long getTotalRules();
         Long getActiveRules();
         Long getExpiredRules();
@@ -634,8 +635,8 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
         ORDER BY pr.priority DESC
         """)
     List<PricingRule> findActiveBySellerAndSite(
-            @Param("sellerId") String sellerId,
-            @Param("siteId") String siteId,
+            @Param("sellerId") Long sellerId,
+            @Param("siteId") Long siteId,
             @Param("currentTime") LocalDateTime currentTime
     );
 
@@ -651,7 +652,7 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
         """)
     List<PricingRule> findActiveByTypeAndSite(
             @Param("ruleType") RuleType ruleType,
-            @Param("siteId") String siteId,
+            @Param("siteId") Long siteId,
             @Param("currentTime") LocalDateTime currentTime
     );
 
@@ -675,7 +676,7 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
         ORDER BY level, priority DESC
         """, nativeQuery = true)
     List<PricingRule> findRuleHierarchyBySite(
-            @Param("siteId") String siteId,
+            @Param("siteId") Long siteId,
             @Param("maxLevel") Integer maxLevel
     );
 
@@ -688,7 +689,7 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
         AND (pr.effectiveTo IS NULL OR pr.effectiveTo >= :currentTime)
         """)
     long countActiveBySite(
-            @Param("siteId") String siteId,
+            @Param("siteId") Long siteId,
             @Param("currentTime") LocalDateTime currentTime
     );
 
@@ -707,7 +708,7 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
     List<RuleSiteSummary> getRuleSummariesBySite();
 
     // Specifications for dynamic queries
-    default Specification<PricingRule> siteSpec(String siteId) {
+    default Specification<PricingRule> siteSpec(Long siteId) {
         return (root, query, cb) -> {
             Join<PricingRule, String> siteJoin = root.join("siteIds");
             return cb.equal(siteJoin, siteId);
@@ -763,7 +764,7 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
         """)
     Optional<PricingRule> findBySellerAndId(
             @Param("ruleId") Long ruleId,
-            @Param("sellerId") String sellerId,
+            @Param("sellerId") Long sellerId,
             @Param("currentTime") LocalDateTime currentTime
     );
 
@@ -847,5 +848,6 @@ public interface RuleRepository extends JpaRepository<PricingRule, Long> {
         return new ArrayList<>(rulesWithConfigs.values());
     }
 
-    List<PricingRule> findRulesBySite(Long siteIdStr);
+    @Query("SELECT pr FROM PricingRule pr WHERE :siteId MEMBER OF pr.siteIds")
+    List<PricingRule> findRulesBySite(@Param("siteId") Long siteId);
 }

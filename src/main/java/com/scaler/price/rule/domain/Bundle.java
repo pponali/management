@@ -30,7 +30,7 @@ public class Bundle extends AuditInfo{
     @ElementCollection
     @CollectionTable(name = "bundle_products",
             joinColumns = @JoinColumn(name = "bundle_id"))
-    private List<String> products;
+    private List<Long> products;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -61,7 +61,7 @@ public class Bundle extends AuditInfo{
         this.productRepository = productRepository;
     }
 
-    public Bundle(ProductRepository productRepository, String name, List<String> products) {
+    public Bundle(ProductRepository productRepository, String name, List<Long> products) {
         this.productRepository = productRepository;
         this.name = name;
         this.products = products;

@@ -1,6 +1,5 @@
 package com.scaler.price.rule.service.impl;
 
-
 import com.scaler.price.rule.domain.Brand;
 import com.scaler.price.rule.dto.BrandDTO;
 import com.scaler.price.rule.mapper.BrandMapper;
@@ -119,7 +118,7 @@ public class BrandServiceImpl implements BrandService {
     }
 
     @Override
-    public boolean isValidBrand(String brandId) {
-        return false;
+    public boolean isValidBrand(Long brandId) {
+        return brandRepository.existsById(brandId);
     }
 }

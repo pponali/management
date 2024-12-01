@@ -6,19 +6,17 @@ import com.scaler.price.rule.domain.constraint.PriceConstraints;
 import com.scaler.price.rule.domain.constraint.RuleConstraints;
 import com.scaler.price.rule.domain.constraint.TimeConstraints;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
-
 import jakarta.persistence.*;
 import lombok.*;
-
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.Type;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-
-import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "seller_site_configs")
@@ -35,10 +33,10 @@ public class SellerSiteConfig extends AuditInfo {
     private PricingRule rule;
 
     @Column(nullable = false)
-    private String sellerId;
+    private Long sellerId;
 
     @Column(nullable = false)
-    private String siteId;
+    private Long siteId;
 
     @Type(JsonBinaryType.class)
     @Column(columnDefinition = "jsonb")
@@ -69,7 +67,7 @@ public class SellerSiteConfig extends AuditInfo {
     )
     @Column(name = "category_id")
     @Builder.Default
-    private Set<String> categoryIds = new HashSet<>();
+    private Set<Long> categoryIds = new HashSet<>();
 
     @ElementCollection
     @CollectionTable(
@@ -78,17 +76,12 @@ public class SellerSiteConfig extends AuditInfo {
     )
     @Column(name = "brand_id")
     @Builder.Default
-    private Set<String> brandIds = new HashSet<>();
-
-    @Version
-    private Long version;
+    private Set<Long> brandIds = new HashSet<>();
 
     @Type(JsonBinaryType.class)
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> metadata;
 
-    @Embedded
-    private AuditInfo auditInfo;
 
     public Set<RuleConstraints> getEffectiveConstraints() {
         Set<RuleConstraints> effectiveConstraints = new HashSet<>();
@@ -111,8 +104,32 @@ public class SellerSiteConfig extends AuditInfo {
         }
     }
 
+    public PriceConstraints getPriceConstraints() {
+        if (constraints != null) {
+            for (RuleConstraints constraint : constraints) {
+                if (constraint instanceof PriceConstraints) {
+                    return (PriceConstraints) constraint;
+                }
+            }
+        }
+        return null;
+    }
+
     public MarginConstraints getMarginConstraints() {
-        return MarginConstraints.builder()
+        if (constraints != null) {
+            Optional<MarginConstraints> marginConstraint = constraints.stream()
+                .filter(MarginConstraints.class::isInstance)
+                .map(MarginConstraints.class::cast)
+                .findFirst();
+            
+            return marginConstraint.orElseGet(() -> 
+                MarginConstraints.marginConstraintsBuilder()
+                    .minimumMargin(minimumMargin)
+                    .maximumMargin(maximumMargin)
+                    .build()
+            );
+        }
+        return MarginConstraints.marginConstraintsBuilder()
                 .minimumMargin(minimumMargin)
                 .maximumMargin(maximumMargin)
                 .build();
@@ -124,15 +141,6 @@ public class SellerSiteConfig extends AuditInfo {
 
     public Boolean getIsActive() {
         return (Boolean) metadata.getOrDefault("isActive", true);
-    }
-
-    public PriceConstraints getPriceConstraints() {
-        for (RuleConstraints constraint : getEffectiveConstraints()) {
-            if (constraint instanceof PriceConstraints) {
-                return (PriceConstraints) constraint;
-            }
-        }
-        return null;
     }
 
     public TimeConstraints getTimeConstraints() {

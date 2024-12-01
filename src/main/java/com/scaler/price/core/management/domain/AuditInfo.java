@@ -2,22 +2,25 @@ package com.scaler.price.core.management.domain;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDateTime;
 
-@Embeddable
-@Setter
+@MappedSuperclass
 @Getter
-@SuperBuilder
+@Setter
+@SuperBuilder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class AuditInfo {
+public abstract class AuditInfo {
 
     @Schema(description = "Audit Event ID", example = "1")
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
     
     @Column(name = "created_at", updatable = false)
@@ -33,17 +36,11 @@ public class AuditInfo {
     private String updatedBy;
 
     @Column(name = "version")
+    @Version
     private Long version = 0L;
 
-    public void setLastModifiedBy(String updatedBy) {
+    public void setLastModifiedInfo(String updatedBy, LocalDateTime updatedAt) {
         this.updatedBy = updatedBy;
-    }
-
-    public void setLastModifiedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public void setModifiedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
 
@@ -58,4 +55,5 @@ public class AuditInfo {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
 }

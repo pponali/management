@@ -12,7 +12,7 @@ import java.util.Optional;
 @Repository
 public interface PriceRepository extends JpaRepository<Price, Long> {
     Optional<Price> findByProductIdAndEffectiveFromLessThanEqualAndEffectiveToGreaterThan(
-            String productId, LocalDateTime effectiveFrom, LocalDateTime effectiveTo);
+            Long productId, LocalDateTime effectiveFrom, LocalDateTime effectiveTo);
 
     List<Price> findByProductId(Long productId);
 
@@ -33,7 +33,7 @@ public interface PriceRepository extends JpaRepository<Price, Long> {
             LocalDateTime date
     );
 
-    List<Price> findBySellerIdAndSiteId(String sellerId, String siteId);
+    List<Price> findBySellerIdAndSiteId(Long sellerId, Long siteId);
 
     @Query("""
         SELECT p FROM Price p 

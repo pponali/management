@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -28,8 +27,6 @@ public class PriceServiceImpl implements PriceService {
     public PriceDTO createPrice(PriceDTO priceDTO) throws PriceValidationException {
         validationService.validatePrice(priceDTO);
         Price price = priceMapper.toEntity(priceDTO);
-        //price.setCreatedAt(LocalDateTime.now());
-        //price.setCreatedBy("SYSTEM"); // Replace with actual user
         Price savedPrice = priceRepository.save(price);
         return priceMapper.toDTO(savedPrice);
     }
@@ -42,9 +39,6 @@ public class PriceServiceImpl implements PriceService {
 
         validationService.validatePrice(priceDTO);
         Price updatedPrice = priceMapper.updateEntity(existingPrice, priceDTO);
-        //updatedPrice.setModifiedAt(LocalDateTime.now());
-        //updatedPrice.setModifiedBy("SYSTEM"); // Replace with actual user
-
         Price savedPrice = priceRepository.save(updatedPrice);
         return priceMapper.toDTO(savedPrice);
     }
@@ -61,11 +55,10 @@ public class PriceServiceImpl implements PriceService {
         List<Price> prices = priceRepository.findByProductId(productId);
         return prices.stream()
                 .map(priceMapper::toDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
-    @Transactional
     public void deletePrice(Long id) {
         if (!priceRepository.existsById(id)) {
             throw new PriceNotFoundException("Price not found with id: " + id);
@@ -75,10 +68,6 @@ public class PriceServiceImpl implements PriceService {
 
     @Override
     public void validatePrice(PriceDTO price) throws PriceValidationException {
-        if (price.getEffectiveFrom().isAfter(price.getEffectiveTo())) {
-            throw new PriceValidationException("Effective from date cannot be after effective to date");
-        }
-
+        validationService.validatePrice(price);
     }
-
 }

@@ -1,7 +1,6 @@
 package com.scaler.price.rule.domain.constraint;
 
 import com.scaler.price.rule.domain.PriceAdjustment;
-import com.scaler.price.rule.domain.constraint.TimeConstraints.SpecialTimeWindow;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -9,7 +8,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-
 import org.hibernate.annotations.Type;
 
 import java.math.BigDecimal;
@@ -19,6 +17,7 @@ import java.util.*;
 @Embeddable
 @SuperBuilder
 @NoArgsConstructor
+@DiscriminatorValue("time_constraints")
 @AllArgsConstructor
 public class TimeConstraints extends RuleConstraints{
 
@@ -84,10 +83,25 @@ public class TimeConstraints extends RuleConstraints{
     @Builder.Default
     private List<BlackoutPeriod> blackoutPeriods = new ArrayList<>();
 
-    @ElementCollection
-    @CollectionTable(name = "time_slots")
-    @Builder.Default
+    @Type(JsonBinaryType.class)
+    @Column(columnDefinition = "jsonb")
     private Map<String, TimeSlot> timeSlots = new HashMap<>();
+
+    @Type(JsonBinaryType.class)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, List<TimeWindow>> weeklySchedule = new HashMap<>();
+
+    @Type(JsonBinaryType.class)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, List<TimeWindow>> dateSpecificSchedule = new HashMap<>();
+
+    @Type(JsonBinaryType.class)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, SpecialTimeWindow> specialSchedules = new HashMap<>();
+
+    @Type(JsonBinaryType.class)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, BlackoutPeriod> blackoutPeriodMap = new HashMap<>();
 
     @Embeddable
     @Data
@@ -114,6 +128,10 @@ public class TimeConstraints extends RuleConstraints{
         @ElementCollection
         @Enumerated(EnumType.STRING)
         private Set<DayOfWeek> applicableDays;
+
+        @Type(JsonBinaryType.class)
+        @Column(columnDefinition = "jsonb")
+        private Map<String, String> blackoutProperties = new HashMap<>();
 
         public Set<DayOfWeek> getDaysOfWeek() {
             return this.applicableDays != null ? this.applicableDays : Collections.emptySet();
@@ -143,6 +161,10 @@ public class TimeConstraints extends RuleConstraints{
         @Type(JsonBinaryType.class)
         @Column(columnDefinition = "jsonb")
         private Map<String, Object> customSettings;
+
+        @Type(JsonBinaryType.class)
+        @Column(columnDefinition = "jsonb")
+        private Map<String, String> overrideRules = new HashMap<>();
     }
 
     @Embeddable
@@ -162,6 +184,57 @@ public class TimeConstraints extends RuleConstraints{
         
         @Enumerated(EnumType.STRING)
         private SlotStatus status;
+    }
+
+    @Embeddable
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TimeWindow {
+        private LocalTime startTime;
+        private LocalTime endTime;
+        private String description;
+        
+        @Type(JsonBinaryType.class)
+        @Column(columnDefinition = "jsonb")
+        private Map<String, String> additionalProperties = new HashMap<>();
+    }
+
+    @Embeddable
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SpecialTimeWindowExt extends TimeWindow {
+        private LocalDate startDate;
+        private LocalDate endDate;
+        private String reason;
+        private Priority priority;
+        
+        @Type(JsonBinaryType.class)
+        @Column(columnDefinition = "jsonb")
+        private Map<String, String> overrideRules = new HashMap<>();
+    }
+
+    @Embeddable
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class BlackoutPeriodExt {
+        private Instant startTime;
+        private Instant endTime;
+        private BlackoutType type;
+        private String reason;
+        
+        @Type(JsonBinaryType.class)
+        @Column(columnDefinition = "jsonb")
+        private Map<String, String> blackoutProperties = new HashMap<>();
+    }
+
+    public enum Priority {
+        LOW,
+        MEDIUM,
+        HIGH,
+        CRITICAL
     }
 
     public Set<DayOfWeek> getAllowedDays() {

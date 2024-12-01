@@ -35,9 +35,6 @@ public class RuleAction extends AuditInfo {
     private Integer sequence;
 
     @Column
-    private Boolean isEnabled;
-
-    @Column
     private String dependsOn;
 
     public String getDependsOn() {
@@ -47,8 +44,5 @@ public class RuleAction extends AuditInfo {
     public void setDependsOn(String dependsOn) {
         this.dependsOn = dependsOn;
     }
-
-    @Version
-    private Long version;
 
 }

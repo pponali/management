@@ -1,5 +1,9 @@
 package com.scaler.price.rule.domain;
 
-public class BrandType {
+public enum BrandType {
+
+    INDIVIDUAL,
+    CORPORATE
+
 
 }

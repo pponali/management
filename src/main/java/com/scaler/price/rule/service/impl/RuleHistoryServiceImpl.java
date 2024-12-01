@@ -36,7 +36,7 @@ public class RuleHistoryServiceImpl implements RuleHistoryService {
             RuleHistory history = RuleHistory.builder()
                     .ruleId(rule.getId())
                     .ruleVersion(getNextVersion(rule.getId()))
-                    .changeType(new ChangeType(changeType))
+                    .changeType(ChangeType.PERCENTAGE)
                     .userId(userId)
                     .comment(comment)
                     .timestamp(LocalDateTime.now())
@@ -120,8 +120,8 @@ public class RuleHistoryServiceImpl implements RuleHistoryService {
         }
 
         PricingRule restoredRule = oldVersion.get();
-        restoredRule.setLastModifiedBy(userId);
-        restoredRule.setLastModifiedAt(LocalDateTime.now());
+
+        restoredRule.setLastModifiedInfo(userId, LocalDateTime.now());
         
         PricingRule savedRule = ruleRepository.save(restoredRule);
         recordRuleChange(savedRule, "RESTORE", userId, 

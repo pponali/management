@@ -19,7 +19,6 @@ public class SetPriceAction extends RuleAction{
     private BigDecimal price;
 
     @Column
-
     private BigDecimal maxAllowedPrice;
 
     @Column

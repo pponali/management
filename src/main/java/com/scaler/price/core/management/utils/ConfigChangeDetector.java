@@ -1,16 +1,13 @@
 package com.scaler.price.core.management.utils;
 
+import com.google.common.collect.Sets;
 import com.scaler.price.rule.domain.ChangeDiff;
 import com.scaler.price.rule.domain.SellerSiteConfig;
 import com.scaler.price.rule.domain.constraint.MarginConstraints;
 import com.scaler.price.rule.domain.constraint.PriceConstraints;
-import com.scaler.price.rule.domain.constraint.PriceConstraints.CategoryLimit;
+import com.scaler.price.rule.domain.constraint.CategoryLimit;
+import com.scaler.price.rule.domain.constraint.PriceThreshold;
 import com.scaler.price.rule.domain.constraint.TimeConstraints;
-
-import jakarta.persistence.criteria.CriteriaBuilder.In;
-
-import com.google.common.collect.Sets;
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -18,7 +15,6 @@ import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.function.Function;
@@ -283,16 +279,16 @@ public class ConfigChangeDetector {
             private void detectPriceThresholdChanges(
             Map<String, ChangeDiff> changes,
             String configKey,
-            List<PriceConstraints.PriceThreshold> oldThresholds,
-            List<PriceConstraints.PriceThreshold> newThresholds) {
+            List<PriceThreshold> oldThresholds,
+            List<PriceThreshold> newThresholds) {
 
         if (oldThresholds == null && newThresholds == null) {
             return;
         }
 
-        List<PriceConstraints.PriceThreshold> oldList =
+        List<PriceThreshold> oldList =
                 oldThresholds != null ? oldThresholds : Collections.emptyList();
-        List<PriceConstraints.PriceThreshold> newList =
+        List<PriceThreshold> newList =
                 newThresholds != null ? newThresholds : Collections.emptyList();
 
         if (oldList.size() != newList.size()) {
@@ -306,9 +302,9 @@ public class ConfigChangeDetector {
         int maxSize = Math.max(oldList.size(), newList.size());
         for (int i = 0; i < maxSize; i++) {
             String thresholdKey = configKey + "_threshold_" + i;
-            PriceConstraints.PriceThreshold oldThreshold =
+            PriceThreshold oldThreshold =
                     i < oldList.size() ? oldList.get(i) : null;
-            PriceConstraints.PriceThreshold newThreshold =
+            PriceThreshold newThreshold =
                     i < newList.size() ? newList.get(i) : null;
 
             detectThresholdChanges(changes, thresholdKey, oldThreshold, newThreshold);
@@ -318,8 +314,8 @@ public class ConfigChangeDetector {
     private void detectCategoryLimitChanges(
         Map<String, ChangeDiff> changes,
         String configKey,
-        Map<String, PriceConstraints.CategoryLimit> oldLimits,
-        Map<String, PriceConstraints.CategoryLimit> newLimits
+        Map<String, CategoryLimit> oldLimits,
+        Map<String, CategoryLimit> newLimits
     ) {
         // Handle null cases
         if (oldLimits == null && newLimits == null) {
@@ -333,9 +329,9 @@ public class ConfigChangeDetector {
 
         // Iterate through categories and detect changes
         for (String category : allCategories) {
-            PriceConstraints.CategoryLimit oldLimit = 
+            CategoryLimit oldLimit =
                 oldLimits != null ? oldLimits.get(category) : null;
-            PriceConstraints.CategoryLimit newLimit = 
+            CategoryLimit newLimit =
                 newLimits != null ? newLimits.get(category) : null;
 
             // Compare specific attributes of CategoryLimit
@@ -536,8 +532,8 @@ public class ConfigChangeDetector {
     private void detectThresholdChanges(
             Map<String, ChangeDiff> changes,
             String thresholdKey,
-            PriceConstraints.PriceThreshold oldThreshold,
-            PriceConstraints.PriceThreshold newThreshold) {
+            PriceThreshold oldThreshold,
+            PriceThreshold newThreshold) {
 
         if (oldThreshold == null && newThreshold == null) {
             return;

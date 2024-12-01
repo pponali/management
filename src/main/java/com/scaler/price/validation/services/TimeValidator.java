@@ -1,8 +1,7 @@
 package com.scaler.price.validation.services;
 
-import com.scaler.price.core.management.utils.PriceServiceMetrics;
 import com.scaler.price.core.management.service.ConfigurationService;
-
+import com.scaler.price.core.management.utils.PriceServiceMetrics;
 import com.scaler.price.rule.domain.DiscountAction;
 import com.scaler.price.rule.domain.DiscountType;
 import com.scaler.price.rule.domain.RuleCondition;
@@ -65,10 +64,10 @@ public class TimeValidator {
 
     private void validateBusinessHours(LocalTime time) throws RuleValidationException {
         LocalTime businessStart = LocalTime.of(
-                configService.getBusinessHourStart(), 0
+                configService.getIntValue("business.hours.start", "default", 9), 0
         );
         LocalTime businessEnd = LocalTime.of(
-                configService.getBusinessHourEnd(), 0
+                configService.getIntValue("business.hours.end", "default", 17), 0
         );
 
         if (time.isBefore(businessStart) || time.isAfter(businessEnd)) {

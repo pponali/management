@@ -21,8 +21,8 @@ public class SellerRuleService {
     private final RuleRepository ruleRepository;
 
     public List<PricingRule> getActiveSellerRules(
-            String sellerId,
-            Set<String> siteIds) {
+            Long sellerId,
+            Set<Long> siteIds) {
         return ruleRepository.findActiveRulesForSeller(
                 sellerId,
                 siteIds,
@@ -31,8 +31,8 @@ public class SellerRuleService {
     }
 
     public List<PricingRule> getApplicableRules(
-            String sellerId,
-            String siteId,
+            Long sellerId,
+            Long siteId,
             BigDecimal price) {
         return ruleRepository.findApplicableRulesForPrice(
                 sellerId,
@@ -42,12 +42,12 @@ public class SellerRuleService {
         );
     }
 
-    public List<RuleRepository.RuleConflict> checkRuleConflicts(String sellerId) {
+    public List<RuleRepository.RuleConflict> checkRuleConflicts(Long sellerId) {
         return ruleRepository.findSellerRuleConflicts(sellerId);
     }
 
     public void deactivateSellerRules(
-            String sellerId,
+            Long sellerId,
             String modifiedBy) {
         int count = ruleRepository.deactivateSellerRules(
                 sellerId,
@@ -58,8 +58,8 @@ public class SellerRuleService {
     }
 
     public List<PricingRule> findRulesWithSpecs(
-            String sellerId,
-            Set<String> siteIds,
+            Long sellerId,
+            Set<Long> siteIds,
             Set<RuleType> ruleTypes,
             boolean activeOnly) {
         Specification<PricingRule> spec = ruleRepository

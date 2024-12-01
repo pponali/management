@@ -1,10 +1,9 @@
 package com.scaler.price.rule.service;
 
-import com.scaler.price.rule.events.NotificationEvent;
 import com.scaler.price.rule.dto.StatusChangeNotification;
-import org.springframework.stereotype.Service;
+import com.scaler.price.rule.events.NotificationEvent;
 
-@Service
+
 public interface NotificationService {
     void sendNotification(NotificationEvent notification);
     

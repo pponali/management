@@ -1,8 +1,8 @@
 package com.scaler.price.core.management.service.impl;
 
-
 import com.scaler.price.core.management.config.FileStorageProperties;
 import com.scaler.price.core.management.exceptions.FileStorageException;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,17 +22,17 @@ import java.time.LocalDate;
 @Slf4j
 public class FileStorageService {
 
-    private final Path fileStorageLocation;
-    private final Path errorReportLocation;
+    private  Path fileStorageLocation;
+    private  Path errorReportLocation;
 
     @Autowired
     public FileStorageService(FileStorageProperties fileStorageProperties) {
-        this.fileStorageLocation = Paths.get(fileStorageProperties.getUploadDir())
-                .toAbsolutePath().normalize();
-        this.errorReportLocation = Paths.get(fileStorageProperties.getErrorDir())
-                .toAbsolutePath().normalize();
-
         try {
+            this.fileStorageLocation = Paths.get(fileStorageProperties.getUploadDir())
+                    .toAbsolutePath().normalize();
+            this.errorReportLocation = Paths.get(fileStorageProperties.getErrorDir())
+                    .toAbsolutePath().normalize();
+
             Files.createDirectories(this.fileStorageLocation);
             Files.createDirectories(this.errorReportLocation);
         } catch (Exception ex) {

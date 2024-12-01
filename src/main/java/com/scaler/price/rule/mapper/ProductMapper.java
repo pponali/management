@@ -4,12 +4,17 @@ import com.scaler.price.core.management.dto.PriceDTO;
 import com.scaler.price.rule.domain.Product;
 import com.scaler.price.rule.domain.Product.ProductStatus;
 import com.scaler.price.rule.dto.ProductDTO;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
 
 @Component
 public class ProductMapper {
+
+    @Autowired
+    private BrandMapper brandMapper;
 
     /**
      * Convert Product entity to ProductDTO
@@ -23,7 +28,7 @@ public class ProductMapper {
                 .id(product.getId())
                 .name(product.getName())
                 .categoryId(product.getCategoryId())
-                .brandId(product.getBrandId())
+                .brand(brandMapper.toDTO(product.getBrand()))
                 .sellerId(product.getSellerId())
                 .siteIds(new HashSet<>(product.getSiteIds()))
                 .mrp(product.getMrp())
@@ -45,7 +50,7 @@ public class ProductMapper {
                 .id(dto.getId())
                 .name(dto.getName())
                 .categoryId(dto.getCategoryId())
-                .brandId(dto.getBrandId())
+                .brand(brandMapper.toEntity(dto.getBrand()))
                 .sellerId(dto.getSellerId())
                 .siteIds(new HashSet<>(dto.getSiteIds()))
                 .mrp(dto.getMrp())
@@ -65,7 +70,7 @@ public class ProductMapper {
 
         if (dto.getName() != null) product.setName(dto.getName());
         if (dto.getCategoryId() != null) product.setCategoryId(dto.getCategoryId());
-        if (dto.getBrandId() != null) product.setBrandId(dto.getBrandId());
+        if (dto.getBrandId() != null) brandMapper.updateEntityFromDTO(dto.getBrand(), product.getBrand());
         if (dto.getSellerId() != null) product.setSellerId(dto.getSellerId());
         if (dto.getSiteIds() != null) product.setSiteIds(new HashSet<>(dto.getSiteIds()));
         if (dto.getMrp() != null) product.setMrp(dto.getMrp());
@@ -132,7 +137,7 @@ public class ProductMapper {
         // Only update non-null values
         if (source.getName() != null) target.setName(source.getName());
         if (source.getCategoryId() != null) target.setCategoryId(source.getCategoryId());
-        if (source.getBrandId() != null) target.setBrandId(source.getBrandId());
+        if (source.getBrand() != null) target.setBrand(source.getBrand());
         if (source.getSellerId() != null) target.setSellerId(source.getSellerId());
         if (source.getSiteIds() != null && !source.getSiteIds().isEmpty()) {
             target.setSiteIds(new HashSet<>(source.getSiteIds()));
@@ -157,7 +162,7 @@ public class ProductMapper {
                 .id(source.getId())
                 .name(source.getName())
                 .categoryId(source.getCategoryId())
-                .brandId(source.getBrandId())
+                .brand(source.getBrand())
                 .sellerId(source.getSellerId())
                 .siteIds(new HashSet<>(source.getSiteIds()))
                 .mrp(source.getMrp())

@@ -2,21 +2,24 @@ package com.scaler.price.core.management.mappers;
 
 import com.scaler.price.core.management.domain.Price;
 import com.scaler.price.core.management.dto.PriceDTO;
+import org.mapstruct.*;
 
-public class PriceMapper {
-    public Price toEntity(PriceDTO priceDTO) {
-        // Implement mapping logic
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
+public interface PriceMapper {
+    
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
+    Price toEntity(PriceDTO dto);
 
-        return null;
-    }
+    PriceDTO toDTO(Price entity);
 
-    public PriceDTO toDTO(Price savedPrice) {
-        // Implement mapping logic
-
-        return null;
-    }
-
-    public Price updateEntity(Price existingPrice, PriceDTO priceDTO) {
-        return null;
-    }
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "updatedBy", ignore = true)
+    Price updateEntity(@MappingTarget Price existingPrice, PriceDTO dto);   
 }

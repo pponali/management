@@ -3,7 +3,6 @@ package com.scaler.price.validation.services.util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scaler.price.core.management.service.ConfigurationService;
-
 import com.scaler.price.rule.domain.*;
 import com.scaler.price.rule.exceptions.RuleValidationException;
 import com.scaler.price.rule.repository.RuleRepository;

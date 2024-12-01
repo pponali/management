@@ -5,21 +5,19 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
+import lombok.experimental.SuperBuilder;
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
+
+import com.scaler.price.core.management.domain.AuditInfo;
 
 @Entity
 @Table(name = "product_attributes")
 @Getter
 @Setter
-@Builder
+@SuperBuilder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProductAttribute {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class ProductAttribute extends AuditInfo {
 
     @Column(nullable = false)
     private Long productId;
@@ -33,23 +31,15 @@ public class ProductAttribute {
     @Column(nullable = false)
     private String attributeType;
 
-    private String category;
+    private Long category;
 
-    private String subCategory;
+    private Long subCategory;
 
     private Boolean isSearchable;
 
     private Boolean isFilterable;
 
     private Integer displayOrder;
-
-    @Column(nullable = false)
-    private LocalDateTime createdAt;
-
-    private LocalDateTime updatedAt;
-
-    @Version
-    private Long version;
 
     
 }

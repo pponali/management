@@ -24,7 +24,12 @@ public class Product extends AuditInfo {
     private String metaDescription;
     private String name;
     private Long categoryId;
-    private Long brandId;
+    
+    
+    @ManyToOne
+    @JoinColumn(name = "brand_id")
+    private Brand brand;
+    
     private Long sellerId;
     
     @ElementCollection
@@ -46,32 +51,30 @@ public class Product extends AuditInfo {
     private String currency;
     private ProductStatus status;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "margin_constraint_id")
     private RuleConstraints marginConstraints;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "price_constraint_id")
     private RuleConstraints priceConstraints;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "time_constraint_id")
     private RuleConstraints timeConstraints;
 
-    @ElementCollection
-    @CollectionTable(name = "product_price_attributes")
-    @MapKeyColumn(name = "attribute_key")
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "product_id")
     private Map<String, PriceAttribute> priceAttributes = new HashMap<>();
 
-    @ElementCollection
-    @CollectionTable(name = "product_validation_rules")
-    @MapKeyColumn(name = "rule_key")
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "product_id")
     private Map<String, ValidationRule> validationRules = new HashMap<>();
-
-    @Embedded
-    private AuditInfo auditInfo;
 
     private Integer quantity;
 
     public MarginConstraints getMarginConstraints() {
-        return MarginConstraints.builder()
+        return MarginConstraints.marginConstraintsBuilder()
                 .siteId("DEFAULT")
                 .minMarginPercentage(BigDecimal.ZERO)
                 .maxMarginOverride(BigDecimal.valueOf(100))
@@ -79,12 +82,20 @@ public class Product extends AuditInfo {
                 .build();
     }
 
+    @Entity
+    @Table(name = "price_attributes")
     @Data
     @SuperBuilder
     @NoArgsConstructor
     @AllArgsConstructor
-    @Embeddable
     public static class PriceAttribute {
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        private Long id;
+
+        @Column(name = "attribute_key")
+        private String key;
+
         private BigDecimal minimumPrice;
         private BigDecimal maximumPrice;
         private BigDecimal minimumMargin;
@@ -95,24 +106,34 @@ public class Product extends AuditInfo {
         
         @ElementCollection
         @CollectionTable(name = "price_attribute_excluded_products")
-        private Set<String> excludedProducts;
+        @Column(name = "product_id")
+        private Set<String> excludedProducts = new HashSet<>();
     }
 
+    @Entity
+    @Table(name = "validation_rules")
     @Data
     @SuperBuilder
     @NoArgsConstructor
     @AllArgsConstructor
-    @Embeddable
     public static class ValidationRule {
-        private String ruleName;
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        private Long id;
+
+        @Column(name = "rule_key")
+        private String key;
+
         private String ruleType;
-        private String ruleExpression;
-        private String errorMessage;
-        
-        @Enumerated(EnumType.STRING)
-        private ValidationSeverity severity;
-        
+        private String validationMessage;
         private Boolean isActive;
+        private Integer priority;
+        
+        @ElementCollection
+        @CollectionTable(name = "validation_rule_parameters")
+        @MapKeyColumn(name = "param_key")
+        @Column(name = "param_value")
+        private Map<String, String> parameters = new HashMap<>();
     }
 
     public enum ValidationSeverity {

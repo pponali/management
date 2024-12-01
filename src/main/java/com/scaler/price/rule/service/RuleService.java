@@ -101,7 +101,7 @@ public class RuleService {
     }
 
     @Transactional(readOnly = true)
-    public PricingRule getRuleForSeller(Long ruleId, String sellerId) {
+    public PricingRule getRuleForSeller(Long ruleId, Long sellerId) {
         log.debug("Fetching rule {} for seller {}", ruleId, sellerId);
         return ruleRepository.findBySellerAndId(ruleId, sellerId, LocalDateTime.now())
                 .orElseThrow(() -> new RuleNotFoundException(
@@ -131,7 +131,7 @@ public class RuleService {
 
     @Transactional(readOnly = true)
     public List<PricingRule> getActiveRulesForSite(
-            String siteId,
+            Long siteId,
             RuleType ruleType,
             Integer minPriority) {
 
@@ -153,7 +153,7 @@ public class RuleService {
     }
 
     @Transactional(readOnly = true)
-    public List<PricingRule> getRuleHierarchy(String siteId) {
+    public List<PricingRule> getRuleHierarchy(Long siteId) {
         return ruleRepository.findRuleHierarchyBySite(
                 siteId,
                 configService.getMaxRuleHierarchyDepth()
