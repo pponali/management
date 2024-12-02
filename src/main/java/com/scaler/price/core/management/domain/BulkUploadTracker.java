@@ -9,12 +9,15 @@ import lombok.experimental.SuperBuilder;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "bulk_upload_tracker")
-@Setter
 @Getter
-@SuperBuilder
+@Setter
 @NoArgsConstructor
+@SuperBuilder
+@Table(name = "bulk_upload_tracker")
 public class BulkUploadTracker extends AuditInfo {
+
+    @Column(nullable = false)
+    private String uploadId;
 
     @Column(nullable = false)
     private Long sellerId;
@@ -29,14 +32,17 @@ public class BulkUploadTracker extends AuditInfo {
     private LocalDateTime uploadedAt;
 
     private Integer totalRecords;
+
     private Integer processedRecords;
+
     private Integer successCount;
+
     private Integer failureCount;
 
     @Enumerated(EnumType.STRING)
     private UploadStatus status;
 
     private String errorFilePath;
-    private String originalFileName;
 
+    private String originalFileName;
 }

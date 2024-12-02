@@ -38,9 +38,9 @@ public class BulkPriceUploadController {
      * @return BulkUploadResult containing upload status and any errors
      */
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<BulkUploadResultDTO> uploadPrices(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<BulkUploadResultDTO> uploadPrices(@RequestParam("file") MultipartFile file, @RequestParam("siteId") Long siteId, @RequestParam("sellerId") Long sellerId) {
         try {
-            BulkUploadResultDTO result = bulkUploadService.processBulkUpload(file);
+            BulkUploadResultDTO result = bulkUploadService.processBulkUpload(file, sellerId, siteId);
             return ResponseEntity.ok(result);
         } catch (PriceValidationException e) {
             BulkUploadResultDTO errorResult = BulkUploadResultDTO.builder()
@@ -79,7 +79,7 @@ public class BulkPriceUploadController {
      * @return BulkUploadResult containing current status and any errors
      */
     @GetMapping("/status/{batchId}")
-    public ResponseEntity<BulkUploadResultDTO> getUploadStatus(@PathVariable Long batchId) {
+    public ResponseEntity<BulkUploadResultDTO> getUploadStatus(@PathVariable String batchId) {
         BulkUploadResultDTO status = bulkUploadService.getUploadStatus(batchId);
         return ResponseEntity.ok(status);
     }

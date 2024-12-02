@@ -1,6 +1,5 @@
 package com.scaler.price.core.management.repository;
 
-
 import com.scaler.price.core.management.domain.BulkUploadTracker;
 import com.scaler.price.core.management.domain.UploadStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -9,9 +8,12 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface BulkUploadTrackerRepository extends JpaRepository<BulkUploadTracker, String> {
+
+    Optional<BulkUploadTracker> findByUploadId(String uploadId);
 
     List<BulkUploadTracker> findBySellerId(Long sellerId);
 

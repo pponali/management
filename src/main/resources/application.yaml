@@ -24,7 +24,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -82,7 +82,7 @@ spring:
 
 server:
   address: 0.0.0.0
-  port: 8081
+  port: 8082
   servlet:
     container-type: TOMCAT
     context-path: /api/v1

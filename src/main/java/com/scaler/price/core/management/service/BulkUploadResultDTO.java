@@ -18,4 +18,5 @@ public class BulkUploadResultDTO {
     private Integer failureCount;
     private String message;
     private String errorFileUrl;
+    private String downloadUrl;
 }
