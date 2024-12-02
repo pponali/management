@@ -86,9 +86,9 @@ public class AsyncPriceProcessor {
 
     private PriceDTO convertToPrice(PriceUploadDTO price, BulkUploadTracker tracker) {
         return PriceDTO.builder()
-                .productId(Long.parseLong(price.getProductId()))
-                .sellerId(tracker.getSellerId())
-                .siteId(tracker.getSiteId())
+                .productId(price.getProductId())
+                .sellerId(price.getSellerId())
+                .siteId(price.getSiteId())
                 .basePrice(new BigDecimal(price.getBasePrice()))
                 .sellingPrice(new BigDecimal(price.getSellingPrice()))
                 .mrp(new BigDecimal(price.getMrp()))
@@ -96,7 +96,7 @@ public class AsyncPriceProcessor {
                 .effectiveFrom(LocalDateTime.parse(price.getEffectiveFrom()))
                 .effectiveTo(price.getEffectiveTo() != null ? LocalDateTime.parse(price.getEffectiveTo()) : null)
                 .priceType(price.getPriceType())
-                .status(price.getStatus())
+                .isActive(price.getIsActive())
                 .build();
     }
 

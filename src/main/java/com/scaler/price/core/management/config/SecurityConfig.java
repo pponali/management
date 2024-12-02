@@ -22,14 +22,15 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())  // Disable CSRF for file upload
                 .authorizeHttpRequests(auth -> auth
                         // Swagger UI endpoints
-                        .requestMatchers("/swagger-ui/**").permitAll()
-                        .requestMatchers("/v3/api-docs/**").permitAll()
-                        .requestMatchers("/swagger-resources/**").permitAll()
-                        .requestMatchers("/webjars/**").permitAll()
+                        .requestMatchers("/api/v1/swagger-ui/**", "/swagger-ui/**").permitAll()
+                        .requestMatchers("/api/v1/api-docs/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/api/v1/swagger-resources/**", "/swagger-resources/**").permitAll()
+                        .requestMatchers("/api/v1/webjars/**", "/webjars/**").permitAll()
                         // API endpoints
                         .requestMatchers("/api/v1/prices/**").permitAll()
                         .anyRequest().authenticated()
-                );
+                )
+                .httpBasic();  // Enable HTTP Basic authentication
 
         return http.build();
     }

@@ -244,8 +244,11 @@ public class BulkPriceUploadServiceImpl implements BulkPriceUploadService {
 
     private PriceUploadDTO parseRow(Row row) {
         PriceUploadDTO price = new PriceUploadDTO();
-        
-        price.setProductId(getCellValueAsString(row.getCell(0)));
+
+        // Change from string parsing to direct numeric assignment
+        price.setProductId(getCellValueAsLong(row.getCell(0)));
+        price.setSellerId(getCellValueAsLong(row.getCell(1)));
+        price.setSiteId(getCellValueAsLong(row.getCell(2)));
         price.setMrp(getCellValueAsString(row.getCell(1)));
         price.setBasePrice(getCellValueAsString(row.getCell(2)));
         price.setSellingPrice(getCellValueAsString(row.getCell(3)));
@@ -256,6 +259,22 @@ public class BulkPriceUploadServiceImpl implements BulkPriceUploadService {
         price.setStatus(getCellValueAsString(row.getCell(8)));
 
         return price;
+    }
+
+    private Long getCellValueAsLong(Cell cell) {
+        if (cell == null) return null;
+        try {
+            switch (cell.getCellType()) {
+                case NUMERIC:
+                    return (long) cell.getNumericCellValue();
+                case STRING:
+                    return Long.parseLong(cell.getStringCellValue().trim());
+                default:
+                    return null;
+            }
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private String getCellValueAsString(Cell cell) {
@@ -287,8 +306,14 @@ public class BulkPriceUploadServiceImpl implements BulkPriceUploadService {
     private void validatePrice(PriceUploadDTO price) {
         List<String> errors = new ArrayList<>();
 
-        if (isEmpty(price.getProductId())) {
+        if (price.getProductId() == null) {
             errors.add("Product ID is required");
+        }
+        if (price.getSellerId() == null) {
+            errors.add("Seller ID is required");
+        }
+        if (price.getSiteId() == null) {
+            errors.add("Site ID is required");
         }
         if (isEmpty(price.getMrp())) {
             errors.add("MRP is required");
