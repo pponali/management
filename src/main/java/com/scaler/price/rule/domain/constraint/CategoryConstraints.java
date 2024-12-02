@@ -24,6 +24,9 @@ import java.util.Set;
 public class CategoryConstraints extends RuleConstraints{
 
     @Column(nullable = false)
+    private Long categoryId;
+
+    @Column(nullable = false)
     private String categoryName;
 
     private String description;

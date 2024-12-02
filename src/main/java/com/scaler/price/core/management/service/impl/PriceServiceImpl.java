@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -69,5 +70,14 @@ public class PriceServiceImpl implements PriceService {
     @Override
     public void validatePrice(PriceDTO price) throws PriceValidationException {
         validationService.validatePrice(price);
+    }
+
+    @Override
+    public PriceDTO getActivePrice(Long productId, Long sellerId, Long siteId) {
+        Price price = priceRepository.findActivePrice(productId, sellerId, siteId, LocalDateTime.now())
+                .orElseThrow(() -> new PriceNotFoundException(
+                        String.format("No active price found for product: %d, seller: %d, site: %d",
+                                productId, sellerId, siteId)));
+        return priceMapper.toDTO(price);
     }
 }

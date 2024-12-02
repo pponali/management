@@ -1,4 +1,8 @@
 spring:
+  security:
+    user:
+      name: admin
+      password: admin  # Change this in production
   flyway:
     enabled: true
     baseline-on-migrate: true
@@ -163,8 +167,8 @@ app:
     max-age: 3600
 
 file:
-  upload-dir: ${FILE_UPLOAD_DIR:~/price-management/uploads}
-  error-dir: ${FILE_ERROR_DIR:~/price-management/errors}
+  upload-dir: ./uploads/prices
+  error-dir: ./uploads/errors
   retention-days: 30
 
 springdoc:

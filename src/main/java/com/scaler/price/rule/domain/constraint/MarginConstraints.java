@@ -48,6 +48,14 @@ public class MarginConstraints extends RuleConstraints {
     private BigDecimal targetMarginPercentage;
 
     /**
+     * The target margin percentage to be achieved.
+     * This represents the desired profit margin as a percentage of the cost.
+     */
+    @Column(name = "current_margin_percentage", precision = 10, scale = 2)
+    @DecimalMin(value = "0.0", message = "Current margin percentage must be non-negative")
+    private BigDecimal currentMarginPercentage;
+
+    /**
      * The minimum margin override.
      */
     @Column(name = "min_margin_override", precision = 10, scale = 2)

@@ -68,29 +68,6 @@ public interface MarginConstraintsRepository extends JpaRepository<MarginConstra
     Page<MarginConstraints> findAll(Pageable pageable);
 
     /**
-     * Find constraints with margin violations
-     */
-    @Query("SELECT mc FROM MarginConstraints mc WHERE " +
-            "mc.currentMarginPercentage < mc.minMarginPercentage OR " +
-            "mc.currentMarginPercentage > mc.maxMarginPercentage")
-    List<MarginConstraints> findMarginViolations();
-
-    /**
-     * Find constraints below target margin
-     */
-    @Query("SELECT mc FROM MarginConstraints mc WHERE " +
-            "mc.currentMarginPercentage < mc.targetMarginPercentage")
-    List<MarginConstraints> findBelowTargetMargin();
-
-    /**
-     * Find constraints by margin efficiency
-     */
-    @Query("SELECT mc FROM MarginConstraints mc WHERE " +
-            "(mc.currentMarginPercentage - mc.targetMarginPercentage) / " +
-            "mc.targetMarginPercentage * 100 >= :efficiency")
-    List<MarginConstraints> findByMarginEfficiency(@Param("efficiency") Double efficiency);
-
-    /**
      * Find constraints with specific margin ranges
      */
     @Query("SELECT mc FROM MarginConstraints mc WHERE " +
@@ -132,11 +109,8 @@ public interface MarginConstraintsRepository extends JpaRepository<MarginConstra
     /**
      * Find constraints needing review
      */
-    @Query("SELECT mc FROM MarginConstraints mc WHERE " +
-            "mc.updatedAt > :reviewDate AND " +
-            "mc.reviewStatus = 'PENDING'")
-    List<MarginConstraints> findConstraintsNeedingReview(
-            @Param("reviewDate") Instant reviewDate);
+    @Query("SELECT mc FROM MarginConstraints mc WHERE mc.updatedAt > :reviewDate")
+    List<MarginConstraints> findConstraintsNeedingReview(@Param("reviewDate") Instant reviewDate);
 
     /**
      * Find constraints by validation status
@@ -167,8 +141,8 @@ public interface MarginConstraintsRepository extends JpaRepository<MarginConstra
      * Find constraints by category type
      */
     @Query("SELECT mc FROM MarginConstraints mc WHERE " +
-            "mc.categoryType = :categoryType")
-    List<MarginConstraints> findByCategoryType(@Param("categoryType") String categoryType);
+            "mc.categoryId = :categoryId")
+    List<MarginConstraints> findByCategory(@Param("categoryId") Long categoryId);
 
     /**
      * Find constraints with margin trends
@@ -176,13 +150,6 @@ public interface MarginConstraintsRepository extends JpaRepository<MarginConstra
     @Query("SELECT mc FROM MarginConstraints mc WHERE " +
             "mc.marginTrend = :trend AND mc.isActive = true")
     List<MarginConstraints> findByMarginTrend(@Param("trend") String trend);
-
-    /**
-     * Calculate average margin by category type
-     */
-    @Query("SELECT AVG(mc.currentMarginPercentage) FROM MarginConstraints mc " +
-            "WHERE mc.categoryType = :categoryType AND mc.isActive = true")
-    Double calculateAverageMarginByCategory(@Param("categoryType") String categoryType);
 
     /**
      * Find constraints requiring optimization
@@ -200,4 +167,36 @@ public interface MarginConstraintsRepository extends JpaRepository<MarginConstra
      * @return List of margin constraints matching the criteria
      */
     List<MarginConstraints> findByTargetMarginPercentageBetween(BigDecimal minTarget, BigDecimal maxTarget);
+
+    /**
+     * Find constraints with margin violations
+     */
+    @Query("SELECT mc FROM MarginConstraints mc WHERE " +
+            "mc.targetMarginPercentage < mc.minMarginPercentage OR " +
+            "mc.targetMarginPercentage > mc.maxMarginPercentage")
+    List<MarginConstraints> findMarginViolations();
+
+    /**
+     * Find constraints below target margin
+     */
+    @Query("SELECT mc FROM MarginConstraints mc WHERE " +
+            "mc.targetMarginPercentage < mc.defaultMargin")
+    List<MarginConstraints> findBelowTargetMargin();
+
+    /**
+     * Find constraints by margin efficiency
+     */
+    @Query("SELECT mc FROM MarginConstraints mc WHERE " +
+            "(mc.targetMarginPercentage - mc.defaultMargin) / " +
+            "mc.defaultMargin * 100 >= :efficiency")
+    List<MarginConstraints> findByMarginEfficiency(@Param("efficiency") Double efficiency);
+
+    /**
+     * Calculate average target margin percentage for a given category
+     * @param categoryId the category ID to calculate average for
+     * @return average target margin percentage for the category
+     */
+    @Query("SELECT AVG(mc.targetMarginPercentage) FROM MarginConstraints mc " +
+            "WHERE mc.categoryId = :categoryId AND mc.isActive = true")
+    BigDecimal calculateAverageMarginByCategory(@Param("categoryId") Long categoryId);
 }

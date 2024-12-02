@@ -13,4 +13,5 @@ public interface PriceService {
     void deletePrice(Long id);
 
     void validatePrice(PriceDTO price) throws PriceValidationException;
+    PriceDTO getActivePrice(Long productId, Long sellerId, Long siteId);
 }

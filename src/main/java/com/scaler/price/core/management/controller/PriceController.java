@@ -1,15 +1,16 @@
 package com.scaler.price.core.management.controller;
 
 import com.scaler.price.core.management.dto.PriceDTO;
+import com.scaler.price.core.management.exceptions.PriceNotFoundException;
 import com.scaler.price.core.management.exceptions.PriceValidationException;
 import com.scaler.price.core.management.service.PriceService;
 import com.scaler.price.core.management.service.PriceValidationService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -74,6 +75,20 @@ public class PriceController {
             return ResponseEntity.ok(List.of("Price validation successful"));
         } catch (Exception e) {
             return ResponseEntity.ok(List.of(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/site/{siteId}/seller/{sellerId}/product/{productId}")
+    public ResponseEntity<PriceDTO> getPriceBySiteAndSeller(
+            @PathVariable Long productId,
+            @PathVariable Long sellerId,
+            @PathVariable Long siteId) {
+
+        try {
+            PriceDTO price = priceService.getActivePrice(productId, sellerId, siteId);
+            return ResponseEntity.ok(price);
+        } catch (PriceNotFoundException ex) {
+            throw ex; // Will be handled by GlobalExceptionHandler
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.scaler.price.core.management.repository;
 
+import com.scaler.price.rule.domain.RuleType;
 import com.scaler.price.rule.domain.constraint.PriceConstraints;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -65,9 +66,9 @@ public interface PriceConstraintsRepository extends JpaRepository<PriceConstrain
 
 
     // Attribute Based Queries
-    @Query("SELECT pc FROM PriceConstraints pc WHERE " +
+    /*@Query("SELECT pc FROM PriceConstraints pc WHERE " +
             "pc.attributes LIKE %:attribute%")
-    List<PriceConstraints> findByAttribute(@Param("attribute") String attribute);
+    List<PriceConstraints> findByAttribute(@Param("attribute") String attribute);*/
 
     // Audit and Review Queries
     List<PriceConstraints> findByUpdatedAtAfter(Instant modifiedDate);
@@ -92,4 +93,18 @@ public interface PriceConstraintsRepository extends JpaRepository<PriceConstrain
     @Query("DELETE FROM PriceConstraints pc WHERE " +
             "pc.isActive = false AND pc.updatedAt < :date")
     int deleteInactiveConstraintsOlderThan(@Param("date") Instant date);
+
+    // Remove or comment out the existing findByAttribute method
+    // List<PriceConstraints> findByAttribute(@Param("attribute") String attribute);
+
+    /**
+     * Find price constraints by category ID and rule type
+     * @param categoryId the category ID to search for
+     * @param ruleType the rule type to filter by
+     * @return List of matching price constraints
+     */
+    @Query("SELECT pc FROM PriceConstraints pc WHERE pc.categoryId = :categoryId AND pc.ruleType = :ruleType")
+    List<PriceConstraints> findByCategoryIdAndRuleType(
+            @Param("categoryId") Long categoryId,
+            @Param("ruleType") RuleType ruleType);
 }

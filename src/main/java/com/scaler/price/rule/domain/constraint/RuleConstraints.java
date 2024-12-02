@@ -63,4 +63,18 @@ public class RuleConstraints extends AuditInfo{
     @Column(name = "category_id")
     private Long categoryId;
 
+    @Column(name = "validation_status")
+    private String validationStatus;
+
+    @Column(name = "review_status")
+    @Enumerated(EnumType.STRING)
+    private ReviewStatus reviewStatus = ReviewStatus.PENDING;
+
+    public enum ReviewStatus {
+        PENDING,
+        REVIEWED,
+        APPROVED,
+        REJECTED
+    }
+
 }

@@ -19,6 +19,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -74,13 +76,28 @@ public class AsyncPriceProcessor {
         trackerRepository.save(tracker);
     }
 
-    private void updateTracker(BulkUploadTracker tracker, int successCount, int size) {
+    private void updateTracker(BulkUploadTracker tracker, int successCount, int failureCount) {
+        tracker.setSuccessCount(successCount);
+        tracker.setFailureCount(failureCount);
+        tracker.setProcessedRecords(successCount + failureCount);
+        tracker.setStatus(UploadStatus.IN_PROGRESS);
+        trackerRepository.save(tracker);
     }
 
     private PriceDTO convertToPrice(PriceUploadDTO price, BulkUploadTracker tracker) {
-        // Implement conversion logic
-
-        return null;
+        return PriceDTO.builder()
+                .productId(Long.parseLong(price.getProductId()))
+                .sellerId(tracker.getSellerId())
+                .siteId(tracker.getSiteId())
+                .basePrice(new BigDecimal(price.getBasePrice()))
+                .sellingPrice(new BigDecimal(price.getSellingPrice()))
+                .mrp(new BigDecimal(price.getMrp()))
+                .currency(price.getCurrency())
+                .effectiveFrom(LocalDateTime.parse(price.getEffectiveFrom()))
+                .effectiveTo(price.getEffectiveTo() != null ? LocalDateTime.parse(price.getEffectiveTo()) : null)
+                .priceType(price.getPriceType())
+                .status(price.getStatus())
+                .build();
     }
 
     private String generateErrorReport(String uploadId, List<PriceUploadDTO> failedRecords) {
@@ -108,16 +125,29 @@ public class AsyncPriceProcessor {
     }
 
     private void createHeaders(Row headerRow) {
-
+        String[] headers = {
+            "Row Number", "Product ID", "Error Message", "Base Price",
+            "Selling Price", "MRP", "Currency", "Effective From",
+            "Effective To", "Price Type", "Status"
+        };
+        
+        for (int i = 0; i < headers.length; i++) {
+            headerRow.createCell(i).setCellValue(headers[i]);
+        }
     }
 
     private void populateErrorRow(Row row, PriceUploadDTO record) {
-        // Implement logic to populate row with error data
-        // ...
-        // Example:
-        row.createCell(0).setCellValue(record.getProductId());
-        row.createCell(1).setCellValue(record.getErrorMessage());
-
-
+        int cellNum = 0;
+        row.createCell(cellNum++).setCellValue(record.getRowNumber());
+        row.createCell(cellNum++).setCellValue(record.getProductId());
+        row.createCell(cellNum++).setCellValue(record.getErrorMessage());
+        row.createCell(cellNum++).setCellValue(record.getBasePrice());
+        row.createCell(cellNum++).setCellValue(record.getSellingPrice());
+        row.createCell(cellNum++).setCellValue(record.getMrp());
+        row.createCell(cellNum++).setCellValue(record.getCurrency());
+        row.createCell(cellNum++).setCellValue(record.getEffectiveFrom());
+        row.createCell(cellNum++).setCellValue(record.getEffectiveTo());
+        row.createCell(cellNum++).setCellValue(record.getPriceType());
+        row.createCell(cellNum).setCellValue(record.getStatus());
     }
 }

@@ -1,6 +1,7 @@
 
 package com.scaler.price.core.management.controller;
 
+import com.scaler.price.core.management.domain.UploadStatus;
 import com.scaler.price.core.management.dto.PriceDTO;
 import com.scaler.price.core.management.exceptions.PriceValidationException;
 import com.scaler.price.core.management.service.BulkPriceUploadService;
@@ -38,13 +39,22 @@ public class BulkPriceUploadController {
      */
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<BulkUploadResultDTO> uploadPrices(@RequestParam("file") MultipartFile file) {
-        BulkUploadResultDTO result = null;
         try {
-            result = bulkUploadService.processBulkUpload(file);
+            BulkUploadResultDTO result = bulkUploadService.processBulkUpload(file);
+            return ResponseEntity.ok(result);
         } catch (PriceValidationException e) {
-            throw new RuntimeException(e);
+            BulkUploadResultDTO errorResult = BulkUploadResultDTO.builder()
+                    .status(UploadStatus.FAILED)
+                    .message(e.getMessage())
+                    .build();
+            return ResponseEntity.badRequest().body(errorResult);
+        } catch (Exception e) {
+            BulkUploadResultDTO errorResult = BulkUploadResultDTO.builder()
+                    .status(UploadStatus.FAILED)
+                    .message("Failed to process bulk upload: " + e.getMessage())
+                    .build();
+            return ResponseEntity.internalServerError().body(errorResult);
         }
-        return ResponseEntity.ok(result);
     }
 
     /**
