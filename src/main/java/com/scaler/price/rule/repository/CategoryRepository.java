@@ -20,112 +20,128 @@ public interface CategoryRepository extends JpaRepository<CategoryConstraints, L
     List<CategoryConstraints> findBySiteIdsContaining(Long siteId);
 
     @Query("""
-        SELECT c FROM Category c
+        SELECT c FROM CategoryConstraints c
         WHERE c.isActive = true
         AND :siteId MEMBER OF c.siteIds
         ORDER BY c.level, c.displayOrder
         """)
     List<CategoryConstraints> findActiveCategoriesBySite(
-            @Param("siteId") String siteId
+            @Param("siteId") Long siteId
     );
 
-    @Query(countQuery = """
-            WITH RECURSIVE CategoryHierarchy AS (
-                SELECT c.category_id, c.parent_category_id, 1 as level
-                FROM categories c
-                WHERE c.category_id = :categoryId
-            
-                UNION ALL
-            
-                SELECT c.category_id, c.parent_category_id, ch.level + 1
-                FROM categories c
-                INNER JOIN CategoryHierarchy ch 
-                ON c.category_id = ch.parent_category_id
-            )
-            SELECT c.* FROM categories c
-            INNER JOIN CategoryHierarchy ch 
-            ON c.category_id = ch.category_id
-            ORDER BY ch.level DESC
-            """, nativeQuery = true)
-    List<CategoryConstraints> findParentCategories(@Param("categoryId") String categoryId);
-
-    @Query(countQuery = """
-            WITH RECURSIVE CategoryHierarchy AS (
-                SELECT c.category_id, c.parent_category_id, 1 as level
-                FROM categories c
-                WHERE c.parent_category_id = :categoryId
-            
-                UNION ALL
-            
-                SELECT c.category_id, c.parent_category_id, ch.level + 1
-                FROM categories c
-                INNER JOIN CategoryHierarchy ch 
-                ON c.parent_category_id = ch.category_id
-            )
-            SELECT c.* FROM categories c
-            INNER JOIN CategoryHierarchy ch 
-            ON c.category_id = ch.category_id
-            ORDER BY ch.level, c.display_order
-            """, nativeQuery = true)
-    List<CategoryConstraints> findAllSubCategories(@Param("categoryId") String categoryId);
 
     @Query("""
-        SELECT DISTINCT c FROM Category c
-        LEFT JOIN FETCH c.subCategories
-        WHERE c.isActive = true
-        AND c.parentCategory IS NULL
-        AND :siteId MEMBER OF c.siteIds
-        ORDER BY c.displayOrder
-        """)
-    List<CategoryConstraints> findRootCategories(@Param("siteId") String siteId);
-
-    @Query("""
-        SELECT c FROM Category c
+        SELECT c FROM CategoryConstraints c
         WHERE c.isActive = true
         AND :siteId MEMBER OF c.siteIds
         AND LOWER(c.categoryName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
         ORDER BY c.level, c.displayOrder
         """)
     List<CategoryConstraints> searchCategories(
-            @Param("siteId") String siteId,
+            @Param("siteId") Long siteId,
             @Param("searchTerm") String searchTerm
     );
 
     @Query("""
-        SELECT new com.scaler.price.category.dto.CategorySummary(
+        SELECT new com.scaler.price.rule.domain.CategorySummary(
             c.categoryId,
             c.categoryName,
-            COUNT(pc),
+            SIZE(c.subCategories),
             CASE WHEN c.isActive = true THEN 'ACTIVE' ELSE 'INACTIVE' END
         )
-        FROM Category c
-        LEFT JOIN Category pc ON pc.parentCategory = c
+        FROM CategoryConstraints c
         WHERE :siteId MEMBER OF c.siteIds
-        GROUP BY c.categoryId, c.categoryName, c.isActive
+        ORDER BY c.displayOrder
         """)
-    List<CategorySummary> getCategorySummaries(@Param("siteId") String siteId);
+    List<CategorySummary> getCategorySummaries(@Param("siteId") Long siteId);
+
 
     // Custom query to find categories with price attributes
-    @Query("""
-        SELECT c FROM Category c
-        WHERE c.isActive = true
-        AND :siteId MEMBER OF c.siteIds
-        AND c.attributes.priceAttributes IS NOT NULL
-        AND c.attributes.priceAttributes != '{}'
-        """)
+    @Query(value = """
+        SELECT c.* FROM category_constraints c
+        CROSS JOIN LATERAL jsonb_object_keys(c.attributes->'priceAttributes') pa
+        WHERE c.is_active = true
+        AND c.site_ids @> CAST(:siteId AS jsonb)
+        GROUP BY c.category_id
+        """, nativeQuery = true)
     List<CategoryConstraints> findCategoriesWithPriceAttributes(
-            @Param("siteId") String siteId
+            @Param("siteId") Long siteId
     );
 
-    // Custom query for validation rules
-    @Query("""
-        SELECT c FROM Category c
-        WHERE c.isActive = true
-        AND :siteId MEMBER OF c.siteIds
-        AND c.attributes.validationRules IS NOT NULL
-        AND c.attributes.validationRules != '{}'
-        """)
-    List<CategoryConstraints> findCategoriesWithValidationRules(
-            @Param("siteId") String siteId
+    // Custom query for validation rules by site
+    @Query(value = """
+        SELECT c.* FROM category_constraints c
+        CROSS JOIN LATERAL jsonb_object_keys(c.attributes->'validationRules') vr
+        WHERE c.is_active = true
+        AND c.site_ids @> CAST(:siteId AS jsonb)
+        GROUP BY c.category_id
+        """, nativeQuery = true)
+    List<CategoryConstraints> findCategoriesWithValidationRulesBySite(
+            @Param("siteId") Long siteId
     );
+
+    // Custom query for validation rules by type
+    @Query(value = """
+        SELECT c.* FROM category_constraints c,
+        jsonb_each(c.attributes->'validationRules') vr
+        WHERE c.is_active = true
+        AND vr.value->>'ruleType' = :ruleType
+        GROUP BY c.category_id
+        """, nativeQuery = true)
+    List<CategoryConstraints> findCategoriesWithValidationRulesByType(
+            @Param("ruleType") String ruleType
+    );
+
+
+    @Query(value = """
+            WITH RECURSIVE CategoryHierarchy AS (
+                SELECT c.category_id, c.parent_category_id, 1 as level
+                FROM category_constraints c
+                WHERE c.category_id = :categoryId
+            
+                UNION ALL
+            
+                SELECT c.category_id, c.parent_category_id, ch.level + 1
+                FROM category_constraints c
+                INNER JOIN CategoryHierarchy ch 
+                ON c.category_id = ch.parent_category_id
+            )
+            SELECT c.* FROM category_constraints c
+            INNER JOIN CategoryHierarchy ch 
+            ON c.category_id = ch.category_id
+            ORDER BY ch.level DESC
+            """,
+            nativeQuery = true)
+    List<CategoryConstraints> findParentCategories(@Param("categoryId") Long categoryId);
+
+    @Query(value = """
+            WITH RECURSIVE CategoryHierarchy AS (
+                SELECT c.category_id, c.parent_category_id, 1 as level
+                FROM category_constraints c
+                WHERE c.parent_category_id = :categoryId
+            
+                UNION ALL
+            
+                SELECT c.category_id, c.parent_category_id, ch.level + 1
+                FROM category_constraints c
+                INNER JOIN CategoryHierarchy ch 
+                ON c.parent_category_id = ch.category_id
+            )
+            SELECT c.* FROM category_constraints c
+            INNER JOIN CategoryHierarchy ch 
+            ON c.category_id = ch.category_id
+            ORDER BY ch.level, c.display_order
+            """,
+            nativeQuery = true)
+    List<CategoryConstraints> findAllSubCategories(@Param("categoryId") Long categoryId);
+
+    @Query(value = """
+            SELECT c.* FROM category_constraints c
+            WHERE c.is_active = true
+            AND c.parent_category_id IS NULL
+            AND c.site_ids @> CAST(:siteId AS jsonb)
+            ORDER BY c.display_order
+            """,
+            nativeQuery = true)
+    List<CategoryConstraints> findRootCategories(@Param("siteId") Long siteId);
 }

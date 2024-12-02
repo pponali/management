@@ -20,8 +20,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-@Component
 @Slf4j
+@Component
 public class ConfigChangeDetector {
 
     public void detectConfigChanges(
@@ -506,7 +506,7 @@ public class ConfigChangeDetector {
             List<TimeConstraints.BlackoutPeriod> periods) {
         return periods.stream()
                 .collect(Collectors.toMap(
-                        period -> period.getStartDate().toString(),
+                        period -> period.getStartTime().toString(),
                         Function.identity(),
                         (p1, p2) -> p1
                 ));
@@ -658,5 +658,99 @@ public class ConfigChangeDetector {
                     new ChangeDiff(oldWindow.toString(), newWindow.toString()));
             }
         });
+    }
+
+    public Map<String, ChangeType> mapBlackoutPeriods(
+            Map<String, TimeConstraints.BlackoutPeriod> oldBlackouts,
+            Map<String, TimeConstraints.BlackoutPeriod> newBlackouts) {
+        
+        Map<String, ChangeType> changes = new HashMap<>();
+        
+        // Handle null maps
+        final Map<String, TimeConstraints.BlackoutPeriod> oldBlackoutsMap = oldBlackouts != null ? oldBlackouts : new HashMap<>();
+        final Map<String, TimeConstraints.BlackoutPeriod> newBlackoutsMap = newBlackouts != null ? newBlackouts : new HashMap<>();
+        
+        // Find additions and modifications
+        newBlackoutsMap.forEach((id, blackout) -> {
+            if (!oldBlackoutsMap.containsKey(id)) {
+                changes.put(id, ChangeType.ADDED);
+            } else if (hasBlackoutChanged(oldBlackoutsMap.get(id), blackout)) {
+                changes.put(id, ChangeType.MODIFIED);
+            }
+        });
+        
+        // Find removals
+        oldBlackoutsMap.keySet().forEach(id -> {
+            if (!newBlackoutsMap.containsKey(id)) {
+                changes.put(id, ChangeType.REMOVED);
+            }
+        });
+        
+        return changes;
+    }
+    
+    public Map<String, ChangeType> mapSpecialWindows(
+            Map<String, TimeConstraints.SpecialTimeWindow> oldWindows,
+            Map<String, TimeConstraints.SpecialTimeWindow> newWindows) {
+        
+        Map<String, ChangeType> changes = new HashMap<>();
+        
+        // Handle null maps
+        final Map<String, TimeConstraints.SpecialTimeWindow> safeOldWindows = oldWindows != null ? oldWindows : new HashMap<>();
+        final Map<String, TimeConstraints.SpecialTimeWindow> safeNewWindows = newWindows != null ? newWindows : new HashMap<>();
+        
+        // Find additions
+        safeNewWindows.forEach((id, window) -> {
+            if (!safeOldWindows.containsKey(id)) {
+                changes.put(id, ChangeType.ADDED);
+            }
+        });
+        
+        // Find removals 
+        safeOldWindows.forEach((id, window) -> {
+            if (!safeNewWindows.containsKey(id)) {
+                changes.put(id, ChangeType.REMOVED);
+            }
+        });
+        
+        // Find modifications
+        safeOldWindows.forEach((id, oldWindow) -> {
+            if (safeNewWindows.containsKey(id)) {
+                TimeConstraints.SpecialTimeWindow newWindow = safeNewWindows.get(id);
+                if (hasWindowChanged(oldWindow, newWindow)) {
+                    changes.put(id, ChangeType.MODIFIED);
+                }
+            }
+        });
+        
+        return changes;
+    }
+    
+    private boolean hasBlackoutChanged(TimeConstraints.BlackoutPeriod old, TimeConstraints.BlackoutPeriod current) {
+        if (old == null || current == null) return true;
+        
+        return !Objects.equals(old.getStartTime(), current.getStartTime()) ||
+               !Objects.equals(old.getEndTime(), current.getEndTime()) ||
+               !Objects.equals(old.getReason(), current.getReason()) ||
+               !Objects.equals(old.getType(), current.getType()) ||
+               !Objects.equals(old.getDescription(), current.getDescription()) ||
+               !Objects.equals(old.getAffectedServices(), current.getAffectedServices());
+    }
+    
+    private boolean hasWindowChanged(TimeConstraints.SpecialTimeWindow old, TimeConstraints.SpecialTimeWindow current) {
+        if (old == null || current == null) return true;
+        
+        return !Objects.equals(old.getStartTime(), current.getStartTime()) ||
+               !Objects.equals(old.getEndTime(), current.getEndTime()) ||
+               !Objects.equals(old.getWindowName(), current.getWindowName()) ||
+               !Objects.equals(old.getAdjustmentFactor(), current.getAdjustmentFactor()) ||
+               !Objects.equals(old.getSpecialRuleId(), current.getSpecialRuleId()) ||
+               !Objects.equals(old.getWindowType(), current.getWindowType());
+    }
+    
+    public enum ChangeType {
+        ADDED,
+        REMOVED,
+        MODIFIED
     }
 }

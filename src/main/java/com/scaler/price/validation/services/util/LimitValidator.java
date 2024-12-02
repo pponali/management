@@ -13,6 +13,10 @@ import lombok.RequiredArgsConstructor;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
+import org.springframework.stereotype.Component;
+
+
+@Component
 @RequiredArgsConstructor
 public class LimitValidator {
     private final ConfigurationService configService;

@@ -39,8 +39,9 @@ public class Product extends AuditInfo {
     @ElementCollection
     @CollectionTable(name = "product_custom_attributes")
     @MapKeyColumn(name = "attribute_key")
-    @Column(name = "attribute_value")
-    private Map<String, String> customAttributes;
+    @Column(name = "attribute_value", columnDefinition = "text")
+    @Convert(converter = JsonObjectConverter.class)
+    private Map<String, Object> customAttributes;
 
     @ElementCollection
     @CollectionTable(name = "product_site_ids")
@@ -71,7 +72,7 @@ public class Product extends AuditInfo {
     @JoinColumn(name = "product_id")
     private Map<String, ValidationRule> validationRules = new HashMap<>();
 
-    private Integer quantity;
+    private Integer inventory;
 
     public MarginConstraints getMarginConstraints() {
         return MarginConstraints.marginConstraintsBuilder()
@@ -80,6 +81,10 @@ public class Product extends AuditInfo {
                 .maxMarginOverride(BigDecimal.valueOf(100))
                 .defaultMargin(BigDecimal.valueOf(20))
                 .build();
+    }
+
+    public Comparable<BigDecimal> getBasePrice() {
+        return mrp != null ? mrp : costPrice;
     }
 
     @Entity

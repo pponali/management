@@ -6,18 +6,21 @@ import com.scaler.price.core.management.repository.MarginConstraintsRepository;
 import com.scaler.price.core.management.repository.PriceConstraintsRepository;
 import com.scaler.price.core.management.repository.TimeConstraintsRepository;
 import com.scaler.price.core.management.service.ConstraintService;
+import com.scaler.price.rule.domain.Category;
 import com.scaler.price.rule.domain.PricingRule;
 import com.scaler.price.rule.domain.constraint.MarginConstraints;
 import com.scaler.price.rule.domain.constraint.PriceConstraints;
 import com.scaler.price.rule.domain.constraint.RuleConstraints;
 import com.scaler.price.rule.domain.constraint.TimeConstraints;
 import com.scaler.price.rule.dto.CategoryAttributes;
+import com.scaler.price.rule.mapper.CategoryMapper;
 import com.scaler.price.rule.repository.RuleRepository;
 import com.scaler.price.validation.helper.ActionParameters;
 import com.scaler.price.validation.services.TimeValidator;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.mapstruct.factory.Mappers;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -43,6 +46,7 @@ public class ConstraintServiceImpl implements ConstraintService {
     private PriceConstraintsRepository priceConstraintsRepository;
     private MarginConstraintsRepository marginConstraintsRepository;
     private CategoryAttributesRepository categoryAttributesRepository;
+    private CategoryMapper categoryMapper = Mappers.getMapper(CategoryMapper.class);
 
 
     @Override
@@ -541,10 +545,13 @@ public class ConstraintServiceImpl implements ConstraintService {
             throw new IllegalArgumentException("Category ID cannot be null");
         }
 
-        CategoryAttributes attributes = categoryAttributesRepository
+        Category category = categoryAttributesRepository
                 .findById(categoryId)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        "Category attributes not found for categoryId: " + categoryId));
+                        "Category not found for categoryId: " + categoryId));
+
+        // Use CategoryMapper to convert Category to CategoryAttributes
+        CategoryAttributes attributes = categoryMapper.categoryToCategoryAttributes(category);
 
         // Fetch related constraints
         MarginConstraints marginConstraints = marginConstraintsRepository
@@ -559,7 +566,7 @@ public class ConstraintServiceImpl implements ConstraintService {
                 .findByCategoryId(categoryId)
                 .orElse(null);
 
-        // Set the fetched constraints
+        // Set constraints
         attributes.setMarginConstraints(marginConstraints);
         attributes.setPriceConstraints(priceConstraints);
         attributes.setTimeConstraints(timeConstraints);

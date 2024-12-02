@@ -1,7 +1,6 @@
 package com.scaler.price.rule.domain;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -18,14 +17,13 @@ import com.scaler.price.core.management.domain.AuditInfo;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProductAttribute extends AuditInfo {
-
     @Column(nullable = false)
     private Long productId;
 
     @Column(nullable = false)
     private Long attributeKey;
 
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "jsonb")
     private String attributeValue;
 
     @Column(nullable = false)
@@ -33,13 +31,11 @@ public class ProductAttribute extends AuditInfo {
 
     private Long category;
 
-    private Long subCategory;
+    private String subCategory;
 
     private Boolean isSearchable;
 
     private Boolean isFilterable;
 
     private Integer displayOrder;
-
-    
 }

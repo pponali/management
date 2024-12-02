@@ -11,25 +11,26 @@ import com.scaler.price.rule.validation.ValidationRules;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.common.util.StringUtils;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-
 @Component
 @Slf4j
-@RequiredArgsConstructor
+@NoArgsConstructor
 public class CategoryValidator {
-    private final SiteService siteService;
-    private final ConfigurationService configService;
-    private final CategoryRepository categoryRepository;
-    private final ValidationRules categoryValidationRules;
-    private final ObjectMapper objectMapper;
+    private SiteService siteService;
+    private ConfigurationService configService;
+    private CategoryRepository categoryRepository;
+    private ValidationRules categoryValidationRules;
+    private ObjectMapper objectMapper;
 
+    @Autowired
     public CategoryValidator(SiteService siteService, 
                            ConfigurationService configService,
                            CategoryRepository categoryRepository,

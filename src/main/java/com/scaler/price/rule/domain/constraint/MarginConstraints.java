@@ -3,13 +3,14 @@ package com.scaler.price.rule.domain.constraint;
 import com.scaler.price.rule.domain.RuleType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -17,7 +18,7 @@ import java.util.*;
  * It extends the RuleConstraints class and adds additional fields and methods specific to margin constraints.
  */
 @Entity
-@DiscriminatorValue("margin_constraints")
+@DiscriminatorValue("PRICING")
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder(toBuilder = true, builderMethodName = "marginConstraintsBuilder")
@@ -37,6 +38,14 @@ public class MarginConstraints extends RuleConstraints {
      */
     @Column(name = "default_margin", precision = 10, scale = 2)
     private BigDecimal defaultMargin;
+
+    /**
+     * The target margin percentage to be achieved.
+     * This represents the desired profit margin as a percentage of the cost.
+     */
+    @Column(name = "target_margin_percentage", precision = 10, scale = 2)
+    @DecimalMin(value = "0.0", message = "Target margin percentage must be non-negative")
+    private BigDecimal targetMarginPercentage;
 
     /**
      * The minimum margin override.
@@ -80,6 +89,13 @@ public class MarginConstraints extends RuleConstraints {
     @Column(name = "site_id")
     private String siteId;
 
+     /**
+     * The margin Trend.
+     */
+    @Column(name = "margin_trend")
+    private String marginTrend;
+
+
     /**
      * The rule type.
      */
@@ -107,7 +123,6 @@ public class MarginConstraints extends RuleConstraints {
     @Column(name = "target_margin")
     @DecimalMin(value = "0.0")
     private BigDecimal targetMargin;
-
 
 
     /**
@@ -207,6 +222,7 @@ public class MarginConstraints extends RuleConstraints {
      * Entity for category margins.
      */
     @Entity
+    @Table(name = "category_margins")
     @Getter
     @Setter
     @NoArgsConstructor
@@ -272,6 +288,7 @@ public class MarginConstraints extends RuleConstraints {
      * Entity for margin tiers.
      */
     @Entity
+    @Table(name = "margin_tiers")
     @Getter
     @Setter
     @NoArgsConstructor
@@ -330,6 +347,7 @@ public class MarginConstraints extends RuleConstraints {
      * Entity for seller margins.
      */
     @Entity
+    @Table(name = "seller_margins")
     @Getter
     @Setter
     @NoArgsConstructor

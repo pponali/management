@@ -25,4 +25,8 @@ public class SiteService {
         return siteRepository.findLimitsById(siteId)
                 .orElse(SiteLimits.getDefaultLimits());
     }
+
+    public boolean existsById(Long siteId) {
+       return siteRepository.existsById(siteId);
+    }
 }

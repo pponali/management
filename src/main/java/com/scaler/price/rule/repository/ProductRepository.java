@@ -1,11 +1,10 @@
 package com.scaler.price.rule.repository;
 
-
 import com.scaler.price.rule.domain.Product;
 import com.scaler.price.rule.domain.Product.ProductStatus;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -13,47 +12,59 @@ import java.util.Set;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
+    @Query("""
+        SELECT p FROM Product p
+        WHERE p.id IN :productIds
+        AND p.status = :status
+        """)
+    List<Product> findActiveProductsByIds(
+            @Param("productIds") Set<Long> productIds,
+            @Param("status") ProductStatus status
+    );
+
+    boolean existsByIdAndStatus(Long id, ProductStatus status);
 
     @Query("""
         SELECT p FROM Product p
         WHERE p.sellerId = :sellerId
-        AND p.status = 'ACTIVE'
+        AND p.status = :status
         """)
-    List<Product> findActiveProductsBySeller(Long sellerId);
+    List<Product> findActiveProductsBySeller(
+            @Param("sellerId") Long sellerId,
+            @Param("status") ProductStatus status
+    );
 
     @Query("""
         SELECT p FROM Product p
         JOIN p.siteIds s
         WHERE s = :siteId
-        AND p.status = 'ACTIVE'
+        AND p.status = :status
         """)
-    List<Product> findActiveProductsBySite(Long siteId);
+    List<Product> findActiveProductsBySite(
+            @Param("siteId") Long siteId,
+            @Param("status") ProductStatus status
+    );
 
     @Query("""
         SELECT p FROM Product p
         WHERE p.categoryId = :categoryId
-        AND p.status = 'ACTIVE'
+        AND p.status = :status
         """)
-    List<Product> findActiveProductsByCategory(Long categoryId);
+    List<Product> findActiveProductsByCategory(
+            @Param("categoryId") Long categoryId,
+            @Param("status") ProductStatus status
+    );
 
     @Query("""
         SELECT DISTINCT p FROM Product p
         JOIN p.siteIds s
         WHERE p.sellerId = :sellerId
         AND s IN :siteIds
-        AND p.status = 'ACTIVE'
+        AND p.status = :status
         """)
     List<Product> findActiveProductsBySellerAndSites(
-            String sellerId,
-            Set<String> siteIds
+            @Param("sellerId") Long sellerId,
+            @Param("siteIds") Set<Long> siteIds,
+            @Param("status") ProductStatus status
     );
-
-    @Query("""
-        SELECT p FROM Product p
-        WHERE p.productId IN :productIds
-        AND p.status = 'ACTIVE'
-        """)
-    List<Product> findActiveProductsByIds(Set<Long> productIds);
-
-    boolean existsByProductIdAndStatus(Long productId, ProductStatus active);
 }

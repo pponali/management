@@ -25,4 +25,8 @@ public class SellerService {
         return sellerRepository.findLimitsById(sellerId)
                 .orElse(SellerLimits.getDefaultLimits());
     }
+
+    public boolean existsById(Long sellerId) {
+        return sellerRepository.existsById(sellerId);
+    }
 }

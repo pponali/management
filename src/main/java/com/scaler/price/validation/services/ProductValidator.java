@@ -105,13 +105,14 @@ public class ProductValidator {
         }
     }
 
-    private void validateAttributes(Map<String, String> attributes) throws ProductValidationException {
+    private void validateAttributes(Map<String, Object> attributes) throws ProductValidationException {
         if (attributes != null && !attributes.isEmpty()) {
-            for (Map.Entry<String, String> entry : attributes.entrySet()) {
-                if (StringUtils.isBlank(entry.getKey())) {
+            for (Map.Entry<String, Object> entry : attributes.entrySet()) {
+                if (entry.getKey() == null || entry.getKey().trim().isEmpty()) {
                     throw new ProductValidationException("Attribute key cannot be blank");
                 }
-                if (StringUtils.isBlank(entry.getValue())) {
+                if (entry.getValue() == null || 
+                    (entry.getValue() instanceof String && ((String) entry.getValue()).trim().isEmpty())) {
                     throw new ProductValidationException("Attribute value cannot be blank for key: " + entry.getKey());
                 }
             }

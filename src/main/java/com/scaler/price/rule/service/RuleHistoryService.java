@@ -36,8 +36,6 @@ public interface RuleHistoryService {
      */
     Page<RuleHistory> getRuleHistory(Long ruleId, Pageable pageable);
 
-    Page<RuleHistory> getRuleHistory(String ruleId, Pageable pageable);
-
     /**
      * Retrieves a specific version of a pricing rule.
      *
@@ -45,7 +43,7 @@ public interface RuleHistoryService {
      * @param version The version number to retrieve
      * @return Optional containing the rule version if found
      */
-    Optional<PricingRule> getRuleVersion(String ruleId, Integer version);
+    Optional<PricingRule> getRuleVersion(Long ruleId, Integer version);
 
     /**
      * Compares two versions of a pricing rule and returns the differences.
@@ -55,7 +53,7 @@ public interface RuleHistoryService {
      * @param version2 Second version number
      * @return List of differences between the versions
      */
-    List<String> compareVersions(String ruleId, Integer version1, Integer version2);
+    List<String> compareVersions(Long ruleId, Integer version1, Integer version2);
 
     /**
      * Retrieves all changes made by a specific user.
@@ -93,7 +91,7 @@ public interface RuleHistoryService {
      * @param comment Optional comment describing the restore
      * @return The restored rule
      */
-    PricingRule restoreVersion(String ruleId, Integer version, String userId, String comment);
+    PricingRule restoreVersion(Long ruleId, Integer version, String userId, String comment);
 
     /**
      * Archives history records older than the specified date.
@@ -110,7 +108,7 @@ public interface RuleHistoryService {
      * @param pageable Pagination parameters
      * @return Page of history records for the product
      */
-    Page<RuleHistory> getProductRelatedChanges(String productId, Pageable pageable);
+    Page<RuleHistory> getProductRelatedChanges(Long productId, Pageable pageable);
 
     /**
      * Retrieves audit trail for rule approval process.
@@ -118,7 +116,7 @@ public interface RuleHistoryService {
      * @param ruleId The ID of the pricing rule
      * @return List of approval-related history records
      */
-    List<RuleHistory> getRuleApprovalHistory(String ruleId);
+    List<RuleHistory> getRuleApprovalHistory(Long ruleId);
 
     /**
      * Retrieves changes made as part of a specific batch operation.

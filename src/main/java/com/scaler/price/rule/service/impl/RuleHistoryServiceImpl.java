@@ -56,17 +56,12 @@ public class RuleHistoryServiceImpl implements RuleHistoryService {
         return historyRepository.findByRuleIdOrderByTimestampDesc(ruleId, pageable);
     }
 
-    @Override
-    public Page<RuleHistory> getRuleHistory(String ruleId, Pageable pageable) {
-        log.debug("Retrieving history for rule: {}", ruleId);
-        return historyRepository.findByRuleIdStringOrderByTimestampDesc(ruleId, pageable);
-    }
 
     @Override
-    public Optional<PricingRule> getRuleVersion(String ruleId, Integer version) {
+    public Optional<PricingRule> getRuleVersion(Long ruleId, Integer version) {
         log.debug("Retrieving version {} of rule: {}", version, ruleId);
         
-        return historyRepository.findByRuleIdStringAndVersion(ruleId, version)
+        return historyRepository.findByRuleIdAndVersion(ruleId, version)
                 .map(history -> {
                     try {
                         return objectMapper.readValue(history.getRuleSnapshot(), PricingRule.class);
@@ -78,7 +73,7 @@ public class RuleHistoryServiceImpl implements RuleHistoryService {
     }
 
     @Override
-    public List<String> compareVersions(String ruleId, Integer version1, Integer version2) {
+    public List<String> compareVersions(Long ruleId, Integer version1, Integer version2) {
         log.debug("Comparing versions {} and {} of rule: {}", version1, version2, ruleId);
         
         Optional<PricingRule> rule1 = getRuleVersion(ruleId, version1);
@@ -111,7 +106,7 @@ public class RuleHistoryServiceImpl implements RuleHistoryService {
 
     @Override
     @Transactional
-    public PricingRule restoreVersion(String ruleId, Integer version, String userId, String comment) {
+    public PricingRule restoreVersion(Long ruleId, Integer version, String userId, String comment) {
         log.info("Restoring rule {} to version {} by user {}", ruleId, version, userId);
         
         Optional<PricingRule> oldVersion = getRuleVersion(ruleId, version);
@@ -134,17 +129,17 @@ public class RuleHistoryServiceImpl implements RuleHistoryService {
     @Transactional
     public int archiveOldRecords(LocalDateTime cutoffDate) {
         log.info("Archiving records older than {}", cutoffDate);
-        return historyRepository.archiveRecordsOlderThan(cutoffDate);
+        return historyRepository.deleteByTimestampBefore(cutoffDate);
     }
 
     @Override
-    public Page<RuleHistory> getProductRelatedChanges(String productId, Pageable pageable) {
+    public Page<RuleHistory> getProductRelatedChanges(Long productId, Pageable pageable) {
         log.debug("Retrieving changes related to product: {}", productId);
         return historyRepository.findByProductId(productId, pageable);
     }
 
     @Override
-    public List<RuleHistory> getRuleApprovalHistory(String ruleId) {
+    public List<RuleHistory> getRuleApprovalHistory(Long ruleId) {
         log.debug("Retrieving approval history for rule: {}", ruleId);
         return historyRepository.findByRuleIdAndChangeTypeInOrderByTimestampDesc(
                 ruleId, 

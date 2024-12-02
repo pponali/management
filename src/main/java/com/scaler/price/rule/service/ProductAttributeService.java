@@ -89,7 +89,7 @@ public class ProductAttributeService {
 
     @Transactional(readOnly = true)
     @Cacheable(value = "productAttributes", key = "#productId")
-    public Map<Long, Object> getAttributes(String productId) {
+    public Map<Long, Object> getAttributes(Long productId) {
         log.debug("Fetching attributes for product: {}", productId);
 
         List<ProductAttribute> attributes = attributeRepository
@@ -156,14 +156,14 @@ public class ProductAttributeService {
     }
 
     @Transactional(readOnly = true)
-    public List<String> getFilterableAttributes(Long category) {
+    public List<Long> getFilterableAttributes(Long category) {
         return attributeRepository.findFilterableAttributesByCategory(category);
     }
 
     @Transactional(readOnly = true)
     public Map<Long, Object> getSpecificAttributes(
             Long productId,
-            Set<String> attributeKeys) {
+            Set<Long> attributeKeys) {
 
         List<ProductAttribute> attributes = attributeRepository
                 .findByProductIdAndAttributeKeys(productId, attributeKeys);

@@ -8,6 +8,9 @@ import lombok.RequiredArgsConstructor;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.stereotype.Component;
+
+@Component
 @RequiredArgsConstructor
 public class ConflictValidator {
     private final RuleRepository ruleRepository;

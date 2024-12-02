@@ -1,6 +1,6 @@
 package com.scaler.price.rule.domain.constraint;
 
-import com.scaler.price.rule.domain.RuleType;
+
 import com.scaler.price.rule.dto.CategoryAttributes;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
@@ -11,9 +11,6 @@ import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.Type;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 

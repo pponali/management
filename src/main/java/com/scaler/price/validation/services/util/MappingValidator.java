@@ -10,6 +10,9 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.Set;
 
+import org.springframework.stereotype.Component;
+
+@Component
 @RequiredArgsConstructor
 public class MappingValidator {
     private final SellerService sellerService;

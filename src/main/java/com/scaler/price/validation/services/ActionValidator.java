@@ -11,9 +11,9 @@ import com.scaler.price.rule.domain.DiscountAction;
 import com.scaler.price.rule.domain.RuleAction;
 import com.scaler.price.rule.exceptions.RuleValidationException;
 import com.scaler.price.validation.helper.CustomActionParameters;
+import com.scaler.price.validation.services.impl.PriceValidator;
 import io.micrometer.common.util.StringUtils;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 

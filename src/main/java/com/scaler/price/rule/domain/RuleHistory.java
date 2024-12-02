@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.scaler.price.core.management.domain.AuditInfo;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
@@ -17,7 +19,10 @@ import java.time.LocalDateTime;
 @Setter
 @Getter
 @SuperBuilder
+@AllArgsConstructor
+@NoArgsConstructor
 public class RuleHistory extends AuditInfo {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -28,16 +33,12 @@ public class RuleHistory extends AuditInfo {
     @Column(nullable = false)
     private Long ruleVersion;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private ChangeType changeType;
-
     @Type(JsonBinaryType.class)
     @Column(columnDefinition = "jsonb")
     private JsonNode changeSummary;
 
     @Column(nullable = false)
-    public byte[] ruleSnapshot;
+    private byte[] ruleSnapshot;
 
     @Column(nullable = false)
     private String userId;
@@ -48,8 +49,24 @@ public class RuleHistory extends AuditInfo {
     @Column(nullable = false)
     private LocalDateTime timestamp;
 
+    @Column(nullable = false)
+    private LocalDateTime cutoffDate;
+
+    @Column
+    private String batchId;
+
+    @Column
+    private Long productId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ChangeType changeType;
+
     @PrePersist
     protected void onCreate() {
-        timestamp = LocalDateTime.now();
+        super.onCreate();
+        if (timestamp == null) {
+            timestamp = LocalDateTime.now();
+        }
     }
 }

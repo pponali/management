@@ -1,6 +1,5 @@
 package com.scaler.price.rule.repository;
 
-
 import com.scaler.price.rule.domain.Brand;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -106,7 +105,7 @@ public interface BrandRepository extends JpaRepository<Brand, Long>, JpaSpecific
             SELECT DISTINCT b FROM Brand b 
             JOIN b.products p 
             WHERE b.active = true 
-            AND p.stockQuantity < :threshold
+            AND p.inventory < :threshold
             """)
     List<Brand> findBrandsWithLowInventory(@Param("threshold") int threshold);
 }

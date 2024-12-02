@@ -9,7 +9,7 @@ import com.scaler.price.rule.exceptions.ProductValidationException;
 import com.scaler.price.rule.exceptions.RuleValidationException;
 import com.scaler.price.rule.mapper.ProductMapper;
 import com.scaler.price.rule.repository.ProductRepository;
-import com.scaler.price.validation.services.ProductValidator;
+import com.scaler.price.validation.services.ProductValidationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 public class ProductService {
     private final ProductRepository productRepository;
     private final ProductMapper productMapper;
-    private final ProductValidator productValidator;
+    private final ProductValidationService productValidator;
     private final SiteService siteService;
     private final ProductEventPublisher eventPublisher;
 
@@ -77,7 +77,7 @@ public class ProductService {
     @Transactional(readOnly = true)
     public List<ProductDTO> getProductsBySeller(Long sellerId) {
         log.debug("Fetching products for seller: {}", sellerId);
-        return productRepository.findActiveProductsBySeller(sellerId)
+        return productRepository.findActiveProductsBySeller(sellerId, ProductStatus.ACTIVE)
                 .stream()
                 .map(productMapper::toDTO)
                 .toList();
@@ -87,7 +87,7 @@ public class ProductService {
     @Transactional(readOnly = true)
     public List<ProductDTO> getProductsBySite(Long siteId) {
         log.debug("Fetching products for site: {}", siteId);
-        return productRepository.findActiveProductsBySite(siteId)
+        return productRepository.findActiveProductsBySite(siteId, ProductStatus.ACTIVE)
                 .stream()
                 .map(productMapper::toDTO)
                 .toList();
@@ -96,7 +96,7 @@ public class ProductService {
     @Transactional(readOnly = true)
     public List<ProductDTO> getProductsByCategory(Long categoryId) {
         log.debug("Fetching products for category: {}", categoryId);
-        return productRepository.findActiveProductsByCategory(categoryId)
+        return productRepository.findActiveProductsByCategory(categoryId, ProductStatus.ACTIVE)
                 .stream()
                 .map(productMapper::toDTO)
                 .toList();
@@ -175,7 +175,7 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public boolean isProductActive(Long productId) {
-        return productRepository.existsByProductIdAndStatus(
+        return productRepository.existsByIdAndStatus(
                 productId,
                 ProductStatus.ACTIVE
         );
@@ -183,7 +183,7 @@ public class ProductService {
 
     @Transactional(readOnly = true)
     public Set<Long> validateProducts(Set<Long> productIds) {
-        List<Product> activeProducts = productRepository.findActiveProductsByIds(productIds);
+        List<Product> activeProducts = productRepository.findActiveProductsByIds(productIds, ProductStatus.ACTIVE);
         return activeProducts.stream()
                 .map(Product::getId)
                 .collect(Collectors.toSet());
@@ -201,7 +201,7 @@ public class ProductService {
         
         // Assuming you want to return the quantity from the Product entity
         // Modify this logic based on your specific requirements for tracking available quantity
-        return product.getQuantity() != null ? product.getQuantity() : 0;
+        return product.getInventory() != null ? product.getInventory() : 0;
     }
 
     @Transactional(readOnly = true)

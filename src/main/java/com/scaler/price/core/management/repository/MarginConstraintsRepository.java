@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -54,12 +55,12 @@ public interface MarginConstraintsRepository extends JpaRepository<MarginConstra
     /**
      * Find margin constraints modified after specified date
      */
-    List<MarginConstraints> findByLastModifiedDateAfter(Instant modifiedDate);
+    List<MarginConstraints> findByUpdatedAtAfter(Instant modifiedDate);
 
     /**
      * Find margin constraints by modified user
      */
-    List<MarginConstraints> findByLastModifiedBy(String userId);
+    List<MarginConstraints> findByUpdatedBy(String userId);
 
     /**
      * Find paginated margin constraints
@@ -120,8 +121,8 @@ public interface MarginConstraintsRepository extends JpaRepository<MarginConstra
      * Update margin status by category ID
      */
     @Query("UPDATE MarginConstraints mc SET mc.isActive = :status, " +
-            "mc.lastModifiedDate = CURRENT_TIMESTAMP, " +
-            "mc.lastModifiedBy = :userId " +
+            "mc.updatedAt = CURRENT_TIMESTAMP, " +
+            "mc.updatedBy = :userId " +
             "WHERE mc.categoryId = :categoryId")
     int updateMarginStatus(
             @Param("categoryId") Long categoryId,
@@ -132,7 +133,7 @@ public interface MarginConstraintsRepository extends JpaRepository<MarginConstra
      * Find constraints needing review
      */
     @Query("SELECT mc FROM MarginConstraints mc WHERE " +
-            "mc.lastModifiedDate > :reviewDate AND " +
+            "mc.updatedAt > :reviewDate AND " +
             "mc.reviewStatus = 'PENDING'")
     List<MarginConstraints> findConstraintsNeedingReview(
             @Param("reviewDate") Instant reviewDate);
@@ -151,7 +152,7 @@ public interface MarginConstraintsRepository extends JpaRepository<MarginConstra
      * Delete inactive constraints older than specified date
      */
     @Query("DELETE FROM MarginConstraints mc WHERE " +
-            "mc.isActive = false AND mc.lastModifiedDate < :date")
+            "mc.isActive = false AND mc.updatedAt < :date")
     void deleteInactiveConstraintsOlderThan(@Param("date") Instant date);
 
     /**
@@ -191,4 +192,12 @@ public interface MarginConstraintsRepository extends JpaRepository<MarginConstra
             "AND mc.isActive = true")
     List<MarginConstraints> findConstraintsNeedingOptimization(
             @Param("threshold") Double threshold);
+
+    /**
+     * Find margin constraints where target margin percentage falls within the specified range
+     * @param minTarget minimum target margin percentage (inclusive)
+     * @param maxTarget maximum target margin percentage (inclusive)
+     * @return List of margin constraints matching the criteria
+     */
+    List<MarginConstraints> findByTargetMarginPercentageBetween(BigDecimal minTarget, BigDecimal maxTarget);
 }

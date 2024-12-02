@@ -4,6 +4,9 @@ import com.scaler.price.rule.domain.RuleHistory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -13,17 +16,17 @@ import java.util.Optional;
 @Repository
 public interface RuleHistoryRepository extends JpaRepository<RuleHistory, Long> {
 
-    List<RuleHistory> findByRuleIdOrderByAuditInfo_CreatedAtDesc(Long ruleId);
-
     Page<RuleHistory> findByRuleIdOrderByTimestampDesc(Long ruleId, Pageable pageable);
 
-    Optional<RuleHistory> findByRuleIdAndVersion(String ruleId, Integer version);
+    Optional<RuleHistory> findByRuleIdAndVersion(Long ruleId, Integer version);
 
-    int archiveRecordsOlderThan(LocalDateTime cutoffDate);
+    @Modifying
+    @Query("DELETE FROM RuleHistory rh WHERE rh.timestamp < :cutoffDate")
+    int deleteByTimestampBefore(@Param("cutoffDate") LocalDateTime cutoffDate);
 
-    Page<RuleHistory> findByProductId(String productId, Pageable pageable);
+    Page<RuleHistory> findByProductId(Long productId, Pageable pageable);
 
-    List<RuleHistory> findByRuleIdAndChangeTypeInOrderByTimestampDesc(String ruleId, List<String> list);
+    List<RuleHistory> findByRuleIdAndChangeTypeInOrderByTimestampDesc(Long ruleId, List<String> list);
 
     Optional<Long> findMaxVersionByRuleId(Long ruleId);
 
@@ -35,7 +38,4 @@ public interface RuleHistoryRepository extends JpaRepository<RuleHistory, Long> 
 
     List<RuleHistory> findByBatchIdOrderByTimestampDesc(String batchId);
 
-    Page<RuleHistory> findByRuleIdStringOrderByTimestampDesc(String ruleId, Pageable pageable);
-
-    Optional<RuleHistory> findByRuleIdStringAndVersion(String ruleId, Integer version);
 }

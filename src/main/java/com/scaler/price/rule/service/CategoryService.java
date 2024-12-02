@@ -49,12 +49,12 @@ public class CategoryService {
     }
 
     @Transactional(readOnly = true)
-    public List<CategoryConstraints> getParentCategories(String categoryId) {
+    public List<CategoryConstraints> getParentCategories(Long categoryId) {
         return categoryRepository.findParentCategories(categoryId);
     }
 
     @Transactional(readOnly = true)
-    public List<CategoryConstraints> getAllSubCategories(String categoryId) {
+    public List<CategoryConstraints> getAllSubCategories(Long categoryId) {
         return categoryRepository.findAllSubCategories(categoryId);
     }
 
@@ -100,5 +100,9 @@ public class CategoryService {
             newParent.addSubCategory(category);
             setupCategoryHierarchy(category);
         }
+    }
+
+    public boolean existsById(Long categoryId) {
+        return categoryRepository.existsById(categoryId);
     }
 }

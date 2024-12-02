@@ -21,6 +21,9 @@ import java.util.stream.Collectors;
 @Setter
 @SuperBuilder(toBuilder = true, builderMethodName = "priceConstraintsBuilder")
 public class PriceConstraints extends RuleConstraints{
+
+    @Column(name = "product_id")
+    private Long productId;
     
     @Column(name = "max_price_change_percentage", precision = 10, scale = 2)
     private BigDecimal maxPriceChangePercentage;

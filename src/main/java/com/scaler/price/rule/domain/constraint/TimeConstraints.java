@@ -1,24 +1,37 @@
 package com.scaler.price.rule.domain.constraint;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scaler.price.rule.domain.PriceAdjustment;
+import com.scaler.price.rule.domain.constraint.TimeConstraints.BlackoutPeriod;
+import com.scaler.price.rule.domain.constraint.TimeConstraints.SpecialTimeWindow;
+import com.scaler.price.rule.domain.constraint.TimeConstraints.TimeSlot;
+import com.scaler.price.rule.domain.constraint.TimeConstraints.TimeWindow;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.Type;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.*;
 import java.util.*;
 
-@Embeddable
+@Entity
+@DiscriminatorValue("time_constraints")
 @SuperBuilder
 @NoArgsConstructor
-@DiscriminatorValue("time_constraints")
 @AllArgsConstructor
+@Setter
+@Getter
 public class TimeConstraints extends RuleConstraints{
 
     public enum BlackoutType {
@@ -43,16 +56,160 @@ public class TimeConstraints extends RuleConstraints{
         MAINTENANCE
     }
 
+    // JSON storage fields
+    @Column(columnDefinition = "jsonb")
+    private String timeSlotsJson;
+
+    @Column(columnDefinition = "jsonb")
+    private String weeklyScheduleJson;
+
+    @Column(columnDefinition = "jsonb")
+    private String dateSpecificScheduleJson;
+
+    @Column(columnDefinition = "jsonb")
+    private String specialSchedulesJson;
+
+    @Column(columnDefinition = "jsonb")
+    private String blackoutPeriodMapJson;
+
+    // Transient fields for in-memory use
+    @Transient
+    private Map<String, TimeSlot> timeSlots = new HashMap<>();
+
+    @Transient
+    private Map<String, List<TimeWindow>> weeklySchedule = new HashMap<>();
+
+    @Transient
+    private Map<String, List<TimeWindow>> dateSpecificSchedule = new HashMap<>();
+
+    @Transient
+    private Map<String, SpecialTimeWindow> specialSchedules = new HashMap<>();
+
+    @Transient
+    private Map<String, BlackoutPeriod> blackoutPeriodMap = new HashMap<>();
+
+    // JSON storage fields
+    @Column(columnDefinition = "jsonb")
+    private String specialWindowsJson;
+
+    @Transient
+    private Map<String, SpecialTimeWindow> specialWindows = new HashMap<>();
+
     @ElementCollection
     @CollectionTable(name = "time_constraints_allowed_days")
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private Set<DayOfWeek> allowedDays = new HashSet<>();
 
-    @ElementCollection
-    @CollectionTable(name = "special_time_windows")
-    @Builder.Default
-    private Map<String, SpecialTimeWindow> specialWindows = new HashMap<>();
+    @PostLoad
+    public void loadJsonFields() {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            if (timeSlotsJson != null) {
+                timeSlots = mapper.readValue(timeSlotsJson, 
+                    new TypeReference<Map<String, TimeSlot>>() {});
+            }
+            if (weeklyScheduleJson != null) {
+                weeklySchedule = mapper.readValue(weeklyScheduleJson, 
+                    new TypeReference<Map<String, List<TimeWindow>>>() {});
+            }
+            if (dateSpecificScheduleJson != null) {
+                dateSpecificSchedule = mapper.readValue(dateSpecificScheduleJson, 
+                    new TypeReference<Map<String, List<TimeWindow>>>() {});
+            }
+            if (specialSchedulesJson != null) {
+                specialSchedules = mapper.readValue(specialSchedulesJson, 
+                    new TypeReference<Map<String, SpecialTimeWindow>>() {});
+            }
+            if (blackoutPeriodMapJson != null) {
+                blackoutPeriodMap = mapper.readValue(blackoutPeriodMapJson, 
+                    new TypeReference<Map<String, BlackoutPeriod>>() {});
+            }
+            if (specialWindowsJson != null) {
+                specialWindows = mapper.readValue(specialWindowsJson, 
+                    new TypeReference<Map<String, SpecialTimeWindow>>() {});
+            }
+        } catch (Exception e) {
+            // Initialize with empty maps if JSON parsing fails
+            timeSlots = new HashMap<>();
+            weeklySchedule = new HashMap<>();
+            dateSpecificSchedule = new HashMap<>();
+            specialSchedules = new HashMap<>();
+            blackoutPeriodMap = new HashMap<>();
+            specialWindows = new HashMap<>();
+        }
+    }
+
+    @PrePersist
+    @PreUpdate
+    public void saveJsonFields() {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            timeSlotsJson = mapper.writeValueAsString(timeSlots);
+            weeklyScheduleJson = mapper.writeValueAsString(weeklySchedule);
+            dateSpecificScheduleJson = mapper.writeValueAsString(dateSpecificSchedule);
+            specialSchedulesJson = mapper.writeValueAsString(specialSchedules);
+            blackoutPeriodMapJson = mapper.writeValueAsString(blackoutPeriodMap);
+            specialWindowsJson = mapper.writeValueAsString(specialWindows);
+        } catch (Exception e) {
+            timeSlotsJson = "{}";
+            weeklyScheduleJson = "{}";
+            dateSpecificScheduleJson = "{}";
+            specialSchedulesJson = "{}";
+            blackoutPeriodMapJson = "{}";
+            specialWindowsJson = "{}";
+        }
+    }
+
+    // Add getter/setter for specialWindows
+    public Map<String, SpecialTimeWindow> getSpecialWindows() {
+        return specialWindows;
+    }
+
+    public void setSpecialWindows(Map<String, SpecialTimeWindow> specialWindows) {
+        this.specialWindows = specialWindows != null ? specialWindows : new HashMap<>();
+    }
+
+    // Getters and setters for the maps (the transient fields)
+    public Map<String, TimeSlot> getTimeSlots() {
+        return timeSlots;
+    }
+
+    public void setTimeSlots(Map<String, TimeSlot> timeSlots) {
+        this.timeSlots = timeSlots != null ? timeSlots : new HashMap<>();
+    }
+
+    public Map<String, List<TimeWindow>> getWeeklySchedule() {
+        return weeklySchedule;
+    }
+
+    public void setWeeklySchedule(Map<String, List<TimeWindow>> weeklySchedule) {
+        this.weeklySchedule = weeklySchedule != null ? weeklySchedule : new HashMap<>();
+    }
+
+    public Map<String, List<TimeWindow>> getDateSpecificSchedule() {
+        return dateSpecificSchedule;
+    }
+
+    public void setDateSpecificSchedule(Map<String, List<TimeWindow>> dateSpecificSchedule) {
+        this.dateSpecificSchedule = dateSpecificSchedule != null ? dateSpecificSchedule : new HashMap<>();
+    }
+
+    public Map<String, SpecialTimeWindow> getSpecialSchedules() {
+        return specialSchedules;
+    }
+
+    public void setSpecialSchedules(Map<String, SpecialTimeWindow> specialSchedules) {
+        this.specialSchedules = specialSchedules != null ? specialSchedules : new HashMap<>();
+    }
+
+    public Map<String, BlackoutPeriod> getBlackoutPeriodMap() {
+        return blackoutPeriodMap;
+    }
+
+    public void setBlackoutPeriodMap(Map<String, BlackoutPeriod> blackoutPeriodMap) {
+        this.blackoutPeriodMap = blackoutPeriodMap != null ? blackoutPeriodMap : new HashMap<>();
+    }
 
     @Column
     private LocalTime mainStartTime;
@@ -83,60 +240,47 @@ public class TimeConstraints extends RuleConstraints{
     @Builder.Default
     private List<BlackoutPeriod> blackoutPeriods = new ArrayList<>();
 
-    @Type(JsonBinaryType.class)
-    @Column(columnDefinition = "jsonb")
-    private Map<String, TimeSlot> timeSlots = new HashMap<>();
-
-    @Type(JsonBinaryType.class)
-    @Column(columnDefinition = "jsonb")
-    private Map<String, List<TimeWindow>> weeklySchedule = new HashMap<>();
-
-    @Type(JsonBinaryType.class)
-    @Column(columnDefinition = "jsonb")
-    private Map<String, List<TimeWindow>> dateSpecificSchedule = new HashMap<>();
-
-    @Type(JsonBinaryType.class)
-    @Column(columnDefinition = "jsonb")
-    private Map<String, SpecialTimeWindow> specialSchedules = new HashMap<>();
-
-    @Type(JsonBinaryType.class)
-    @Column(columnDefinition = "jsonb")
-    private Map<String, BlackoutPeriod> blackoutPeriodMap = new HashMap<>();
-
     @Embeddable
     @Data
-    @Builder
     @NoArgsConstructor
     @AllArgsConstructor
+    @Builder
     public static class BlackoutPeriod {
-        private Instant startDate;
-        private Instant endDate;
-        private String reason;
-        
-        @Enumerated(EnumType.STRING)
         private BlackoutType type;
+        private Instant startTime;
+        private Instant endTime;
+        private String reason;
+        private String description;
         
-        private String alternateRuleId;
-        
-        @Embedded
-        private PriceAdjustment priceAdjustment;
-        
-        @ElementCollection
-        private Set<String> applicableCategories;
-
-        // New field to track days of the week
-        @ElementCollection
-        @Enumerated(EnumType.STRING)
-        private Set<DayOfWeek> applicableDays;
-
-        @Type(JsonBinaryType.class)
         @Column(columnDefinition = "jsonb")
-        private Map<String, String> blackoutProperties = new HashMap<>();
-
-        public Set<DayOfWeek> getDaysOfWeek() {
-            return this.applicableDays != null ? this.applicableDays : Collections.emptySet();
+        private String affectedServicesJson = "[]";
+        
+        @Transient
+        private List<String> affectedServices = new ArrayList<>();
+        
+        @PostLoad
+        public void loadJson() {
+            ObjectMapper mapper = new ObjectMapper();
+            try {
+                if (affectedServicesJson != null) {
+                    affectedServices = mapper.readValue(affectedServicesJson, 
+                        new TypeReference<List<String>>() {});
+                }
+            } catch (Exception e) {
+                affectedServices = new ArrayList<>();
+            }
         }
-
+        
+        @PrePersist
+        @PreUpdate
+        public void saveJson() {
+            ObjectMapper mapper = new ObjectMapper();
+            try {
+                affectedServicesJson = mapper.writeValueAsString(affectedServices);
+            } catch (Exception e) {
+                affectedServicesJson = "[]";
+            }
+        }
     }
 
     @Embeddable
@@ -201,7 +345,8 @@ public class TimeConstraints extends RuleConstraints{
     }
 
     @Embeddable
-    @Data
+    @Getter
+    @Setter
     @NoArgsConstructor
     @AllArgsConstructor
     public static class SpecialTimeWindowExt extends TimeWindow {
@@ -279,8 +424,8 @@ public class TimeConstraints extends RuleConstraints{
 
             return blackoutPeriods.stream()
                     .anyMatch(period -> 
-                            (!period.startDate.isAfter(instant)) &&
-                            (period.endDate == null || !period.endDate.isBefore(instant)));
+                            (!period.startTime.isAfter(instant)) &&
+                            (period.endTime == null || !period.endTime.isBefore(instant)));
         } catch (Exception e) {
             throw new IllegalStateException("Error checking blackout period", e);
         }
@@ -333,10 +478,6 @@ public class TimeConstraints extends RuleConstraints{
 
     public void setMainEndTime(LocalTime endTime) {
         this.mainEndTime = endTime;
-    }
-
-    public Map<String, SpecialTimeWindow> getSpecialWindows() {
-        return specialWindows;
     }
 
     public String getMinDuration() {

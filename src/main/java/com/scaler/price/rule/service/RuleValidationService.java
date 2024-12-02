@@ -3,6 +3,7 @@ package com.scaler.price.rule.service;
 import com.scaler.price.rule.domain.*;
 
 import com.scaler.price.rule.exceptions.RuleValidationException;
+import com.scaler.price.validation.services.impl.PriceValidator;
 import com.scaler.price.validation.services.util.BasicFieldValidator;
 import com.scaler.price.validation.services.util.ConflictValidator;
 import com.scaler.price.validation.services.util.DateValidator;

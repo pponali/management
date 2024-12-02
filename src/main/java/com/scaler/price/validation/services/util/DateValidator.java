@@ -7,7 +7,9 @@ import com.scaler.price.rule.domain.PricingRule;
 import com.scaler.price.rule.exceptions.RuleValidationException;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
+@Component
 @RequiredArgsConstructor
 public class DateValidator {
     private final ConfigurationService configService;

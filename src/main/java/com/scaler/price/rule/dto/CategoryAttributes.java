@@ -1,12 +1,7 @@
 package com.scaler.price.rule.dto;
 
-import com.scaler.price.core.management.domain.AuditInfo;
 import com.scaler.price.rule.domain.constraint.RuleConstraints;
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
-import jakarta.persistence.*;
 import lombok.*;
-import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.Type;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -14,50 +9,39 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+@ToString
+@EqualsAndHashCode
 @Getter
 @Setter
-@SuperBuilder
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Entity
-public class CategoryAttributes extends AuditInfo {
+public class CategoryAttributes {
+    private Long id;
+    private Long categoryId;
     private String displayName;
     private String imageUrl;
     private String metaTitle;
     private String metaDescription;
-
-    @Type(JsonBinaryType.class)
-    @Column(columnDefinition = "jsonb")
     private Set<String> tags = new HashSet<>();
-
-    @Type(JsonBinaryType.class)
-    @Column(columnDefinition = "jsonb")
     private Map<String, String> customAttributes = new HashMap<>();
-
-    @ManyToOne
-    @JoinColumn(name = "margin_constraint_id")
+    private Map<String, PriceAttribute> priceAttributes = new HashMap<>();
+    private Map<String, ValidationRule> validationRules = new HashMap<>();
+    private Boolean isActive;
+    private String lastModifiedBy;
+    private String modifiedUser;
     private RuleConstraints marginConstraints;
-
-    @ManyToOne
-    @JoinColumn(name = "price_constraint_id")
+    private RuleConstraints timeConstraints;
     private RuleConstraints priceConstraints;
 
-    @ManyToOne
-    @JoinColumn(name = "time_constraint_id")
-    private RuleConstraints timeConstraints;
+    public void setPriceConstraints(RuleConstraints priceConstraints) {
+        this.priceConstraints = priceConstraints;
+    }
 
-    @Type(JsonBinaryType.class)
-    @Column(columnDefinition = "jsonb")
-    @Builder.Default
-    private Map<String, PriceAttribute> priceAttributes = new HashMap<>();
-
-    @Type(JsonBinaryType.class)
-    @Column(columnDefinition = "jsonb")
-    @Builder.Default
-    private Map<String, ValidationRule> validationRules = new HashMap<>();
-
-
-    @Data
+    @ToString
+    @EqualsAndHashCode
+    @Getter
+    @Setter
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
@@ -70,13 +54,13 @@ public class CategoryAttributes extends AuditInfo {
         private Boolean enforceMinPrice;
         private Boolean enforceMaxPrice;
         private Set<String> excludedProducts;
-        
-        @Type(JsonBinaryType.class)
-        @Column(columnDefinition = "jsonb")
         private Map<String, String> priceModifiers = new HashMap<>();
     }
 
-    @Data
+    @ToString
+    @EqualsAndHashCode
+    @Getter
+    @Setter
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
@@ -87,9 +71,6 @@ public class CategoryAttributes extends AuditInfo {
         private String errorMessage;
         private ValidationSeverity severity;
         private Boolean isActive;
-        
-        @Type(JsonBinaryType.class)
-        @Column(columnDefinition = "jsonb")
         private Map<String, String> parameters = new HashMap<>();
     }
 
