@@ -17,6 +17,7 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -33,8 +34,9 @@ public class AsyncPriceProcessor {
     private final FileStorageService fileStorageService;
 
     @Async
-    public void processPrices(String uploadId, List<PriceUploadDTO> prices) throws PriceValidationException {
-        BulkUploadTracker tracker = trackerRepository.findById(uploadId)
+    @Transactional
+    public void processPrices(String uploadId, List<PriceUploadDTO> prices) {
+        BulkUploadTracker tracker = trackerRepository.findByUploadId(uploadId)
                 .orElseThrow(() -> new BulkUploadException("Tracker not found: " + uploadId));
 
         List<PriceUploadDTO> failedRecords = new ArrayList<>();
@@ -48,24 +50,36 @@ public class AsyncPriceProcessor {
                 }
 
                 PriceDTO priceDTO = convertToPrice(price, tracker);
-                priceService.createPrice(priceDTO);
-                successCount++;
+                try {
+                    priceService.createPrice(priceDTO);
+                    successCount++;
+                } catch (PriceValidationException e) {
+                    price.setStatus("FAILED");
+                    price.setErrorMessage(e.getMessage());
+                    failedRecords.add(price);
+                    log.error("Validation failed for price: {}, Error: {}", price.getProductId(), e.getMessage());
+                }
 
                 // Update tracker periodically
-                if (successCount % 100 == 0) {
+                if ((successCount + failedRecords.size()) % 100 == 0) {
                     updateTracker(tracker, successCount, failedRecords.size());
                 }
             } catch (Exception e) {
                 price.setStatus("FAILED");
                 price.setErrorMessage(e.getMessage());
                 failedRecords.add(price);
+                log.error("Failed to process price: {}, Error: {}", price.getProductId(), e.getMessage());
             }
         }
 
         // Generate error report if needed
         if (!failedRecords.isEmpty()) {
-            String errorFilePath = generateErrorReport(uploadId, failedRecords);
-            tracker.setErrorFilePath(errorFilePath);
+            try {
+                String errorFilePath = generateErrorReport(uploadId, failedRecords);
+                tracker.setErrorFilePath(errorFilePath);
+            } catch (Exception e) {
+                log.error("Failed to generate error report for upload {}: {}", uploadId, e.getMessage());
+            }
         }
 
         // Update final status
@@ -112,7 +126,12 @@ public class AsyncPriceProcessor {
             int rowNum = 1;
             for (PriceUploadDTO record : failedRecords) {
                 Row row = sheet.createRow(rowNum++);
-                populateErrorRow(row, record);
+                try {
+                    populateErrorRow(row, record);
+                } catch (Exception e) {
+                    log.error("Failed to populate error row for record: {}", record, e);
+                }
+
             }
 
             // Save file

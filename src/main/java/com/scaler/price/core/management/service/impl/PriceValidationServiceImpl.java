@@ -48,6 +48,7 @@ public class PriceValidationServiceImpl implements PriceValidationService {
             throw new PriceValidationException("Selling price must be greater than zero");
         }
 
+
         if (priceDTO.getSellingPrice().compareTo(priceDTO.getBasePrice()) > 0) {
             throw new PriceValidationException("Selling price cannot be greater than base price");
         }

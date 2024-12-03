@@ -7,17 +7,18 @@ import com.scaler.price.rule.domain.constraint.PriceConstraints;
 import com.scaler.price.rule.domain.constraint.TimeConstraints;
 import com.scaler.price.rule.dto.CategoryAttributes;
 import com.scaler.price.validation.helper.ActionParameters;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 @RestController
 @RequestMapping("/api/v1/constraints")
+@Tag(name = "Constraint Management", description = "APIs for cont")
 public class ConstraintController {
 
     private final ConstraintService constraintService;

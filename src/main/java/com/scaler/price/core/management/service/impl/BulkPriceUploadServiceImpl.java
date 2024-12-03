@@ -11,7 +11,6 @@ import com.scaler.price.core.management.repository.BulkUploadTrackerRepository;
 import com.scaler.price.core.management.service.BulkPriceUploadService;
 import com.scaler.price.core.management.service.BulkUploadResultDTO;
 import com.scaler.price.core.management.service.PriceService;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
@@ -47,34 +46,7 @@ public class BulkPriceUploadServiceImpl implements BulkPriceUploadService {
     private final BulkUploadTrackerRepository trackerRepository;
     private final AsyncPriceProcessor asyncPriceProcessor;
     private final FileStorageService fileStorageService;
-
-    @Override
-    @Transactional
-    public BulkUploadResultDTO uploadPrices(MultipartFile file, Long sellerId, Long siteId) throws PriceValidationException {
-        // Generate unique upload ID
-        String uploadId = generateUploadId();
-
-        // Create and save tracker
-        BulkUploadTracker tracker = createTracker(uploadId, sellerId, siteId);
-
-        try {
-            // Parse and validate file
-            List<PriceUploadDTO> prices = parseAndValidateFile(file);
-            assert tracker != null;
-            tracker.setTotalRecords(prices.size());
-            trackerRepository.save(tracker);
-
-            // Start async processing
-            asyncPriceProcessor.processPrices(uploadId, prices);
-
-            return createInitialResponse(tracker);
-        } catch (Exception e) {
-            tracker.setStatus(UploadStatus.FAILED);
-            tracker.setFailureCount(tracker.getTotalRecords());
-            trackerRepository.save(tracker);
-            throw new BulkUploadException("Failed to process bulk upload", e);
-        }
-    }
+    
 
     private BulkUploadTracker createTracker(String uploadId, Long sellerId, Long siteId) {
         BulkUploadTracker tracker = new BulkUploadTracker();
@@ -376,6 +348,33 @@ public class BulkPriceUploadServiceImpl implements BulkPriceUploadService {
 
         if (!missingHeaders.isEmpty()) {
             throw new PriceValidationException("Missing or invalid headers: " + String.join(", ", missingHeaders));
+        }
+    }
+
+    @Override
+    public BulkUploadResultDTO uploadPrices(MultipartFile file, Long sellerId, Long siteId) throws PriceValidationException {
+        // Generate unique upload ID
+        String uploadId = generateUploadId();
+
+        // Create and save tracker
+        BulkUploadTracker tracker = createTracker(uploadId, sellerId, siteId);
+        trackerRepository.save(tracker);  // Save tracker before async processing
+
+        try {
+            // Parse and validate file
+            List<PriceUploadDTO> prices = parseAndValidateFile(file);
+            tracker.setTotalRecords(prices.size());
+            trackerRepository.save(tracker);
+
+            // Start async processing
+            asyncPriceProcessor.processPrices(uploadId, prices);
+
+            return createInitialResponse(tracker);
+        } catch (Exception e) {
+            tracker.setStatus(UploadStatus.FAILED);
+            tracker.setFailureCount(tracker.getTotalRecords());
+            trackerRepository.save(tracker);
+            throw new BulkUploadException("Failed to process bulk upload", e);
         }
     }
 
