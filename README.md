@@ -1,73 +1,37 @@
-// Example Rule Configurations
+# Price Management System
 
-// Margin Rule
-{
-"ruleName": "Category Margin Rule",
-"ruleType": "MARGIN_RULE",
-"conditions": {
-"categoryId": "ELECTRONICS",
-"minimumPrice": 1000,
-"attributes": {
-"brand_tier": "PREMIUM"
-}
-},
-"actions": {
-"type": "MARGIN",
-"marginPercentage": 25,
-"roundingMethod": "CEIL",
-"roundingValue": 9
-}
-}
+A robust and scalable price management system built with Spring Boot, designed to handle complex pricing scenarios for e-commerce platforms.
 
-// Markdown Rule
-{
-"ruleName": "Seasonal Markdown",
-"ruleType": "MARKDOWN_RULE",
-"conditions": {
-"categoryId": "APPAREL",
-"seasonCode": "SUMMER",
-"inventoryAge": {
-"moreThan": 60
-}
-},
-"actions": {
-"type": "DISCOUNT",
-"discountPercentage": 30,
-"maxDiscountAmount": 5000
-}
-}
+## 🚀 Features
 
-// Competitive Rule
-{
-"ruleName": "Competitive Pricing",
-"ruleType": "COMPETITIVE_RULE",
-"conditions": {
-"competitorPrice": {
-"available": true,
-"source": ["AMAZON", "FLIPKART"]
-}
-},
-"actions": {
-"type": "COMPETITIVE",
-"matchType": "BEAT",
-"differencePercentage": 5,
-"minimumMargin": 10
-}
-}
+- **Dynamic Price Management**: Handle time-based price changes with effective dates
+- **Bulk Price Updates**: Asynchronous processing of bulk price modifications
+- **Multi-tenant Support**: Manage prices across different sellers and sites
+- **Validation Framework**: Comprehensive price validation rules
+- **RESTful API**: Clean and well-documented API endpoints
+- **Async Processing**: Handle large-scale price updates efficiently
 
-// Bundle Rule
-{
-"ruleName": "Bundle Discount",
-"ruleType": "BUNDLE_RULE",
-"conditions": {
-"bundleId": "MOBILE_COMBO",
-"minimumQuantity": 2,
-"products": ["PHONE", "CASE", "CHARGER"]
-},
-"actions": {
-"type": "BUNDLE_DISCOUNT",
-"discountType": "PERCENTAGE",
-"value": 15,
-"applyTo": "ALL"
-}
-}
+## 🛠 Tech Stack
+
+- **Java 21**
+- **Spring Boot 3.2.0**
+- **Spring Data JPA**
+- **PostgreSQL**
+- **Apache Kafka** (for async processing)
+- **Maven**
+- **JUnit 5 & MockMvc** (for testing)
+- **Lombok**
+- **MapStruct**
+
+## 📋 Prerequisites
+
+- JDK 21 or later
+- Maven 3.8+
+- PostgreSQL 14+
+- Kafka 3.x (for async processing)
+
+## 🏗 Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/pponali/management.git
