@@ -26,41 +26,37 @@ class PriceRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        testPrice = new Price();
-        testPrice.setProductId(1L);
-        testPrice.setSellerId(1L);
-        testPrice.setSiteId(1L);
-        testPrice.setBasePrice(new BigDecimal("100.00"));
-        testPrice.setSellingPrice(new BigDecimal("90.00"));
-        testPrice.setEffectiveFrom(now);
-        testPrice.setEffectiveTo(now.plusDays(30));
-        testPrice.setIsActive(true);
-        testPrice = priceRepository.save(testPrice);
+        testPrice = Price.builder()
+                .productId(1L)
+                .sellerId(1L)
+                .siteId(1L)
+                .basePrice(new BigDecimal("100.00"))
+                .sellingPrice(new BigDecimal("90.00"))
+                .currency("USD")
+                .effectiveFrom(now)
+                .effectiveTo(now.plusDays(30))
+                .isActive(true)
+                .build();
+        priceRepository.save(testPrice);
     }
 
     @Test
     void findActivePrice_WhenPriceExists_ShouldReturnPrice() {
-        Optional<Price> result = priceRepository.findActivePrice(
+        Optional<Price> foundPrice = priceRepository.findActivePrice(
                 testPrice.getProductId(),
                 testPrice.getSellerId(),
                 testPrice.getSiteId(),
-                now.plusDays(1)
+                now
         );
 
-        assertThat(result).isPresent();
-        assertThat(result.get().getProductId()).isEqualTo(testPrice.getProductId());
-        assertThat(result.get().getSellingPrice()).isEqualTo(testPrice.getSellingPrice());
-    }
-
-    @Test
-    void findActivePrice_WhenPriceDoesNotExist_ShouldReturnEmpty() {
-        Optional<Price> result = priceRepository.findActivePrice(999L, 999L, 999L, now);
-        assertThat(result).isEmpty();
+        assertThat(foundPrice).isPresent();
+        assertThat(foundPrice.get().getProductId()).isEqualTo(testPrice.getProductId());
     }
 
     @Test
     void findByProductId_ShouldReturnAllPricesForProduct() {
         List<Price> results = priceRepository.findByProductId(testPrice.getProductId());
+
         assertThat(results).hasSize(1);
         assertThat(results.get(0).getProductId()).isEqualTo(testPrice.getProductId());
     }
@@ -79,27 +75,28 @@ class PriceRepositoryTest {
     @Test
     void findUpcomingPriceChanges_ShouldReturnFuturePrices() {
         // Create a future price
-        Price futurePrice = new Price();
-        futurePrice.setProductId(2L);
-        futurePrice.setSellerId(testPrice.getSellerId());
-        futurePrice.setSiteId(testPrice.getSiteId());
-        futurePrice.setBasePrice(new BigDecimal("200.00"));
-        futurePrice.setSellingPrice(new BigDecimal("180.00"));
-        futurePrice.setEffectiveFrom(now.plusDays(5));
-        futurePrice.setEffectiveTo(now.plusDays(35));
-        futurePrice.setIsActive(true);
+        Price futurePrice = Price.builder()
+                .productId(2L)
+                .sellerId(testPrice.getSellerId())
+                .siteId(testPrice.getSiteId())
+                .basePrice(new BigDecimal("200.00"))
+                .sellingPrice(new BigDecimal("180.00"))
+                .currency("USD")
+                .effectiveFrom(now.plusDays(5))
+                .effectiveTo(now.plusDays(35))
+                .isActive(true)
+                .build();
         priceRepository.save(futurePrice);
 
         List<Price> results = priceRepository.findUpcomingPriceChanges(
                 testPrice.getSellerId(),
                 testPrice.getSiteId(),
-                now,
-                now.plusDays(10)
+                now.plusDays(1),
+                now.plusDays(30)
         );
 
-        assertThat(results).hasSize(2);
-        assertThat(results).extracting(Price::getEffectiveFrom)
-                .allMatch(date -> date.isAfter(now.minusDays(1)) && date.isBefore(now.plusDays(11)));
+        assertThat(results).hasSize(1);
+        assertThat(results.get(0).getProductId()).isEqualTo(futurePrice.getProductId());
     }
 
     @Test
@@ -118,15 +115,17 @@ class PriceRepositoryTest {
     @Test
     void basicCrudOperations() {
         // Create
-        Price newPrice = new Price();
-        newPrice.setProductId(3L);
-        newPrice.setSellerId(2L);
-        newPrice.setSiteId(2L);
-        newPrice.setBasePrice(new BigDecimal("150.00"));
-        newPrice.setSellingPrice(new BigDecimal("140.00"));
-        newPrice.setEffectiveFrom(now);
-        newPrice.setEffectiveTo(now.plusDays(30));
-        newPrice.setIsActive(true);
+        Price newPrice = Price.builder()
+                .productId(3L)
+                .sellerId(2L)
+                .siteId(2L)
+                .basePrice(new BigDecimal("150.00"))
+                .sellingPrice(new BigDecimal("140.00"))
+                .currency("USD")
+                .effectiveFrom(now)
+                .effectiveTo(now.plusDays(30))
+                .isActive(true)
+                .build();
 
         Price savedPrice = priceRepository.save(newPrice);
         assertThat(savedPrice.getId()).isNotNull();

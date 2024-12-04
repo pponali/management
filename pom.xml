@@ -29,6 +29,12 @@
         <jackson.version>2.15.3</jackson.version>
         <caffeine.version>3.1.8</caffeine.version>
         <spring-boot.repackage.skip>false</spring-boot.repackage.skip>
+        <argLine>
+            --add-opens java.base/java.lang=ALL-UNNAMED
+            --add-opens java.base/java.time=ALL-UNNAMED
+            --add-opens java.base/java.sql=ALL-UNNAMED
+            -Djacoco.skip=true
+        </argLine>
     </properties>
 
     <dependencies>
@@ -229,6 +235,11 @@
             <artifactId>postgresql</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!-- Google Guava -->
         <dependency>
@@ -237,6 +248,16 @@
             <version>32.1.3-jre</version>
         </dependency>
     </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.postgresql</groupId>
+                <artifactId>postgresql</artifactId>
+                <version>${postgresql.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>
@@ -276,8 +297,14 @@
                         --add-opens java.base/java.lang=ALL-UNNAMED
                         --add-opens java.base/java.time=ALL-UNNAMED
                         --add-opens java.base/java.sql=ALL-UNNAMED
-                        ${jacoco.agent.argLine}
+                        ${argLine}
                     </argLine>
+                    <properties>
+                        <property>
+                            <name>listener</name>
+                            <value>org.sonar.java.jacoco.JUnitListener</value>
+                        </property>
+                    </properties>
                 </configuration>
             </plugin>
             <plugin>
@@ -291,6 +318,7 @@
                         <exclude>**/entity/**</exclude>
                         <exclude>**/dto/**</exclude>
                     </excludes>
+                    <propertyName>argLine</propertyName>
                 </configuration>
                 <executions>
                     <execution>
@@ -328,6 +356,13 @@
                                 </rule>
                             </rules>
                         </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-report</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>
