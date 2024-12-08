@@ -10,27 +10,30 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+    private static final List<String> ALLOWED_ORIGINS = Arrays.asList("*");
+    private static final List<String> ALLOWED_METHODS = Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS");
+    private static final List<String> ALLOWED_HEADERS = Arrays.asList("*");
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable())  // Disable CSRF for file upload
-                .authorizeHttpRequests(auth -> auth
-                        // Swagger UI endpoints
-                        .requestMatchers("/api/v1/swagger-ui/**", "/swagger-ui/**").permitAll()
-                        .requestMatchers("/api/v1/api-docs/**", "/v3/api-docs/**").permitAll()
-                        .requestMatchers("/api/v1/swagger-resources/**", "/swagger-resources/**").permitAll()
-                        .requestMatchers("/api/v1/webjars/**", "/webjars/**").permitAll()
-                        // API endpoints
-                        .requestMatchers("/api/v1/prices/**").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .httpBasic();  // Enable HTTP Basic authentication
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/v1/swagger-ui/**", "/swagger-ui/**", 
+                                 "/api/v1/api-docs/**", "/v3/api-docs/**", 
+                                 "/api/v1/swagger-resources/**", "/swagger-resources/**", 
+                                 "/api/v1/webjars/**", "/webjars/**",
+                                 "/actuator/**", "/api/v1/actuator/**",
+                                 "/api/v1/actuator/prometheus", "/api/v1/prices/**").permitAll()
+                .anyRequest().authenticated()
+            );
 
         return http.build();
     }
@@ -38,9 +41,9 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("*"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowedOrigins(ALLOWED_ORIGINS);
+        configuration.setAllowedMethods(ALLOWED_METHODS);
+        configuration.setAllowedHeaders(ALLOWED_HEADERS);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

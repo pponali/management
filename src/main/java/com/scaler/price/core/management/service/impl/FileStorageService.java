@@ -17,6 +17,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Service
 @Slf4j
@@ -70,25 +72,42 @@ public class FileStorageService {
     }
 
     public String saveErrorReport(Workbook workbook, String uploadId) {
+        if (workbook == null) {
+            throw new FileStorageException("Workbook cannot be null");
+        }
+        
         try {
             // Create date-based directory structure for error reports
             LocalDate today = LocalDate.now();
             Path dateBasedDir = errorReportLocation.resolve(
                     String.format("%d/%02d/%02d", today.getYear(), today.getMonthValue(), today.getDayOfMonth())
             );
-            Files.createDirectories(dateBasedDir);
+            
+            // Ensure directory exists
+            try {
+                Files.createDirectories(dateBasedDir);
+            } catch (IOException e) {
+                log.error("Failed to create directory structure: {}", dateBasedDir);
+                throw new FileStorageException("Could not create directory for error report", e);
+            }
 
-            // Generate error report filename
-            String errorFileName = uploadId + "_errors.xlsx";
+            // Generate error report filename with timestamp to avoid conflicts
+            String errorFileName = String.format("%s_errors_%s.xlsx", 
+                uploadId, 
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")));
             Path errorFilePath = dateBasedDir.resolve(errorFileName);
 
             // Write workbook to file
             try (FileOutputStream fos = new FileOutputStream(errorFilePath.toFile())) {
                 workbook.write(fos);
+                log.info("Successfully saved error report: {}", errorFilePath);
+                return errorFilePath.toString();
+            } catch (IOException e) {
+                log.error("Failed to write error report to file: {}", errorFilePath);
+                throw new FileStorageException("Could not write error report to file", e);
             }
-
-            return errorFilePath.toString();
-        } catch (IOException ex) {
+        } catch (Exception ex) {
+            log.error("Unexpected error while saving error report for upload {}: {}", uploadId, ex.getMessage());
             throw new FileStorageException("Could not store error report. Please try again!", ex);
         }
     }

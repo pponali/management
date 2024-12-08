@@ -26,7 +26,7 @@ class PriceRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        testPrice = Price.builder()
+        testPrice = Price.priceBuilder()
                 .productId(1L)
                 .sellerId(1L)
                 .siteId(1L)
@@ -75,7 +75,7 @@ class PriceRepositoryTest {
     @Test
     void findUpcomingPriceChanges_ShouldReturnFuturePrices() {
         // Create a future price
-        Price futurePrice = Price.builder()
+        Price futurePrice = Price.priceBuilder()
                 .productId(2L)
                 .sellerId(testPrice.getSellerId())
                 .siteId(testPrice.getSiteId())
@@ -115,7 +115,7 @@ class PriceRepositoryTest {
     @Test
     void basicCrudOperations() {
         // Create
-        Price newPrice = Price.builder()
+        Price newPrice = Price.priceBuilder()
                 .productId(3L)
                 .sellerId(2L)
                 .siteId(2L)

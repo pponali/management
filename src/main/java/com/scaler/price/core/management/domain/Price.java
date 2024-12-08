@@ -1,7 +1,9 @@
 package com.scaler.price.core.management.domain;
 
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import jakarta.persistence.*;
 import lombok.experimental.SuperBuilder;
@@ -19,7 +21,9 @@ import java.time.LocalDateTime;
 )
 @Getter
 @Setter
-@SuperBuilder
+@SuperBuilder(toBuilder = true,builderMethodName = "priceBuilder")
+@NoArgsConstructor
+@AllArgsConstructor
 public class Price extends AuditInfo{
 
     @Column(name = "product_id", nullable = false)
@@ -30,6 +34,13 @@ public class Price extends AuditInfo{
 
     @Column(name = "site_id", nullable = false)
     private Long siteId;
+
+    @Column(name = "is_seller_active")
+    private Boolean isSellerActive;
+
+    @Column(name = "is_site_active")
+    private Boolean isSiteActive;
+
 
     @Column(nullable = false)
     private BigDecimal basePrice;
@@ -60,5 +71,8 @@ public class Price extends AuditInfo{
 
     @Embedded
     private SiteAttributes siteAttributes;
-    
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "fulfilment_type")
+    private FulfilmentType fulfilmentType;
 }

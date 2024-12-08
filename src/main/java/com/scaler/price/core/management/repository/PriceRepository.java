@@ -1,13 +1,15 @@
 package com.scaler.price.core.management.repository;
 
-import com.scaler.price.core.management.domain.Price;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.stereotype.Repository;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import com.scaler.price.core.management.domain.Price;
 
 @Repository
 public interface PriceRepository extends JpaRepository<Price, Long> {
@@ -47,5 +49,19 @@ public interface PriceRepository extends JpaRepository<Price, Long> {
             Long siteId,
             LocalDateTime startDate,
             LocalDateTime endDate
+    );
+
+    @Query("""
+        SELECT p FROM Price p 
+        WHERE p.productId = :productId 
+        AND p.siteId = :siteId 
+        AND p.isActive = true 
+        AND p.effectiveFrom <= :currentTime 
+        AND (p.effectiveTo IS NULL OR p.effectiveTo >= :currentTime)
+        """)
+    List<Price> findActiveValidPrices(
+        @Param("productId") Long productId,
+        @Param("siteId") Long siteId,
+        @Param("currentTime") LocalDateTime currentTime
     );
 }

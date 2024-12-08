@@ -9,6 +9,8 @@ import com.scaler.price.core.management.mappers.PriceMapper;
 import com.scaler.price.core.management.repository.PriceRepository;
 import com.scaler.price.core.management.service.PriceService;
 import com.scaler.price.core.management.service.PriceValidationService;
+import com.scaler.price.rule.service.SellerService;
+import com.scaler.price.rule.service.SiteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,12 +24,19 @@ public class PriceServiceImpl implements PriceService {
     private final PriceRepository priceRepository;
     private final PriceValidationService validationService;
     private final PriceMapper priceMapper;
+    private final SellerService sellerService;
+    private final SiteService siteService;
 
     @Override
     @Transactional
     public PriceDTO createPrice(PriceDTO priceDTO) throws PriceValidationException {
+        // Fetch active statuses
+        boolean isSellerActive = sellerService.isSellerActive(priceDTO.getSellerId());
+        boolean isSiteActive = siteService.isSiteActive(priceDTO.getSiteId());
         validationService.validatePrice(priceDTO);
-        Price price = priceMapper.toEntity(priceDTO);
+        Price price = priceMapper.toEntity(priceDTO, sellerService, siteService);
+        price.setIsSellerActive(isSellerActive);
+        price.setIsSiteActive(isSiteActive);
         Price savedPrice = priceRepository.save(price);
         return priceMapper.toDTO(savedPrice);
     }

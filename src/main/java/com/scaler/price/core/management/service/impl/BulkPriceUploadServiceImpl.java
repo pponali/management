@@ -127,11 +127,25 @@ public class BulkPriceUploadServiceImpl implements BulkPriceUploadService {
             List<PriceUploadDTO> prices = parseAndValidateFile(file);
             String uploadId = generateUploadId();
             BulkUploadTracker tracker = createTracker(uploadId, sellerId, siteId);
-            assert tracker != null;
+
+            // Filter out invalid records
+            List<PriceUploadDTO> validPrices = prices.stream()
+                .filter(price -> {
+                    validatePrice(price);
+                    return true;
+                })
+                .collect(Collectors.toList());
+
+            if (validPrices.isEmpty()) {
+                throw new BulkUploadException("No valid records found in the file");
+            }
+
             tracker.setTotalRecords(prices.size());
+            tracker.setFailureCount(prices.size() - validPrices.size());
             trackerRepository.save(tracker);
 
-            asyncPriceProcessor.processPrices(uploadId, prices);
+            // Only process valid prices
+            asyncPriceProcessor.processPrices(uploadId, validPrices);
 
             return createInitialResponse(tracker);
         } catch (Exception e) {
@@ -197,7 +211,9 @@ public class BulkPriceUploadServiceImpl implements BulkPriceUploadService {
                 UUID.randomUUID().toString().substring(0, 8));
     }
 
-    private List<PriceUploadDTO> parseAndValidateFile(MultipartFile file) throws IOException, InvalidFormatException {
+    private List<PriceUploadDTO> parseAndValidateFile(MultipartFile file) throws IOException, InvalidFormatException, PriceValidationException {
+        log.info("Starting to parse and validate file: {}", file.getOriginalFilename());
+
         if (file == null || file.isEmpty()) {
             throw new BulkUploadException("Upload file is empty or null");
         }
@@ -238,6 +254,7 @@ public class BulkPriceUploadServiceImpl implements BulkPriceUploadService {
             throw new BulkUploadException("No valid price records found in the file");
         }
 
+        log.info("File parsing and validation completed successfully for file: {}", file.getOriginalFilename());
         return prices;
     }
 
@@ -379,32 +396,64 @@ public class BulkPriceUploadServiceImpl implements BulkPriceUploadService {
     }
 
     private PriceUploadDTO parseRow(Row row) {
+        log.debug("Parsing row number: {}", row.getRowNum() + 1);
+
         PriceUploadDTO price = new PriceUploadDTO();
 
-        // Parse IDs
-        price.setProductId(getCellValueAsLong(row.getCell(0)));  // Product ID*
-        price.setSellerId(getCellValueAsLong(row.getCell(1)));   // Seller ID*
-        price.setSiteId(getCellValueAsLong(row.getCell(2)));     // Site ID*
+        try {
+            // Parse IDs
+            Long productId = getCellValueAsLong(row.getCell(0));  // Product ID*
+            if (productId == null) {
+                log.warn("Product ID is null for row number: {}", row.getRowNum() + 1);
+            }
+            price.setProductId(productId);
+            log.debug("Parsed Product ID: {}", price.getProductId());
 
-        // Parse prices
-        price.setBasePrice(getCellValueAsString(row.getCell(3)));    // Base Price*
-        price.setSellingPrice(getCellValueAsString(row.getCell(4))); // Selling Price*
-        price.setMrp(getCellValueAsString(row.getCell(5)));          // MRP*
+            price.setSellerId(getCellValueAsLong(row.getCell(1)));   // Seller ID*
+            log.debug("Parsed Seller ID: {}", price.getSellerId());
 
-        // Parse other fields
-        price.setPriceType(getCellValueAsString(row.getCell(6)));     // Price Type*
-        price.setCurrency(getCellValueAsString(row.getCell(7)));      // Currency*
-        price.setEffectiveFrom(getCellValueAsString(row.getCell(8))); // Effective From*
-        price.setEffectiveTo(getCellValueAsString(row.getCell(9)));   // Effective To
+            price.setSiteId(getCellValueAsLong(row.getCell(2)));     // Site ID*
+            log.debug("Parsed Site ID: {}", price.getSiteId());
 
-        // Parse boolean and status
-        String isActiveStr = getCellValueAsString(row.getCell(10));   // Is Active*
-        price.setIsActive(isActiveStr != null ? Boolean.parseBoolean(isActiveStr.toLowerCase()) : null);
+            // Parse prices
+            price.setBasePrice(getCellValueAsString(row.getCell(3)));    // Base Price*
+            log.debug("Parsed Base Price: {}", price.getBasePrice());
 
-        price.setStatus(getCellValueAsString(row.getCell(11)));       // Status
+            price.setSellingPrice(getCellValueAsString(row.getCell(4))); // Selling Price*
+            log.debug("Parsed Selling Price: {}", price.getSellingPrice());
 
-        // Set row number for error tracking
-        price.setRowNumber(row.getRowNum() + 1);
+            price.setMrp(getCellValueAsString(row.getCell(5)));          // MRP*
+            log.debug("Parsed MRP: {}", price.getMrp());
+
+            // Parse other fields
+            price.setPriceType(getCellValueAsString(row.getCell(6)));     // Price Type*
+            log.debug("Parsed Price Type: {}", price.getPriceType());
+
+            price.setCurrency(getCellValueAsString(row.getCell(7)));      // Currency*
+            log.debug("Parsed Currency: {}", price.getCurrency());
+
+            price.setEffectiveFrom(getCellValueAsString(row.getCell(8))); // Effective From*
+            log.debug("Parsed Effective From: {}", price.getEffectiveFrom());
+
+            price.setEffectiveTo(getCellValueAsString(row.getCell(9)));   // Effective To
+            log.debug("Parsed Effective To: {}", price.getEffectiveTo());
+
+            // Parse boolean and status
+            String isActiveStr = getCellValueAsString(row.getCell(10));   // Is Active*
+            price.setIsActive(isActiveStr != null ? Boolean.parseBoolean(isActiveStr.toLowerCase()) : null);
+            log.debug("Parsed Is Active: {}", price.getIsActive());
+
+            price.setStatus(getCellValueAsString(row.getCell(11)));       // Status
+            log.debug("Parsed Status: {}", price.getStatus());
+
+            // Set row number for error tracking
+            price.setRowNumber(row.getRowNum() + 1);
+            log.debug("Set row number for error tracking: {}", price.getRowNumber());
+
+        } catch (Exception e) {
+            log.error("Error parsing row number: {}. Error: {}", row.getRowNum() + 1, e.getMessage(), e);
+            throw new BulkUploadException("Error parsing row: " + (row.getRowNum() + 1), e);
+        }
 
         return price;
     }
@@ -416,7 +465,7 @@ public class BulkPriceUploadServiceImpl implements BulkPriceUploadService {
                 case NUMERIC:
                     return (long) cell.getNumericCellValue();
                 case STRING:
-                    return Long.parseLong(cell.getStringCellValue().trim());
+                    return Long.valueOf(cell.getStringCellValue().trim());
                 default:
                     return null;
             }
@@ -426,85 +475,54 @@ public class BulkPriceUploadServiceImpl implements BulkPriceUploadService {
     }
 
     private void validatePrice(PriceUploadDTO price) {
-        if (price == null) {
-            throw new IllegalArgumentException("Price cannot be null");
-        }
+        List<String> errors = new ArrayList<>();
 
+        // Basic null checks
         if (price.getProductId() == null) {
-            throw new IllegalArgumentException("Product ID is required");
+            errors.add("Product ID is required");
         }
         if (price.getSellerId() == null) {
-            throw new IllegalArgumentException("Seller ID is required");
+            errors.add("Seller ID is required");
         }
         if (price.getSiteId() == null) {
-            throw new IllegalArgumentException("Site ID is required");
+            errors.add("Site ID is required");
         }
 
-        // Add more specific validations based on the annotations in PriceUploadDTO
-        validateDecimalValue(price.getMrp(), "MRP");
-        validateDecimalValue(price.getBasePrice(), "Base Price");
-        validateDecimalValue(price.getSellingPrice(), "Selling Price");
-
-        // Currency validation
-        if (price.getCurrency() == null || price.getCurrency().trim().isEmpty()) {
-            throw new IllegalArgumentException("Currency is required");
-        }
-        if (!price.getCurrency().matches("^[A-Z]{3}$")) {
-            throw new IllegalArgumentException("Currency must be a 3-letter uppercase code");
-        }
-
-        // Date validation for Effective From
-        if (price.getEffectiveFrom() == null || price.getEffectiveFrom().trim().isEmpty()) {
-            throw new IllegalArgumentException("Effective From date is required");
-        }
-        if (!price.getEffectiveFrom().matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z?$")) {
-            throw new IllegalArgumentException("Effective From date must be in format: yyyy-MM-ddTHH:mm:ss (e.g.,2024-01-01T00:00:00Z)");
-        }
-
-        // Date validation for Effective To
-        if (price.getEffectiveTo() == null || price.getEffectiveTo().trim().isEmpty()) {
-            throw new IllegalArgumentException("Effective To date is required");
-        }
-        if (!price.getEffectiveTo().matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z?$")) {
-            throw new IllegalArgumentException("Effective To date must be in format: yyyy-MM-ddTHH:mm:ss (e.g., 2024-01-01T00:00:00Z)");
-        }
-
-        // Price type validation
-        if (price.getPriceType() == null || price.getPriceType().trim().isEmpty()) {
-            throw new IllegalArgumentException("Price Type is required");
-        }
-        if (!Arrays.asList("REGULAR", "PROMOTIONAL", "CLEARANCE").contains(price.getPriceType())) {
-            throw new IllegalArgumentException("Price Type must be one of: REGULAR, PROMOTIONAL, CLEARANCE");
-        }
-
-        // Business rule validations
+        // Price validations
         try {
-            BigDecimal mrp = new BigDecimal(price.getMrp().trim());
             BigDecimal basePrice = new BigDecimal(price.getBasePrice().trim());
             BigDecimal sellingPrice = new BigDecimal(price.getSellingPrice().trim());
+            BigDecimal mrp = new BigDecimal(price.getMrp().trim());
 
+            // Validate price relationships
             if (basePrice.compareTo(mrp) > 0) {
-                throw new IllegalArgumentException("Base Price cannot be greater than MRP");
+                errors.add("Base Price cannot be greater than MRP");
             }
             if (sellingPrice.compareTo(mrp) > 0) {
-                throw new IllegalArgumentException("Selling Price cannot be greater than MRP");
+                errors.add("Selling Price cannot be greater than MRP");
             }
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid price format");
-        }
-    }
+            if (sellingPrice.compareTo(basePrice) > 0) {
+                errors.add("Selling price cannot be greater than base price");
+            }
 
-    private void validateDecimalValue(String value, String fieldName) {
-        if (value == null || value.trim().isEmpty()) {
-            throw new IllegalArgumentException(fieldName + " is required");
-        }
-        try {
-            BigDecimal decimalValue = new BigDecimal(value.trim());
-            if (decimalValue.compareTo(BigDecimal.ZERO) <= 0) {
-                throw new IllegalArgumentException(fieldName + " must be greater than zero");
+            // Validate positive values
+            if (basePrice.compareTo(BigDecimal.ZERO) <= 0) {
+                errors.add("Base Price must be greater than zero");
             }
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException(fieldName + " must be a valid decimal number");
+            if (sellingPrice.compareTo(BigDecimal.ZERO) <= 0) {
+                errors.add("Selling Price must be greater than zero");
+            }
+            if (mrp.compareTo(BigDecimal.ZERO) <= 0) {
+                errors.add("MRP must be greater than zero");
+            }
+        } catch (NumberFormatException | NullPointerException e) {
+            errors.add("Invalid price format");
+        }
+
+        // If any validation errors exist, throw exception
+        if (!errors.isEmpty()) {
+            price.setStatus("FAILED");
+            price.setErrorMessage(String.join("; ", errors));
         }
     }
 }

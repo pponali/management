@@ -16,13 +16,13 @@ import java.time.LocalDateTime;
 @Table(name = "bulk_upload_tracker")
 public class BulkUploadTracker extends AuditInfo {
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true, name = "upload_id")
     private String uploadId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name = "seller_id")
     private Long sellerId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, name = "site_id")
     private Long siteId;
 
     @Column(nullable = false)

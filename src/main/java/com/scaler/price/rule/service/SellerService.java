@@ -2,6 +2,7 @@ package com.scaler.price.rule.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import com.scaler.price.rule.domain.SellerLimits;
@@ -17,9 +18,7 @@ public class SellerService {
         return sellerRepository.existsById(sellerId);
     }
 
-    public boolean isSellerActive(Long sellerId) {
-        return sellerRepository.findActiveStatusById(sellerId);
-    }
+
 
     public SellerLimits getSellerLimits(Long sellerId) {
         return sellerRepository.findLimitsById(sellerId)
@@ -28,5 +27,13 @@ public class SellerService {
 
     public boolean existsById(Long sellerId) {
         return sellerRepository.existsById(sellerId);
+    }
+
+
+    @Cacheable(value = "sellerStatus", key = "#sellerId")
+    public boolean isSellerActive(Long sellerId) {
+        return sellerRepository.findById(sellerId)
+                .map(SellerLimits::isActive)
+                .orElse(false);
     }
 }

@@ -10,4 +10,8 @@ public interface SellerRepository extends JpaRepository<SellerLimits, Long> {
     Optional<SellerLimits> findLimitsById(Long sellerId);
 
     boolean findActiveStatusById(Long sellerId);
+
+
+
+
 }
