@@ -186,8 +186,16 @@ The API documentation is available via Swagger UI. You can access it by navigati
 ## Overview
 
 This service manages pricing rules, constraints, and templates for the Price Management System.
+## Buybox Implementation
 
+The Buybox service determines the winning price for a product based on several factors. The scoring system considers the following components:
 
+- **Price Component (40% Weight)**: Lower prices receive higher scores. The score is calculated based on the discount percentage from the MRP.
+- **Seller Rating Component (30% Weight)**: Higher-rated sellers receive higher scores. Ratings are fetched from the SellerScoreService.
+- **Fulfillment Score (20% Weight)**: Different fulfillment types (e.g., PRIME, EXPRESS) have different scores, with PRIME receiving the highest score.
+- **Stock Availability (10% Weight)**: Ensures that the product is in stock. This is a placeholder implementation and can be adjusted based on inventory data.
+
+These weights are configurable in the `application.yaml` file:
 
 This interface allows you to explore the API endpoints, view request and response formats, and test the API directly from your browser.
 
