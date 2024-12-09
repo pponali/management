@@ -25,15 +25,23 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/swagger-ui/**", "/swagger-ui/**", 
-                                 "/api/v1/api-docs/**", "/v3/api-docs/**", 
-                                 "/api/v1/swagger-resources/**", "/swagger-resources/**", 
-                                 "/api/v1/webjars/**", "/webjars/**",
-                                 "/actuator/**", "/api/v1/actuator/**",
-                                 "/api/v1/actuator/prometheus", "/api/v1/prices/**").permitAll()
-                .anyRequest().authenticated()
-            );
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/api/v1/swagger-ui/**",
+                                "/swagger-ui/**",
+                                "/api/v1/api-docs/**",
+                                "/v3/api-docs/**",
+                                "/api/v1/swagger-resources/**",
+                                "/swagger-resources/**",
+                                "/api/v1/webjars/**",
+                                "/webjars/**",
+                                "/actuator/**",
+                                "/api/v1/actuator/**",
+                                "/api/v1/actuator/prometheus",
+                                "/api/v1/prices/**"
+                        ).permitAll()
+                        .anyRequest().authenticated()
+                );
 
         return http.build();
     }

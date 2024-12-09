@@ -24,6 +24,9 @@ spring:
 
   jpa:
     hibernate:
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
       ddl-auto: update
     show-sql: true
     properties:
@@ -174,70 +177,34 @@ file:
   error-dir: ./uploads/errors
   retention-days: 30
 
-springdoc:
-  api-docs:
-    path: /api-docs
-  swagger-ui:
-    syntax-highlight:
-      activated: true
-      theme: monokai
-    try-it-out-enabled: true
-    request-snippets-enabled: true
-    response-codes-to-remove:
-      - 500
-      - 404
-    supported-submit-methods:
-      - get
-      - post
-      - put
-      - delete
-      - patch
-    persist-authorization: true
-    default-models-expand-depth: 3
-    default-model-expand-depth: 3
-    display-operation-id: true
-    display-request-duration: true
-    show-common-extensions: true
-    show-extensions: true
-    deep-linking: true
-  group-configs:
-    - group: pricing
-      paths-to-match: /api/v1/pricing/**
-      packages-to-scan: com.scaler.price.rule
-    - group: constraints
-      paths-to-match: /api/v1/constraints/**
-      packages-to-scan: com.scaler.price.core.management
-    - group: templates
-      paths-to-match: /api/v1/templates/**
-      packages-to-scan: com.scaler.price.template
-  packages-to-scan: com.scaler.price
-  paths-to-match:
-    - /api/v1/**
-  default-produces-media-type: application/json
-  default-consumes-media-type: application/json
-  openapi:
-    info:
-      title: Price Management API
-      description: REST API for managing pricing rules, constraints, and templates
-      version: 1.0.0
-      terms-of-service: https://scaler.com/terms
-      contact:
-        name: Scaler Support
-        email: support@scaler.com
-        url: https://scaler.com/support
-      license:
-        name: Apache 2.0
-        url: https://www.apache.org/licenses/LICENSE-2.0
-    servers:
-      - url: http://localhost:8080
-        description: Local Development Server
-      - url: https://api.scaler.com
-        description: Production Server
-    security-schemes:
-      bearerAuth:
-        type: http
-        scheme: bearer
-        bearerFormat: JWT
+openapi:
+  info:
+    title: Swagger Petstore - OpenAPI 3.0
+    description: |-
+      This is a sample Pet Store Server based on the OpenAPI 3.0 specification.  You can find out more about
+      Swagger at [https://swagger.io](https://swagger.io). In the third iteration of the pet store, we've switched to the design first approach!
+      You can now help us improve the API whether it's by making changes to the definition itself or to the code.
+      That way, with time, we can improve the API in general, and expose some of the new features in OAS3.
+
+      _If you're looking for the Swagger 2.0/OAS 2.0 version of Petstore, then click [here](https://editor.swagger.io/?url=https://petstore.swagger.io/v2/swagger.yaml). Alternatively, you can load via the `Edit > Load Petstore OAS 2.0` menu option!_
+
+      Some useful links:
+      - [The Pet Store repository](https://github.com/swagger-api/swagger-petstore)
+      - [The source API definition for the Pet Store](https://github.com/swagger-api/swagger-petstore/blob/master/src/main/resources/openapi.yaml)
+    termsOfService: http://swagger.io/terms/
+    contact:
+      email: apiteam@swagger.io
+    license:
+      name: Apache 2.0
+      url: http://www.apache.org/licenses/LICENSE-2.0.html
+    version: 1.0.11
+  externalDocs:
+    description: Find out more about Swagger
+    url: http://swagger.io
+  servers:
+    - url: https://petstore3.swagger.io/api/v3
+paths:
+
 
 price:
   margin:
