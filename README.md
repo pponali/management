@@ -1,4 +1,4 @@
-# Price Management System
+# Price Management Serice
 
 A robust and scalable price management system built with Spring Boot, designed to handle complex pricing scenarios for e-commerce platforms. This system provides comprehensive price management capabilities with support for dynamic pricing rules, bulk operations, and multi-tenant architecture.
 
@@ -178,6 +178,35 @@ A robust and scalable price management system built with Spring Boot, designed t
    ```
 
 ## 📚 API Documentation
+
+The API documentation is available via Swagger UI. You can access it by navigating to the following URL in your browser:
+
+[Swagger UI](http://localhost:8082/api/v1/swagger-ui/index.html)
+
+## Overview
+
+This service manages pricing rules, constraints, and templates for the Price Management System.
+
+
+
+This interface allows you to explore the API endpoints, view request and response formats, and test the API directly from your browser.
+
+## Getting Started
+
+To run the application locally, follow these steps:
+
+1. Ensure you have Java and Maven installed.
+2. Clone the repository.
+3. Navigate to the project directory.
+4. Run the application using Maven:
+   ```bash
+   mvn spring-boot:run
+   ```
+5. Access the Swagger UI at [http://localhost:8082/api/v1/swagger-ui/index.html](http://localhost:8082/api/v1/swagger-ui/index.html).
+
+## Additional Information
+
+For more details on the API endpoints and their usage, refer to the Swagger UI documentation linked above.
 
 ### Price Management APIs
 

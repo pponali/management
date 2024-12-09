@@ -226,3 +226,15 @@ price:
     max-per-category: 50
     max-actions: 10
     max-conditions: 5
+
+springdoc:
+  group-configs:
+    - group: pricing
+      paths-to-match: /api/v1/pricing/**
+      packages-to-scan: com.scaler.price.rule
+    - group: constraints
+      paths-to-match: /api/v1/constraints/**
+      packages-to-scan: com.scaler.price.core.management
+    - group: templates
+      paths-to-match: /api/v1/templates/**
+      packages-to-scan: com.scaler.price.template
