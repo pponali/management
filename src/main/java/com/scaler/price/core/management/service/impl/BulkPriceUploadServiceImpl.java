@@ -3,13 +3,17 @@ package com.scaler.price.core.management.service.impl;
 import com.scaler.price.core.bulk.services.AsyncPriceProcessor;
 import com.scaler.price.core.management.domain.BulkUploadTracker;
 import com.scaler.price.core.management.domain.UploadStatus;
+import com.scaler.price.core.management.dto.BulkUploadResultDTO;
+import com.scaler.price.core.management.dto.FailedPriceDTO;
 import com.scaler.price.core.management.dto.PriceDTO;
 import com.scaler.price.core.management.dto.PriceUploadDTO;
 import com.scaler.price.core.management.exceptions.BulkUploadException;
 import com.scaler.price.core.management.exceptions.PriceValidationException;
+import com.scaler.price.core.management.mapper.FailedPriceMapper;
+import com.scaler.price.core.management.mappers.BulkUploadTrackerMapper;
 import com.scaler.price.core.management.repository.BulkUploadTrackerRepository;
+import com.scaler.price.core.management.repository.FailedPricesRepository;
 import com.scaler.price.core.management.service.BulkPriceUploadService;
-import com.scaler.price.core.management.service.BulkUploadResultDTO;
 import com.scaler.price.core.management.service.PriceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,10 +47,12 @@ import java.util.stream.Collectors;
 @Slf4j
 public class BulkPriceUploadServiceImpl implements BulkPriceUploadService {
     private final PriceService priceService;
+    private final BulkUploadTrackerMapper bulkUploadTrackerMapper;
     private final BulkUploadTrackerRepository trackerRepository;
     private final AsyncPriceProcessor asyncPriceProcessor;
     private final FileStorageService fileStorageService;
-    
+    private final FailedPricesRepository failedPricesRepository;
+    private final FailedPriceMapper failedPriceMapper;
 
     private BulkUploadTracker createTracker(String uploadId, Long sellerId, Long siteId) {
         BulkUploadTracker tracker = new BulkUploadTracker();
@@ -65,7 +71,41 @@ public class BulkPriceUploadServiceImpl implements BulkPriceUploadService {
 
     @Override
     public BulkUploadResultDTO getUploadStatus(String uploadId) {
-        return null;
+        if (uploadId == null || uploadId.trim().isEmpty()) {
+            return BulkUploadResultDTO.builder()
+                    .status(UploadStatus.NOT_FOUND)
+                    .failureCount(0)
+                    .successCount(0)
+                    .totalRecords(0)
+                    .build();
+        }
+
+        Optional<BulkUploadTracker> bulkUploadTracker = trackerRepository.findByUploadId(uploadId);
+        if (!bulkUploadTracker.isPresent()) {
+            return BulkUploadResultDTO.builder()
+                    .uploadId(uploadId)
+                    .status(UploadStatus.FAILED)
+                    .failureCount(0)
+                    .successCount(0)
+                    .totalRecords(0)
+                    .build();
+        }
+
+        BulkUploadTracker tracker = bulkUploadTracker.get();
+        List<FailedPriceDTO> failedRecords = failedPricesRepository.findByUploadId(uploadId)
+                .stream()
+                .map(failedPriceMapper::toDTO)
+                .collect(Collectors.toList());
+
+        return BulkUploadResultDTO.builder()
+                .uploadId(uploadId)
+                .status(tracker.getStatus())
+                .failureCount(tracker.getFailureCount())
+                .successCount(tracker.getSuccessCount())
+                .totalRecords(tracker.getProcessedRecords())
+                .failedRecords(failedRecords)
+                .downloadUrl(tracker.getErrorFilePath())
+                .build();
     }
 
 
@@ -395,34 +435,52 @@ public class BulkPriceUploadServiceImpl implements BulkPriceUploadService {
         }
     }
 
-    private PriceUploadDTO parseRow(Row row) {
+    private BigDecimal getCellValueAsBigDecimal(Cell cell) throws PriceValidationException {
+        if (cell == null) {
+            return null;
+        }
+
+        try {
+            switch (cell.getCellType()) {
+                case NUMERIC:
+                    return BigDecimal.valueOf(cell.getNumericCellValue());
+                case STRING:
+                    String stringValue = cell.getStringCellValue().trim();
+                    return stringValue.isEmpty() ? null : new BigDecimal(stringValue);
+                case BLANK:
+                    return null;
+                default:
+                    throw new PriceValidationException("Invalid cell type for price value at column: " + cell.getColumnIndex());
+            }
+        } catch (NumberFormatException e) {
+            throw new PriceValidationException("Invalid price value at column: " + cell.getColumnIndex());
+        }
+    }
+
+    private PriceUploadDTO parseRow(Row row) throws PriceValidationException {
         log.debug("Parsing row number: {}", row.getRowNum() + 1);
 
         PriceUploadDTO price = new PriceUploadDTO();
 
         try {
             // Parse IDs
-            Long productId = getCellValueAsLong(row.getCell(0));  // Product ID*
-            if (productId == null) {
-                log.warn("Product ID is null for row number: {}", row.getRowNum() + 1);
-            }
-            price.setProductId(productId);
+            price.setProductId(getCellValueAsLong(row.getCell(0)));      // Product ID*
             log.debug("Parsed Product ID: {}", price.getProductId());
 
-            price.setSellerId(getCellValueAsLong(row.getCell(1)));   // Seller ID*
+            price.setSellerId(getCellValueAsLong(row.getCell(1)));       // Seller ID*
             log.debug("Parsed Seller ID: {}", price.getSellerId());
 
-            price.setSiteId(getCellValueAsLong(row.getCell(2)));     // Site ID*
+            price.setSiteId(getCellValueAsLong(row.getCell(2)));         // Site ID*
             log.debug("Parsed Site ID: {}", price.getSiteId());
 
             // Parse prices
-            price.setBasePrice(getCellValueAsString(row.getCell(3)));    // Base Price*
+            price.setBasePrice(getCellValueAsBigDecimal(row.getCell(3)));    // Base Price*
             log.debug("Parsed Base Price: {}", price.getBasePrice());
 
-            price.setSellingPrice(getCellValueAsString(row.getCell(4))); // Selling Price*
+            price.setSellingPrice(getCellValueAsBigDecimal(row.getCell(4))); // Selling Price*
             log.debug("Parsed Selling Price: {}", price.getSellingPrice());
 
-            price.setMrp(getCellValueAsString(row.getCell(5)));          // MRP*
+            price.setMrp(getCellValueAsBigDecimal(row.getCell(5)));          // MRP*
             log.debug("Parsed MRP: {}", price.getMrp());
 
             // Parse other fields
@@ -458,19 +516,25 @@ public class BulkPriceUploadServiceImpl implements BulkPriceUploadService {
         return price;
     }
 
-    private Long getCellValueAsLong(Cell cell) {
-        if (cell == null) return null;
+    private Long getCellValueAsLong(Cell cell) throws PriceValidationException {
+        if (cell == null) {
+            return null;
+        }
+
         try {
             switch (cell.getCellType()) {
                 case NUMERIC:
                     return (long) cell.getNumericCellValue();
                 case STRING:
-                    return Long.valueOf(cell.getStringCellValue().trim());
-                default:
+                    String stringValue = cell.getStringCellValue().trim();
+                    return stringValue.isEmpty() ? null : Long.parseLong(stringValue);
+                case BLANK:
                     return null;
+                default:
+                    throw new PriceValidationException("Invalid cell type for numeric value at column: " + cell.getColumnIndex());
             }
         } catch (NumberFormatException e) {
-            return null;
+            throw new PriceValidationException("Invalid numeric value at column: " + cell.getColumnIndex());
         }
     }
 
@@ -490,9 +554,9 @@ public class BulkPriceUploadServiceImpl implements BulkPriceUploadService {
 
         // Price validations
         try {
-            BigDecimal basePrice = new BigDecimal(price.getBasePrice().trim());
-            BigDecimal sellingPrice = new BigDecimal(price.getSellingPrice().trim());
-            BigDecimal mrp = new BigDecimal(price.getMrp().trim());
+            BigDecimal basePrice = price.getBasePrice();
+            BigDecimal sellingPrice = price.getSellingPrice();
+            BigDecimal mrp = price.getMrp();
 
             // Validate price relationships
             if (basePrice.compareTo(mrp) > 0) {
@@ -515,7 +579,7 @@ public class BulkPriceUploadServiceImpl implements BulkPriceUploadService {
             if (mrp.compareTo(BigDecimal.ZERO) <= 0) {
                 errors.add("MRP must be greater than zero");
             }
-        } catch (NumberFormatException | NullPointerException e) {
+        } catch (NullPointerException e) {
             errors.add("Invalid price format");
         }
 

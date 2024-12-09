@@ -205,6 +205,13 @@ openapi:
     - url: https://petstore3.swagger.io/api/v3
 paths:
 
+buybox:
+  weights:
+    price: 0.4
+    sellerRating: 0.3
+    fulfillment: 0.2
+    stock: 0.1
+
 
 price:
   margin:

@@ -2,10 +2,10 @@
 package com.scaler.price.core.management.controller;
 
 import com.scaler.price.core.management.domain.UploadStatus;
+import com.scaler.price.core.management.dto.BulkUploadResultDTO;
 import com.scaler.price.core.management.dto.PriceDTO;
 import com.scaler.price.core.management.exceptions.PriceValidationException;
 import com.scaler.price.core.management.service.BulkPriceUploadService;
-import com.scaler.price.core.management.service.BulkUploadResultDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;

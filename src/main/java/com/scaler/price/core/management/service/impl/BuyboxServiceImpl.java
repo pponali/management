@@ -5,8 +5,8 @@ import com.scaler.price.core.management.repository.PriceRepository;
 import com.scaler.price.core.management.service.BuyboxService;
 import com.scaler.price.core.management.service.SellerScoreService;
 import lombok.RequiredArgsConstructor;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -23,6 +23,18 @@ import java.util.stream.Collectors;
 public class BuyboxServiceImpl implements BuyboxService {
     private final PriceRepository priceRepository;
     private final SellerScoreService sellerScoreService;  // For seller metrics
+
+    @Value("${buybox.weights.price}")
+    private double priceWeight;
+
+    @Value("${buybox.weights.sellerRating}")
+    private double sellerRatingWeight;
+
+    @Value("${buybox.weights.fulfillment}")
+    private double fulfillmentWeight;
+
+    @Value("${buybox.weights.stock}")
+    private double stockWeight;
     
     @Override
     public Optional<Price> getWinningPrice(Long productId, Long siteId) {
@@ -60,18 +72,15 @@ public class BuyboxServiceImpl implements BuyboxService {
     
     private double calculateScore(Price price) {
         double score = 0.0;
-        
+
         // Price component (40% weight)
-        score += calculatePriceScore(price) * 0.4;
-        
+        score += calculatePriceScore(price) * priceWeight;
         // Seller rating component (30% weight)
-        score += sellerScoreService.getSellerRating(price.getSellerId()) * 0.3;
-        
+        score += sellerScoreService.getSellerRating(price.getSellerId()) * sellerRatingWeight;
         // Fulfillment score (20% weight)
-        score += calculateFulfillmentScore(price) * 0.2;
-        
+        score += calculateFulfillmentScore(price) * fulfillmentWeight;
         // Stock availability (10% weight)
-        score += calculateStockScore(price) * 0.1;
+        score += calculateStockScore(price) * stockWeight;
         
         log.debug("Calculated buybox score {} for price: {}", score, price);
         return score;
@@ -115,7 +124,7 @@ public class BuyboxServiceImpl implements BuyboxService {
         return 1.0;
     }
     
-    @Value
+    @lombok.Value
     private static class BuyboxScore {
         Price price;
         double score;

@@ -1,6 +1,7 @@
 package com.scaler.price.core.bulk.services;
 
 import com.scaler.price.core.management.domain.BulkUploadTracker;
+import com.scaler.price.core.management.domain.FailedPrice;
 import com.scaler.price.core.management.domain.UploadStatus;
 import com.scaler.price.core.management.dto.PriceDTO;
 import com.scaler.price.core.management.dto.PriceUploadDTO;
@@ -8,6 +9,7 @@ import com.scaler.price.core.management.exceptions.BulkUploadException;
 import com.scaler.price.core.management.exceptions.FileStorageException;
 import com.scaler.price.core.management.exceptions.PriceValidationException;
 import com.scaler.price.core.management.repository.BulkUploadTrackerRepository;
+import com.scaler.price.core.management.repository.FailedPricesRepository;
 import com.scaler.price.core.management.service.PriceService;
 import com.scaler.price.core.management.service.impl.FileStorageService;
 import lombok.RequiredArgsConstructor;
@@ -22,10 +24,10 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +36,7 @@ public class AsyncPriceProcessor {
     
     private final PriceService priceService;
     private final BulkUploadTrackerRepository trackerRepository;
+    private final FailedPricesRepository failedPricesRepository;
     private final FileStorageService fileStorageService;
 
     @Async
@@ -111,13 +114,15 @@ public class AsyncPriceProcessor {
         if (!failedRecords.isEmpty()) {
             log.info("Processing completed with failures. Total failed records: {}", failedRecords.size());
             try {
+                // Save failed records to database in a new transaction
+                saveFailedRecords(uploadId, failedRecords);
+                
                 log.debug("Generating error report for {} failed records", failedRecords.size());
                 String errorFilePath = generateErrorReport(uploadId, failedRecords);
                 tracker.setErrorFilePath(errorFilePath);
                 log.info("Error report generated successfully at: {}", errorFilePath);
             } catch (Exception e) {
-                log.error("Failed to generate error report for upload {}. Error: {}",
-                        uploadId, e.getMessage(), e);
+                log.error("Failed to generate error report for upload {}: {}", uploadId, e.getMessage());
             }
         } else {
             log.info("Processing completed successfully. All {} records processed without errors",
@@ -161,14 +166,32 @@ public class AsyncPriceProcessor {
         log.debug("Tracker updated successfully");
     }
 
+    @Transactional
+    protected void saveFailedRecords(String uploadId, List<PriceUploadDTO> failedRecords) {
+        List<FailedPrice> failedPrices = failedRecords.stream()
+            .map(failedRecord -> FailedPrice.builder()
+                .uploadId(uploadId)
+                .productId(failedRecord.getProductId())
+                .sellerId(failedRecord.getSellerId())
+                .siteId(failedRecord.getSiteId())
+                .basePrice(failedRecord.getBasePrice())
+                .sellingPrice(failedRecord.getSellingPrice())
+                .mrp(failedRecord.getMrp())
+                .errorMessage(failedRecord.getErrorMessage())
+                .createdAt(LocalDateTime.now())
+                .build())
+            .collect(Collectors.toList());
+        failedPricesRepository.saveAll(failedPrices);
+    }
+
     private PriceDTO convertToPrice(PriceUploadDTO price, BulkUploadTracker tracker) {
         return PriceDTO.builder()
                 .productId(price.getProductId())
                 .sellerId(price.getSellerId())
                 .siteId(price.getSiteId())
-                .basePrice(new BigDecimal(price.getBasePrice()))
-                .sellingPrice(new BigDecimal(price.getSellingPrice()))
-                .mrp(new BigDecimal(price.getMrp()))
+                .basePrice(price.getBasePrice())
+                .sellingPrice(price.getSellingPrice())
+                .mrp(price.getMrp())
                 .currency(price.getCurrency())
                 .effectiveFrom(LocalDateTime.parse(price.getEffectiveFrom()))
                 .effectiveTo(price.getEffectiveTo() != null ? LocalDateTime.parse(price.getEffectiveTo()) : null)
@@ -231,9 +254,12 @@ public class AsyncPriceProcessor {
         row.createCell(cellNum++).setCellValue(record.getRowNumber());
         row.createCell(cellNum++).setCellValue(record.getProductId());
         row.createCell(cellNum++).setCellValue(record.getErrorMessage());
-        row.createCell(cellNum++).setCellValue(record.getBasePrice());
-        row.createCell(cellNum++).setCellValue(record.getSellingPrice());
-        row.createCell(cellNum++).setCellValue(record.getMrp());
+
+        // Convert BigDecimal to double
+        row.createCell(cellNum++).setCellValue(record.getBasePrice() != null ? record.getBasePrice().doubleValue() : 0.0);
+        row.createCell(cellNum++).setCellValue(record.getSellingPrice() != null ? record.getSellingPrice().doubleValue() : 0.0);
+        row.createCell(cellNum++).setCellValue(record.getMrp() != null ? record.getMrp().doubleValue() : 0.0);
+
         row.createCell(cellNum++).setCellValue(record.getCurrency());
         row.createCell(cellNum++).setCellValue(record.getEffectiveFrom());
         row.createCell(cellNum++).setCellValue(record.getEffectiveTo());

@@ -5,6 +5,8 @@ import jakarta.validation.constraints.*;
 import lombok.Data;
 import org.hibernate.validator.constraints.Length;
 
+import java.math.BigDecimal;
+
 @Data
 @Schema(description = "Data Transfer Object for bulk price upload")
 public class PriceUploadDTO {
@@ -23,17 +25,17 @@ public class PriceUploadDTO {
     @Schema(description = "Maximum Retail Price", example = "999.99")
     @NotNull(message = "MRP is required")
     @DecimalMin(value = "0.0", message = "MRP must be greater than or equal to 0")
-    private String mrp;
+    private BigDecimal mrp;
 
     @Schema(description = "Base price before any discounts", example = "899.99")
     @NotNull(message = "Base price is required")
     @DecimalMin(value = "0.0", message = "Base price must be greater than or equal to 0")
-    private String basePrice;
+    private BigDecimal basePrice;
 
     @Schema(description = "Final selling price", example = "849.99")
     @NotNull(message = "Selling price is required")
     @DecimalMin(value = "0.0", message = "Selling price must be greater than or equal to 0")
-    private String sellingPrice;
+    private BigDecimal sellingPrice;
 
     @Schema(description = "Currency code in ISO format", example = "USD")
     @NotBlank(message = "Currency is required")

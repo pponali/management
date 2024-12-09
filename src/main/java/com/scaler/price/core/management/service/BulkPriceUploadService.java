@@ -1,6 +1,7 @@
 package com.scaler.price.core.management.service;
 
 
+import com.scaler.price.core.management.dto.BulkUploadResultDTO;
 import com.scaler.price.core.management.dto.PriceDTO;
 import com.scaler.price.core.management.exceptions.PriceValidationException;
 import org.springframework.core.io.Resource;
