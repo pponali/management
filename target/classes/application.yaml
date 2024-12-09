@@ -1,0 +1,235 @@
+spring:
+  security:
+    user:
+      name: admin
+      password: admin  # Change this in production
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
+  application:
+    name: price-management-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/price_management
+    username: myuser
+    password: mypassword
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+
+  jpa:
+    hibernate:
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+
+  cache:
+    type: caffeine
+    cache-names:
+      - priceRules
+      - priceConstraints
+      - priceTemplates
+      - categoryConstraints
+      - competitorPrices
+    caffeine:
+      spec: maximumSize=1000,expireAfterWrite=3600s
+    cache-configurations:
+      priceRules:
+        expireAfterWrite: 1h
+        maximumSize: 1000
+        recordStats: true
+      priceConstraints:
+        expireAfterWrite: 2h
+        maximumSize: 500
+        recordStats: true
+      priceTemplates:
+        expireAfterWrite: 4h
+        maximumSize: 200
+        recordStats: true
+      categoryConstraints:
+        expireAfterWrite: 12h
+        maximumSize: 300
+        recordStats: true
+      competitorPrices:
+        expireAfterWrite: 30m
+        maximumSize: 2000
+        recordStats: true
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: price-management-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+server:
+  address: 0.0.0.0
+  port: 8082
+  servlet:
+    container-type: TOMCAT
+    context-path: /api/v1
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/plain
+    min-response-size: 1024
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics,info,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    export:
+      prometheus:
+        enabled: true
+
+logging:
+  level:
+    root: INFO
+    com.scaler.price: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+app:
+  pricing:
+    default-currency: INR
+    max-price-history-days: 30
+    cache:
+      price-ttl: 3600
+      rules-ttl: 7200
+    constraints:
+      min-margin-percentage: 5
+      max-margin-percentage: 50
+    async:
+      core-pool-size: 5
+      max-pool-size: 10
+      queue-capacity: 25
+    template:
+      defaults:
+        margin-percentage: 20
+        min-price-threshold: 10.00
+        max-price-threshold: 1000000.00
+        rounding-strategy: NEAREST
+        rounding-value: 0.99
+      validation:
+        max-templates-per-category: 5
+        max-templates-per-seller: 10
+        min-valid-duration-days: 1
+        max-valid-duration-days: 365
+      processing:
+        batch-size: 100
+        retry-attempts: 3
+        timeout-seconds: 300
+      notifications:
+        enabled: true
+        email-alerts: true
+        slack-alerts: false
+      calculation:
+        include-tax: true
+        tax-rate: 0.20
+        allow-negative-margins: false
+        price-precision: 2
+      competitor:
+        max-price-age-hours: 24
+        min-competitors: 1
+        max-competitors: 10
+        price-deviation-threshold: 0.15
+  security:
+    jwt:
+      secret: ${JWT_SECRET:your-secret-key}
+      expiration: 86400000 # 24 hours
+  cors:
+    allowed-origins: "*"
+    allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+    allowed-headers: "*"
+    max-age: 3600
+
+file:
+  upload-dir: ./uploads/prices
+  error-dir: ./uploads/errors
+  retention-days: 30
+
+openapi:
+  info:
+    title: Swagger Petstore - OpenAPI 3.0
+    description: |-
+      This is a sample Pet Store Server based on the OpenAPI 3.0 specification.  You can find out more about
+      Swagger at [https://swagger.io](https://swagger.io). In the third iteration of the pet store, we've switched to the design first approach!
+      You can now help us improve the API whether it's by making changes to the definition itself or to the code.
+      That way, with time, we can improve the API in general, and expose some of the new features in OAS3.
+
+      _If you're looking for the Swagger 2.0/OAS 2.0 version of Petstore, then click [here](https://editor.swagger.io/?url=https://petstore.swagger.io/v2/swagger.yaml). Alternatively, you can load via the `Edit > Load Petstore OAS 2.0` menu option!_
+
+      Some useful links:
+      - [The Pet Store repository](https://github.com/swagger-api/swagger-petstore)
+      - [The source API definition for the Pet Store](https://github.com/swagger-api/swagger-petstore/blob/master/src/main/resources/openapi.yaml)
+    termsOfService: http://swagger.io/terms/
+    contact:
+      email: apiteam@swagger.io
+    license:
+      name: Apache 2.0
+      url: http://www.apache.org/licenses/LICENSE-2.0.html
+    version: 1.0.11
+  externalDocs:
+    description: Find out more about Swagger
+    url: http://swagger.io
+  servers:
+    - url: https://petstore3.swagger.io/api/v3
+
+buybox:
+  weights:
+    price: 0.4
+    sellerRating: 0.3
+    fulfillment: 0.2
+    stock: 0.1
+
+
+price:
+  margin:
+    default: 0.15
+    minimum: 0.05
+    maximum: 0.50
+  constraints:
+    minimum-price: 0.01
+    maximum-price: 999999.99
+  category:
+    max-name-length: 255
+    max-depth: 5
+    max-site-mappings: 100
+    max-custom-attributes: 50
+    max-attribute-value-length: 1000
+    max-validation-rules: 20
+    max-tags: 10
+  rules:
+    max-per-category: 50
+    max-actions: 10
+    max-conditions: 5
+
