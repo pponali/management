@@ -203,7 +203,6 @@ openapi:
     url: http://swagger.io
   servers:
     - url: https://petstore3.swagger.io/api/v3
-paths:
 
 buybox:
   weights:
@@ -234,14 +233,3 @@ price:
     max-actions: 10
     max-conditions: 5
 
-springdoc:
-  group-configs:
-    - group: pricing
-      paths-to-match: /api/v1/pricing/**
-      packages-to-scan: com.scaler.price.rule
-    - group: constraints
-      paths-to-match: /api/v1/constraints/**
-      packages-to-scan: com.scaler.price.core.management
-    - group: templates
-      paths-to-match: /api/v1/templates/**
-      packages-to-scan: com.scaler.price.template

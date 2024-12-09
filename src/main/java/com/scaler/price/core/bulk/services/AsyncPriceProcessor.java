@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -40,17 +39,11 @@ public class AsyncPriceProcessor {
     private final FileStorageService fileStorageService;
 
     @Async
-    @Transactional
-    public void processPrices(String uploadId, List<PriceUploadDTO> prices) {
+    public void processPrices(String uploadId, List<PriceUploadDTO> prices) throws PriceValidationException {
         log.info("Starting bulk price processing for upload ID: {}. Total records: {}", uploadId, prices.size());
-        
-        for (PriceUploadDTO price : prices) {
-            log.debug("Processing PriceUploadDTO: Product ID: {}", price.getProductId());
-        }
 
         BulkUploadTracker tracker = trackerRepository.findByUploadId(uploadId)
                 .orElseThrow(() -> new BulkUploadException("Tracker not found: " + uploadId));
-        log.debug("Found tracker for upload ID: {}. Initial status: {}", uploadId, tracker.getStatus());
 
         List<PriceUploadDTO> failedRecords = new ArrayList<>();
         int successCount = 0;
@@ -58,130 +51,136 @@ public class AsyncPriceProcessor {
 
         for (PriceUploadDTO price : prices) {
             currentRecord++;
-            log.debug("Processing record {}/{}: Product ID: {}, Price Type: {}", 
-                    currentRecord, prices.size(), price.getProductId(), price.getPriceType());
-
             try {
-                if (price.getErrorMessage() != null) {
-                    price.setStatus("FAILED");
-                    if (price.getErrorMessage() == null) {
-                        price.setErrorMessage("Product ID cannot be null or empty");
-                    }
-                    failedRecords.add(price);
-                    log.error("Invalid record - Product ID is null or empty at row: {}", price.getRowNumber());
-                    continue;
-                }
-
-                if ("FAILED".equals(price.getStatus())) {
-                    log.warn("Skipping previously failed record for Product ID: {}", price.getProductId());
-                    failedRecords.add(price);
-                    continue;
-                }
-
-                log.debug("Converting price data for Product ID: {} to DTO", price.getProductId());
                 PriceDTO priceDTO = convertToPrice(price, tracker);
-                
-                try {
-                    log.debug("Attempting to create price for Product ID: {}", price.getProductId());
-                    priceService.createPrice(priceDTO);
-                    successCount++;
-                    log.info("Successfully processed price for Product ID: {}. Success count: {}", 
-                            price.getProductId(), successCount);
-                    
-                } catch (PriceValidationException e) {
-                    price.setStatus("FAILED");
-                    price.setErrorMessage(e.getMessage());
-                    failedRecords.add(price);
-                    log.error("Validation failed for Product ID: {}. Error: {}", 
-                            price.getProductId(), e.getMessage());
-                }
-
-                // Update tracker periodically
-                if ((successCount + failedRecords.size()) % 100 == 0) {
-                    log.info("Progress update - Processed: {}/{}, Success: {}, Failed: {}", 
-                            currentRecord, prices.size(), successCount, failedRecords.size());
-                    updateTracker(tracker, successCount, failedRecords.size());
-                }
-            } catch (Exception e) {
-                price.setStatus("FAILED");
-                price.setErrorMessage(e.getMessage());
+                processPrice(priceDTO);
+                successCount++;
+                log.debug("Successfully processed price for Product ID: {}", price.getProductId());
+            } catch (Throwable e) {
+                handlePriceProcessingError(price, e, tracker.getUploadId());
                 failedRecords.add(price);
-                log.error("Unexpected error processing Product ID: {}. Error: {}", 
-                        price.getProductId(), e.getMessage(), e);
+            }
+
+            // Update tracker periodically
+            if (currentRecord % 100 == 0) {
+                updateTrackerProgress(tracker, successCount, failedRecords.size(), currentRecord, prices.size());
             }
         }
-        // Generate error report if needed
-        if (!failedRecords.isEmpty()) {
-            log.info("Processing completed with failures. Total failed records: {}", failedRecords.size());
-            try {
-                // Save failed records to database in a new transaction
+
+        // Final update
+        finalizeProcessing(tracker, uploadId, failedRecords, prices, successCount);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    protected void processPrice(PriceDTO priceDTO) throws PriceValidationException {
+        priceService.createPrice(priceDTO);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    protected void updateTrackerProgress(BulkUploadTracker tracker, int successCount,
+                                         int failureCount, int currentRecord, int totalRecords) {
+        try {
+            tracker.setSuccessCount(successCount);
+            tracker.setFailureCount(failureCount);
+            tracker.setProcessedRecords(currentRecord);
+            tracker.setStatus(UploadStatus.IN_PROGRESS);
+            trackerRepository.save(tracker);
+            log.debug("Updated tracker progress: {}/{} records processed", currentRecord, totalRecords);
+        } catch (Exception e) {
+            log.error("Failed to update tracker progress: {}", e.getMessage());
+        }
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    protected void finalizeProcessing(BulkUploadTracker tracker, String uploadId,
+                                      List<PriceUploadDTO> failedRecords, List<PriceUploadDTO> prices, int successCount) {
+        try {
+            if (!failedRecords.isEmpty()) {
                 saveFailedRecords(uploadId, failedRecords);
-                
-                log.debug("Generating error report for {} failed records", failedRecords.size());
                 String errorFilePath = generateErrorReport(uploadId, failedRecords);
                 tracker.setErrorFilePath(errorFilePath);
-                log.info("Error report generated successfully at: {}", errorFilePath);
-            } catch (Exception e) {
-                log.error("Failed to generate error report for upload {}: {}", uploadId, e.getMessage());
             }
-        } else {
-            log.info("Processing completed successfully. All {} records processed without errors",
-                    prices.size());
-        }
 
-        UploadStatus finalStatus = failedRecords.isEmpty() ?
-                UploadStatus.COMPLETED : UploadStatus.COMPLETED_WITH_ERRORS;
-        log.info("Updating final status for upload {}. Status: {}, Success: {}, Failed: {}",
-                uploadId, finalStatus, successCount, failedRecords.size());
-        updateTracker(tracker, finalStatus, prices.size() - failedRecords.size(), failedRecords, prices);
-    }
+            UploadStatus finalStatus = failedRecords.isEmpty() ?
+                    UploadStatus.COMPLETED : UploadStatus.COMPLETED_WITH_ERRORS;
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)  // Add this to create a new transaction
-    private void updateTracker(BulkUploadTracker tracker, UploadStatus finalStatus, int successCount, List<?> failedRecords, List<?> prices) {
-        try {
-            BulkUploadTracker freshTracker = trackerRepository.findByUploadId(tracker.getUploadId())
-                    .orElseThrow(() -> new RuntimeException("Tracker not found"));
+            tracker.setStatus(finalStatus);
+            tracker.setSuccessCount(successCount);
+            tracker.setFailureCount(failedRecords.size());
+            tracker.setProcessedRecords(prices.size());
+            trackerRepository.save(tracker);
 
-            freshTracker.setStatus(finalStatus);
-            freshTracker.setSuccessCount(successCount);
-            freshTracker.setFailureCount(failedRecords.size());
-            freshTracker.setProcessedRecords(prices.size());
-
-            trackerRepository.saveAndFlush(freshTracker);
-            log.info("Tracker updated successfully: {}", freshTracker);
+            log.info("Processing completed. Status: {}, Success: {}, Failed: {}",
+                    finalStatus, successCount, failedRecords.size());
         } catch (Exception e) {
-            log.error("Failed to update tracker: {}", e.getMessage(), e);
-            throw e;
+            log.error("Error in finalizing processing: {}", e.getMessage());
+            tracker.setStatus(UploadStatus.FAILED);
+            trackerRepository.save(tracker);
         }
     }
 
-    private void updateTracker(BulkUploadTracker tracker, int successCount, int failureCount) {
-        log.debug("Updating tracker - Upload ID: {}, Success: {}, Failed: {}",
-                tracker.getUploadId(), successCount, failureCount);
-        tracker.setSuccessCount(successCount);
-        tracker.setFailureCount(failureCount);
-        tracker.setProcessedRecords(successCount + failureCount);
-        tracker.setStatus(UploadStatus.IN_PROGRESS);
-        trackerRepository.save(tracker);
-        log.debug("Tracker updated successfully");
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    protected void saveFailedRecords(String uploadId, List<PriceUploadDTO> failedRecords) {
+        for (PriceUploadDTO failedRecord : failedRecords) {
+            try {
+                FailedPrice failedPrice = FailedPrice.builder()
+                        .uploadId(uploadId)
+                        .productId(failedRecord.getProductId())
+                        .sellerId(failedRecord.getSellerId())
+                        .siteId(failedRecord.getSiteId())
+                        .basePrice(failedRecord.getBasePrice())
+                        .sellingPrice(failedRecord.getSellingPrice())
+                        .mrp(failedRecord.getMrp())
+                        .errorMessage(failedRecord.getErrorMessage())
+                        .build();
+
+                failedPricesRepository.save(failedPrice);
+            } catch (Exception e) {
+                log.error("Failed to save failed record for Product ID: {}. Error: {}",
+                        failedRecord.getProductId(), e.getMessage());
+            }
+        }
     }
 
-    @Transactional
-    protected void saveFailedRecords(String uploadId, List<PriceUploadDTO> failedRecords) {
-        List<FailedPrice> failedPrices = failedRecords.stream()
-            .map(failedRecord -> FailedPrice.builder()
+    private void handlePriceProcessingError(PriceUploadDTO price, Throwable e, String uploadId) {
+        String errorMessage;
+        
+        // Get the root cause of the exception
+        Throwable rootCause = getRootCause(e);
+        String rootMessage = rootCause.getMessage();
+        
+        if (e instanceof PriceValidationException) {
+            errorMessage = e.getMessage();
+        } else if (rootMessage != null && rootMessage.contains("already exists")) {
+            errorMessage = "Duplicate price entry: A price already exists for this product, seller, site, date and price type combination";
+        } else if (rootMessage != null && rootMessage.contains("value too long")) {
+            errorMessage = "One or more fields exceed the maximum allowed length";
+        } else {
+            errorMessage = "Unexpected error: " + e.getMessage();
+        }
+        
+        log.error("Error processing price for Product ID: {}. Error: {}", price.getProductId(), errorMessage, e);
+        
+        FailedPrice failedPrice = FailedPrice.builder()
                 .uploadId(uploadId)
-                .productId(failedRecord.getProductId())
-                .sellerId(failedRecord.getSellerId())
-                .siteId(failedRecord.getSiteId())
-                .basePrice(failedRecord.getBasePrice())
-                .sellingPrice(failedRecord.getSellingPrice())
-                .mrp(failedRecord.getMrp())
-                .errorMessage(failedRecord.getErrorMessage())
-                .createdAt(LocalDateTime.now())
-                .build())
-            .collect(Collectors.toList());
-        failedPricesRepository.saveAll(failedPrices);
+                .productId(price.getProductId())
+                .sellerId(price.getSellerId())
+                .siteId(price.getSiteId())
+                .basePrice(price.getBasePrice())
+                .sellingPrice(price.getSellingPrice())
+                .mrp(price.getMrp())
+                .errorMessage(errorMessage)
+                .build();
+
+        failedPricesRepository.save(failedPrice);
+    }
+
+    private Throwable getRootCause(Throwable throwable) {
+        Throwable rootCause = throwable;
+        while (rootCause.getCause() != null && rootCause.getCause() != rootCause) {
+            rootCause = rootCause.getCause();
+        }
+        return rootCause;
     }
 
     private PriceDTO convertToPrice(PriceUploadDTO price, BulkUploadTracker tracker) {

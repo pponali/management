@@ -16,7 +16,8 @@ public class FailedPriceDTO {
     private Long id;
     private String uploadId;
     private Long productId;
-    private BigDecimal price;
-    private String errorReason;
+    private BigDecimal basePrice;
+    private BigDecimal sellingPrice;
+    private String errorMessage;
     private LocalDateTime createdAt;
 }

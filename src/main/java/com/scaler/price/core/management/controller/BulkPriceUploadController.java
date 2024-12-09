@@ -1,4 +1,3 @@
-
 package com.scaler.price.core.management.controller;
 
 import com.scaler.price.core.management.domain.UploadStatus;
@@ -7,6 +6,8 @@ import com.scaler.price.core.management.dto.PriceDTO;
 import com.scaler.price.core.management.exceptions.PriceValidationException;
 import com.scaler.price.core.management.service.BulkPriceUploadService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -96,5 +97,20 @@ public class BulkPriceUploadController {
         List<String> validationErrors = bulkUploadService.validatePrices(prices);
         return ResponseEntity.ok(validationErrors);
     }
-}
 
+    /**
+     * Downloads the error report for a specific bulk upload.
+     *
+     * @param uploadId The ID of the bulk upload
+     * @return The error report file as a downloadable resource
+     */
+    @GetMapping("/download/{uploadId}")
+    public ResponseEntity<Resource> downloadErrorReport(@PathVariable String uploadId) {
+        Resource resource = bulkUploadService.downloadErrorReport(uploadId);
+        
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"error_report_" + uploadId + ".xlsx\"")
+                .body(resource);
+    }
+}

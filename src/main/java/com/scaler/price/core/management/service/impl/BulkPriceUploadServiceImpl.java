@@ -104,7 +104,7 @@ public class BulkPriceUploadServiceImpl implements BulkPriceUploadService {
                 .successCount(tracker.getSuccessCount())
                 .totalRecords(tracker.getProcessedRecords())
                 .failedRecords(failedRecords)
-                .downloadUrl(tracker.getErrorFilePath())
+                .downloadUrl(tracker.getErrorFilePath() != null ? "/api/v1/prices/bulk/download/" + tracker.getUploadId() : null)
                 .build();
     }
 

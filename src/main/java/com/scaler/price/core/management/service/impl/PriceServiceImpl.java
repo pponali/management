@@ -12,6 +12,7 @@ import com.scaler.price.core.management.service.PriceValidationService;
 import com.scaler.price.rule.service.SellerService;
 import com.scaler.price.rule.service.SiteService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,7 +38,12 @@ public class PriceServiceImpl implements PriceService {
         Price price = priceMapper.toEntity(priceDTO, sellerService, siteService);
         price.setIsSellerActive(isSellerActive);
         price.setIsSiteActive(isSiteActive);
-        Price savedPrice = priceRepository.save(price);
+        Price savedPrice = null;
+        try {
+            savedPrice = priceRepository.save(price);
+        }catch (DataIntegrityViolationException exception){
+            //throw new PriceValidationException("Product ID already exists");
+        }
         return priceMapper.toDTO(savedPrice);
     }
 

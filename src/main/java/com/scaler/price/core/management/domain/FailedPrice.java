@@ -4,18 +4,21 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "failed_prices")
-@Builder
+@Getter
+@Setter
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
-public class FailedPrice extends AuditInfo{
+public class FailedPrice extends AuditInfo {
 
     @Column(name = "upload_id")
     private String uploadId;
@@ -38,9 +41,6 @@ public class FailedPrice extends AuditInfo{
     @Column(name = "mrp")
     private BigDecimal mrp;
 
-    @Column(name = "error_message")
+    @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
-
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
 }
