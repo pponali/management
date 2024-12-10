@@ -1,6 +1,7 @@
 // com.scaler.price.core.management.service.impl.PriceServiceImpl.java
 package com.scaler.price.core.management.service.impl;
 
+import com.scaler.price.core.management.buybox.service.BuyboxService;
 import com.scaler.price.core.management.domain.Price;
 import com.scaler.price.core.management.dto.PriceDTO;
 import com.scaler.price.core.management.exceptions.PriceNotFoundException;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +29,7 @@ public class PriceServiceImpl implements PriceService {
     private final PriceMapper priceMapper;
     private final SellerService sellerService;
     private final SiteService siteService;
+    private final BuyboxService buyboxService;
 
     @Override
     @Transactional
@@ -94,5 +97,17 @@ public class PriceServiceImpl implements PriceService {
                         String.format("No active price found for product: %d, seller: %d, site: %d",
                                 productId, sellerId, siteId)));
         return priceMapper.toDTO(price);
+    }
+
+    @Override
+    public PriceDTO getWinningSellerPrice(Long productId, Long siteId) {
+
+        Optional<Price> optionalPrice = buyboxService.getWinningPrice(productId, siteId);
+        if(optionalPrice.isPresent()){
+            return priceMapper.toDTO(optionalPrice.get());
+        }
+        else {
+            throw new PriceNotFoundException("No active price found for product: " + productId + " and site: " + siteId);
+        }
     }
 }

@@ -7,9 +7,9 @@ import lombok.Data;
 @Data
 public class SellerAttributes {
     private String sellerName;
-    private String sellerType; // MARKETPLACE, DIRECT, CONSIGNMENT
-    private String sellerCategory; // PREFERRED, REGULAR, NEW
-    private String fulfilmentType; // SELLER_FULFILLED, scalerFULFILLED
+    private SellerType sellerType;
+    private SellerCategory sellerCategory;
+    private FulfilmentType fulfilmentType;
     private String sellerRegion;
     private Boolean isSellerActive;
 }

@@ -51,17 +51,32 @@ public interface PriceRepository extends JpaRepository<Price, Long> {
             LocalDateTime endDate
     );
 
-    @Query("""
-        SELECT p FROM Price p 
-        WHERE p.productId = :productId 
-        AND p.siteId = :siteId 
-        AND p.isActive = true 
-        AND p.effectiveFrom <= :currentTime 
-        AND (p.effectiveTo IS NULL OR p.effectiveTo >= :currentTime)
-        """)
+    @Query("SELECT p FROM Price p " +
+           "WHERE p.productId = :productId " +
+           "AND p.siteId = :siteId " +
+           "AND p.effectiveFrom <= :currentTime " +
+           "AND (p.effectiveTo IS NULL OR p.effectiveTo > :currentTime)")
     List<Price> findActiveValidPrices(
-        @Param("productId") Long productId,
-        @Param("siteId") Long siteId,
-        @Param("currentTime") LocalDateTime currentTime
+            @Param("productId") Long productId,
+            @Param("siteId") Long siteId,
+            @Param("currentTime") LocalDateTime currentTime
+    );
+
+    @Query("SELECT p FROM Price p " +
+           "WHERE p.productId = :productId " +
+           "AND p.siteId = :siteId " +
+           "AND p.effectiveFrom <= :currentTime " +
+           "AND (p.effectiveTo IS NULL OR p.effectiveTo > :currentTime) " +
+           "AND p.isActive = :isActive " +
+           "AND p.isSellerActive = :isSellerActive " +
+           "AND p.isSiteActive = :isSiteActive " +
+           "ORDER BY p.sellingPrice ASC")
+    List<Price> findActivePricesForBuybox(
+            @Param("productId") Long productId,
+            @Param("siteId") Long siteId,
+            @Param("currentTime") LocalDateTime currentTime,
+            @Param("isActive") boolean isActive,
+            @Param("isSellerActive") boolean isSellerActive,
+            @Param("isSiteActive") boolean isSiteActive
     );
 }

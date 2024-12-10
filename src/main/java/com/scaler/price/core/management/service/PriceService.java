@@ -14,4 +14,5 @@ public interface PriceService {
 
     void validatePrice(PriceDTO price) throws PriceValidationException;
     PriceDTO getActivePrice(Long productId, Long sellerId, Long siteId);
+    PriceDTO getWinningSellerPrice(Long productId, Long siteId);
 }

@@ -1,8 +1,8 @@
-package com.scaler.price.core.management.service.impl;
+package com.scaler.price.core.management.buybox.service.impl;
 
+import com.scaler.price.core.management.buybox.service.BuyboxService;
 import com.scaler.price.core.management.domain.Price;
 import com.scaler.price.core.management.repository.PriceRepository;
-import com.scaler.price.core.management.service.BuyboxService;
 import com.scaler.price.core.management.service.SellerScoreService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -48,19 +47,19 @@ public class BuyboxServiceImpl implements BuyboxService {
         
         return determineBuyboxWinner(eligiblePrices);
     }
-    
-    private List<Price> getEligiblePrices(Long productId, Long siteId) {
-        return priceRepository.findActiveValidPrices(productId, siteId, LocalDateTime.now())
-                .stream()
-                .filter(this::isEligibleForBuybox)
-                .collect(Collectors.toList());
-    }
-    
-    private boolean isEligibleForBuybox(Price price) {
-        return price.getIsActive() &&
-               price.getIsSellerActive() &&
-               price.getIsSiteActive() &&
-               price.getSellingPrice().compareTo(BigDecimal.ZERO) > 0;
+
+
+
+    public List<Price> getEligiblePrices(Long productId, Long siteId) {
+        LocalDateTime now = LocalDateTime.now();
+        return priceRepository.findActivePricesForBuybox(
+                productId,
+                siteId,
+                now,
+                true,  // isActive
+                true,  // isSellerActive
+                true   // isSiteActive
+        );
     }
     
     private Optional<Price> determineBuyboxWinner(List<Price> eligiblePrices) {

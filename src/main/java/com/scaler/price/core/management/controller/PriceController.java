@@ -91,4 +91,17 @@ public class PriceController {
             throw ex; // Will be handled by GlobalExceptionHandler
         }
     }
+
+    @GetMapping("/site/{siteId}/product/{productId}")
+    public ResponseEntity<PriceDTO> getPriceBySite(
+            @PathVariable Long productId,
+            @PathVariable Long siteId) {
+
+        try {
+            PriceDTO price = priceService.getWinningSellerPrice(productId, siteId);
+            return ResponseEntity.ok(price);
+        } catch (PriceNotFoundException ex) {
+            throw ex; // Will be handled by GlobalExceptionHandler
+        }
+    }
 }

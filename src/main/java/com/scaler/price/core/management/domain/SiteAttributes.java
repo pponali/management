@@ -7,7 +7,7 @@ import jakarta.persistence.Embeddable;
 @Data
 public class SiteAttributes {
     private String siteName; // scaler, LUXURY, MARKETPLACE
-    private String channel; // WEB, MOBILE, POS
+    private Channel channel; //
     private String region;
     private String businessUnit;
     private Boolean isSiteActive;
