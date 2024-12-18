@@ -2,6 +2,9 @@ package com.scaler.price.core.management.controller;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -148,5 +151,80 @@ class PriceControllerTest {
                         .content(objectMapper.writeValueAsString(testPriceDTO)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0]").value("Price validation successful"));
+    }
+
+    @Test
+    void getPricesByProduct_ExistingProduct_ReturnsPriceList() throws Exception {
+        List<PriceDTO> prices = Arrays.asList(testPriceDTO);
+        when(priceService.getPricesByProduct(1L)).thenReturn(prices);
+
+        mockMvc.perform(get("/api/v1/prices/product/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].productId").value(testPriceDTO.getProductId()))
+                .andExpect(jsonPath("$[0].sellerId").value(testPriceDTO.getSellerId()));
+    }
+
+    @Test
+    void getPricesByProduct_NonExistingProduct_ReturnsEmptyList() throws Exception {
+        when(priceService.getPricesByProduct(999L)).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/api/v1/prices/product/999"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
+    void getPriceBySite_ExistingPrice_ReturnsPrice() throws Exception {
+        when(priceService.getWinningSellerPrice(1L, 1L)).thenReturn(testPriceDTO);
+
+        mockMvc.perform(get("/api/v1/prices/site/1/product/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.productId").value(testPriceDTO.getProductId()))
+                .andExpect(jsonPath("$.sellerId").value(testPriceDTO.getSellerId()));
+    }
+
+    @Test
+    void getPriceBySite_NonExistingPrice_ReturnsNotFound() throws Exception {
+        when(priceService.getWinningSellerPrice(999L, 999L))
+                .thenThrow(new PriceNotFoundException("No winning seller price found"));
+
+        mockMvc.perform(get("/api/v1/prices/site/999/product/999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("No winning seller price found"));
+    }
+
+    @Test
+    void updatePrice_NonExistingPrice_ReturnsNotFound() throws Exception, PriceValidationException {
+        when(priceService.updatePrice(eq(999L), any(PriceDTO.class)))
+                .thenThrow(new PriceNotFoundException("Price not found with id: 999"));
+
+        mockMvc.perform(put("/api/v1/prices/999")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(testPriceDTO)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Price not found with id: 999"));
+    }
+
+    @Test
+    void createPrice_InvalidPriceData_ReturnsBadRequest() throws Exception {
+        testPriceDTO.setBasePrice(new BigDecimal("-100.00")); // Invalid negative price
+
+        mockMvc.perform(post("/api/v1/prices")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(testPriceDTO)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void validateNewPrice_InvalidPrice_ReturnsValidationError() throws Exception {
+        when(validationService.validatePrice(any(PriceDTO.class)))
+                .thenThrow(new PriceValidationException("Invalid price data"));
+
+        mockMvc.perform(post("/api/v1/prices/validate")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(testPriceDTO)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0]").value("Invalid price data"));
     }
 }

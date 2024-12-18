@@ -10,6 +10,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -23,6 +24,10 @@ import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@TestPropertySource(properties = {
+    "spring.main.allow-bean-definition-overriding=true",
+    "app.initialization.enabled=false"  // Disable data initialization during tests
+})
 class BulkPriceUploadControllerTest {
 
     @Autowired
@@ -33,8 +38,8 @@ class BulkPriceUploadControllerTest {
 
     @Test
     void testBulkUpload() throws Exception {
-        // Load the template file
-        ClassPathResource resource = new ClassPathResource("uploads/prices/price_upload_template.xlsx");
+        // Load the template file from test resources
+        ClassPathResource resource = new ClassPathResource("test-data/price_upload_template.xlsx");
         
         // Create a mock multipart file
         MockMultipartFile file = new MockMultipartFile(

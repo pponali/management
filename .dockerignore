@@ -1,0 +1,50 @@
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# Compiled files
+target/
+*.class
+
+# Logs
+logs/
+*.log
+
+# Local configuration
+src/main/resources/application-local.yml
+src/main/resources/application-local.properties
+
+# Documentation
+README.md
+HELP.md
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Test reports
+coverage-reports/
+test-output/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

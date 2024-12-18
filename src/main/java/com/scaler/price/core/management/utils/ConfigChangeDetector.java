@@ -747,7 +747,7 @@ public class ConfigChangeDetector {
                !Objects.equals(old.getSpecialRuleId(), current.getSpecialRuleId()) ||
                !Objects.equals(old.getWindowType(), current.getWindowType());
     }
-    
+
     public enum ChangeType {
         ADDED,
         REMOVED,
