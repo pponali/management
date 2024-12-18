@@ -10,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -217,9 +218,9 @@ class PriceControllerTest {
     }
 
     @Test
-    void validateNewPrice_InvalidPrice_ReturnsValidationError() throws Exception {
-        when(validationService.validatePrice(any(PriceDTO.class)))
-                .thenThrow(new PriceValidationException("Invalid price data"));
+    void validateNewPrice_InvalidPrice_ReturnsValidationError() throws Exception, PriceValidationException {
+        doThrow(new PriceValidationException("Invalid price data"))
+                .when(validationService).validatePrice(any(PriceDTO.class));
 
         mockMvc.perform(post("/api/v1/prices/validate")
                 .contentType(MediaType.APPLICATION_JSON)

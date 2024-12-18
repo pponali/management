@@ -17,7 +17,7 @@ public class DataInitializationConfig {
 
     @Autowired
     private SqlScriptGenerator sqlScriptGenerator;
-
+    /*
     @Bean
     @Profile("!prod")  // Don't run in production
     @ConditionalOnProperty(name = "app.initialization.enabled", havingValue = "true", matchIfMissing = true)
@@ -31,5 +31,5 @@ public class DataInitializationConfig {
             resourceDatabasePopulator.addScript(new ClassPathResource("db/migration/V2__Insert_Sample_Prices.sql"));
             resourceDatabasePopulator.execute(dataSource);
         };
-    }
+    } */
 }

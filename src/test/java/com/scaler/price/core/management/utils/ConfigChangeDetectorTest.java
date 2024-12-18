@@ -1,76 +1,76 @@
 package com.scaler.price.core.management.utils;
 
 import com.scaler.price.rule.domain.ChangeDiff;
+import com.scaler.price.rule.domain.PricingRule;
+import com.scaler.price.rule.domain.RuleStatus;
+import com.scaler.price.rule.domain.RuleType;
 import com.scaler.price.rule.domain.SellerSiteConfig;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.springframework.stereotype.Component;
+import org.junit.jupiter.api.Test;
 
-import java.time.Instant;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 class ConfigChangeDetectorTest {
+
+    private ConfigChangeDetector configChangeDetector;
 
     @BeforeEach
     void setUp() {
+        configChangeDetector = new ConfigChangeDetector();
     }
 
-    @AfterEach
-    void tearDown() {
-    }
+    @Test
+    void test_detectConfigChanges() {
+        // Arrange
+        Map<String, ChangeDiff> changes = new HashMap<>();
+        Set<SellerSiteConfig> oldConfigs = new HashSet<>();
+        Set<SellerSiteConfig> newConfigs = new HashSet<>();
+        
+        // Create pricing rule
+        PricingRule rule = new PricingRule();
+        rule.setId(1L);
+        rule.setRuleName("Test Rule");
+        rule.setDescription("Test Description");
+        rule.setRuleType(RuleType.PRICE);
+        rule.setStatus(RuleStatus.ACTIVE);
+        rule.setSellerSiteConfigs(new HashSet<>());
+        
+        // Create test configs
+        SellerSiteConfig oldConfig = new SellerSiteConfig();
+        oldConfig.setId(1L);
+        oldConfig.setSellerId(1L);
+        oldConfig.setSiteId(1L);
+        oldConfig.setRule(rule);
+        Map<String, Object> oldMetadata = new HashMap<>();
+        oldMetadata.put("isActive", true);
+        oldConfig.setMetadata(oldMetadata);
+        
+        SellerSiteConfig newConfig = new SellerSiteConfig();
+        newConfig.setId(1L);
+        newConfig.setSellerId(1L);
+        newConfig.setSiteId(1L);
+        newConfig.setRule(rule);
+        Map<String, Object> newMetadata = new HashMap<>();
+        newMetadata.put("isActive", false);
+        newConfig.setMetadata(newMetadata);
+        
+        oldConfigs.add(oldConfig);
+        newConfigs.add(newConfig);
 
-    @org.junit.jupiter.api.Test
-    void detect() {
-    }
+        // Act
+        configChangeDetector.detectConfigChanges(changes, oldConfigs, newConfigs);
 
-    @org.junit.jupiter.api.Test
-    public void test_detectConfigChanges(
-            Map<String, ChangeDiff> changes,
-            Set<SellerSiteConfig> oldConfigs,
-            Set<SellerSiteConfig> newConfigs) {
-        //Arrange
-        ConfigChangeDetector configChangeDetector = new ConfigChangeDetector();
-
-
-        //Act
-
-        //Assert
-
-
-
-    }
-
-    @Slf4j
-    @Component
-    public class ConfigChangeDetector {
-        private Map<String, ChangeDiff> changes;
-        private boolean hasChanges;
-        private com.scaler.price.core.management.utils.ConfigChangeDetector.ChangeType changeType;
-        private Instant changeTime;
-        private String changeTimeFormatted;
-        private TimeWindow changeTimeWindow; // Need to create this class
-        private Instant changeTimeWindowStart;
-        private Instant changeTimeWindowEnd;
-        private String changeTimeWindowStartFormatted;
-        private String changeTimeWindowEndFormatted;
-        private Long changeTimeWindowStartEpoch;
-        private Long changeTimeWindowEndEpoch;
-        private String changeTimeWindowStartEpochFormatted;
-        private String changeTimeWindowEndEpochFormatted;
-    }
-
-    @Data
-    @AllArgsConstructor
-    public class TimeWindow {
-        private Instant start;
-        private Instant end;
-
-        public String toString() {
-            return start + "-" + end;
-        }
+        // Assert
+        String key = "1:1"; // sellerId:siteId
+        assertTrue(changes.containsKey(key), "Should detect changes for seller 1, site 1");
+        ChangeDiff diff = changes.get(key);
+        assertTrue(diff.getOldValue().contains("true"), "Old config should be active");
+        assertTrue(diff.getNewValue().contains("false"), "New config should be inactive");
     }
 }
